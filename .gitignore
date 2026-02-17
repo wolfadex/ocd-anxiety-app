@@ -1,0 +1,9 @@
+node_modules/
+elm-stuff/
+dist/
+android/
+ios/
+
+
+.DS_Store
+.Directory
