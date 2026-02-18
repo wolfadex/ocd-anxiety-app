@@ -1,20 +1,25 @@
 module Main exposing (main)
 
+import AppUrl
 import Browser
+import Browser.Navigation
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events
 import Task
 import Time
+import Url exposing (Url)
 
 
 main : Program Flags Model Msg
 main =
-    Browser.document
+    Browser.application
         { init = init
         , update = update
         , view = viewport
         , subscriptions = always Sub.none
+        , onUrlChange = UrlChanged
+        , onUrlRequest = UrlRequested
         }
 
 
@@ -23,7 +28,9 @@ type alias Flags =
 
 
 type alias Model =
-    { safetyBehaviors : List Behavior
+    { navKey : Browser.Navigation.Key
+    , route : Route
+    , safetyBehaviors : List Behavior
     , showAddBehavior : Bool
     , behaviorNameToAdd : String
     , showMenu : Bool
@@ -37,13 +44,54 @@ type alias Behavior =
     }
 
 
+type Route
+    = HomeRoute
+    | AddBehaviorRoute
+    | SettingsRoute
+
+
+routeToString : Route -> String
+routeToString route =
+    case route of
+        HomeRoute ->
+            "/"
+
+        AddBehaviorRoute ->
+            "/add-behavior"
+
+        SettingsRoute ->
+            "/settings"
+
+
+routeFromUrl : Url -> Route
+routeFromUrl url =
+    let
+        appUrl =
+            AppUrl.fromUrl url
+    in
+    case appUrl.path of
+        [] ->
+            HomeRoute
+
+        [ "add-behavior" ] ->
+            AddBehaviorRoute
+
+        [ "settings" ] ->
+            SettingsRoute
+
+        _ ->
+            HomeRoute
+
+
 
 -- INIT
 
 
-init : Flags -> ( Model, Cmd Msg )
-init () =
-    ( { safetyBehaviors = []
+init : Flags -> Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
+init () url navKey =
+    ( { navKey = navKey
+      , route = routeFromUrl url
+      , safetyBehaviors = []
       , showAddBehavior = False
       , behaviorNameToAdd = ""
       , showMenu = False
@@ -57,7 +105,9 @@ init () =
 
 
 type Msg
-    = ShowAddBehaviorClicked
+    = UrlChanged Url
+    | UrlRequested Browser.UrlRequest
+    | ShowAddBehaviorClicked
     | DismissAddBehaviorClicked
     | AddBehavior
     | BehaviorNameToAddChanged String
@@ -65,6 +115,8 @@ type Msg
     | SubmittedToBehaviorAt Int Time.Posix
     | ResistedBehavior Int
     | ResistedBehaviorAt Int Time.Posix
+    | ShowBehaviorEditor Int
+    | HideBehaviorEditor
     | ShowMenu
     | HideMenu
 
@@ -72,6 +124,21 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        UrlChanged url ->
+            ( { model | route = routeFromUrl url }, Cmd.none )
+
+        UrlRequested urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model
+                    , Browser.Navigation.pushUrl model.navKey (Url.toString url)
+                    )
+
+                Browser.External url ->
+                    ( model
+                    , Browser.Navigation.load url
+                    )
+
         ShowAddBehaviorClicked ->
             ( { model | showAddBehavior = True }, Cmd.none )
 
@@ -88,10 +155,9 @@ update msg model =
             else
                 ( { model
                     | behaviorNameToAdd = ""
-                    , showAddBehavior = False
                     , safetyBehaviors = { name = model.behaviorNameToAdd, submits = [], resists = [] } :: model.safetyBehaviors
                   }
-                , Cmd.none
+                , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
                 )
 
         SubmittedToBehavior index ->
@@ -132,6 +198,12 @@ update msg model =
             , Cmd.none
             )
 
+        ShowBehaviorEditor index ->
+            ( model, Cmd.none )
+
+        HideBehaviorEditor ->
+            ( model, Cmd.none )
+
         ShowMenu ->
             ( { model | showMenu = True }, Cmd.none )
 
@@ -154,14 +226,15 @@ viewport model =
 
 view : Model -> Html Msg
 view model =
-    if model.showAddBehavior then
-        viewAddBehavior model
+    case model.route of
+        HomeRoute ->
+            viewBehaviorList model
 
-    else if model.showMenu then
-        viewMenu model
+        AddBehaviorRoute ->
+            viewAddBehavior model
 
-    else
-        viewBehaviorList model
+        SettingsRoute ->
+            viewMenu model
 
 
 viewMenu : Model -> Html Msg
@@ -212,11 +285,12 @@ viewBehaviorList model =
                 , Attr.style "align-items" "center"
                 , Attr.style "justify-content" "center"
                 ]
-                [ Html.div
-                    [ Attr.style "font-size" "10vw"
+                [ Html.h1 [] [ Html.span [] [ Html.text "Welcome!" ] ]
+                , Html.div
+                    [ Attr.style "font-size" "3rem"
                     ]
-                    [ buttonPrimary "Start tracking"
-                        ShowAddBehaviorClicked
+                    [ linkPrimary "Start tracking"
+                        AddBehaviorRoute
                     ]
                 ]
 
@@ -236,10 +310,10 @@ viewBehaviorList model =
                     , Attr.style "justify-content" "space-between"
                     , Attr.style "padding" "0.5rem"
                     ]
-                    [ buttonPrimarySmall "Add behavior"
-                        ShowAddBehaviorClicked
-                    , buttonSecondaryIcon "☰"
-                        ShowMenu
+                    [ linkPrimarySmall "Add behavior"
+                        AddBehaviorRoute
+                    , linkSecondaryIcon "☰"
+                        SettingsRoute
                     ]
                 , Html.div
                     [ Attr.style "height" "93vh"
@@ -261,7 +335,15 @@ viewBehaviorInList index behavior =
         , Attr.style "border-radius" "0.5rem"
         , Attr.style "background" "hsl(265deg, 100%, 95%)"
         ]
-        [ Html.span [] [ Html.text behavior.name ]
+        [ Html.div
+            [ Attr.style "display" "flex"
+            , Attr.style "justify-content" "space-between"
+            , Attr.style "align-items" "center"
+            ]
+            [ Html.span [] [ Html.text behavior.name ]
+            , buttonSecondaryIcon "✎"
+                (ShowBehaviorEditor index)
+            ]
         , Html.div
             [ Attr.style "display" "flex"
             , Attr.style "justify-content" "space-between"
@@ -323,8 +405,8 @@ viewAddBehavior model =
                 , Attr.style "width" "100%"
                 , Attr.style "justify-content" "space-between"
                 ]
-                [ buttonSecondary "Cancel"
-                    DismissAddBehaviorClicked
+                [ linkSecondary "Cancel"
+                    HomeRoute
                 , buttonPrimary "Add" AddBehavior
                 ]
             ]
@@ -336,6 +418,18 @@ buttonPrimary label action =
     Html.button
         [ Attr.class "pushable"
         , Html.Events.onClick action
+        ]
+        [ Html.span [ Attr.class "shadow" ] []
+        , Html.span [ Attr.class "edge" ] []
+        , Html.span [ Attr.class "front" ] [ Html.text label ]
+        ]
+
+
+linkPrimary : String -> Route -> Html Msg
+linkPrimary label route =
+    Html.a
+        [ Attr.class "pushable"
+        , Attr.href (routeToString route)
         ]
         [ Html.span [ Attr.class "shadow" ] []
         , Html.span [ Attr.class "edge" ] []
@@ -355,11 +449,35 @@ buttonPrimarySmall label action =
         ]
 
 
+linkPrimarySmall : String -> Route -> Html Msg
+linkPrimarySmall label route =
+    Html.a
+        [ Attr.class "pushable"
+        , Attr.href (routeToString route)
+        ]
+        [ Html.span [ Attr.class "shadow" ] []
+        , Html.span [ Attr.class "edge" ] []
+        , Html.span [ Attr.class "front front-small" ] [ Html.text label ]
+        ]
+
+
 buttonSecondary : String -> Msg -> Html Msg
 buttonSecondary label action =
     Html.button
         [ Attr.class "pushable"
         , Html.Events.onClick action
+        ]
+        [ Html.span [ Attr.class "shadow" ] []
+        , Html.span [ Attr.class "edge edge-secondary" ] []
+        , Html.span [ Attr.class "front front-secondary" ] [ Html.text label ]
+        ]
+
+
+linkSecondary : String -> Route -> Html Msg
+linkSecondary label route =
+    Html.a
+        [ Attr.class "pushable"
+        , Attr.href (routeToString route)
         ]
         [ Html.span [ Attr.class "shadow" ] []
         , Html.span [ Attr.class "edge edge-secondary" ] []
@@ -379,11 +497,35 @@ buttonSecondarySmall label action =
         ]
 
 
+linkSecondarySmall : String -> Route -> Html Msg
+linkSecondarySmall label route =
+    Html.a
+        [ Attr.class "pushable"
+        , Attr.href (routeToString route)
+        ]
+        [ Html.span [ Attr.class "shadow" ] []
+        , Html.span [ Attr.class "edge edge-secondary" ] []
+        , Html.span [ Attr.class "front front-secondary front-small" ] [ Html.text label ]
+        ]
+
+
 buttonSecondaryIcon : String -> Msg -> Html Msg
 buttonSecondaryIcon label action =
     Html.button
         [ Attr.class "pushable"
         , Html.Events.onClick action
+        ]
+        [ Html.span [ Attr.class "shadow" ] []
+        , Html.span [ Attr.class "edge edge-secondary" ] []
+        , Html.span [ Attr.class "front front-secondary front-icon" ] [ Html.text label ]
+        ]
+
+
+linkSecondaryIcon : String -> Route -> Html Msg
+linkSecondaryIcon label route =
+    Html.a
+        [ Attr.class "pushable"
+        , Attr.href (routeToString route)
         ]
         [ Html.span [ Attr.class "shadow" ] []
         , Html.span [ Attr.class "edge edge-secondary" ] []
