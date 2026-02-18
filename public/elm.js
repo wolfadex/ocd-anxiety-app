@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1771455279518"
+    "1771456832840"
   );
   var ORIGINAL_COMPILATION_MODE = "debug";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -14523,9 +14523,7 @@ var $author$project$Main$init = F3(
 				behaviorNameToAdd: '',
 				navKey: navKey,
 				route: $author$project$Main$routeFromUrl(url),
-				safetyBehaviors: _List_Nil,
-				showAddBehavior: false,
-				showMenu: false
+				safetyBehaviors: _List_Nil
 			},
 			$elm$core$Platform$Cmd$none);
 	});
@@ -14538,6 +14536,17 @@ var $author$project$Main$ResistedBehaviorAt = F2(
 var $author$project$Main$SubmittedToBehaviorAt = F2(
 	function (a, b) {
 		return {$: 'SubmittedToBehaviorAt', a: a, b: b};
+	});
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
 	});
 var $elm$core$List$head = function (list) {
 	if (list.b) {
@@ -14554,7 +14563,6 @@ var $author$project$Main$findBehaviorById = F2(
 			A2($elm$core$List$drop, id, behaviors));
 	});
 var $elm$browser$Browser$Navigation$load = _Browser_load;
-var $elm$core$Debug$log = _Debug_log;
 var $elm$time$Time$Name = function (a) {
 	return {$: 'Name', a: a};
 };
@@ -14635,13 +14643,9 @@ var $author$project$Main$update = F2(
 			case 'UrlChanged':
 				var url = msg.a;
 				var route = $author$project$Main$routeFromUrl(url);
-				var _v1 = A2($elm$core$Debug$log, 'url changed', route);
-				if (_v1.$ === 'EditBehaviorRoute') {
-					var id = _v1.a;
-					var _v2 = A2(
-						$elm$core$Debug$log,
-						'behavior found?',
-						A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors));
+				if (route.$ === 'EditBehaviorRoute') {
+					var id = route.a;
+					var _v2 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
 					if (_v2.$ === 'Nothing') {
 						return _Utils_Tuple2(
 							_Utils_update(
@@ -14683,18 +14687,6 @@ var $author$project$Main$update = F2(
 						model,
 						$elm$browser$Browser$Navigation$load(url));
 				}
-			case 'ShowAddBehaviorClicked':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{showAddBehavior: true}),
-					$elm$core$Platform$Cmd$none);
-			case 'DismissAddBehaviorClicked':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{showAddBehavior: false}),
-					$elm$core$Platform$Cmd$none);
 			case 'BehaviorNameToAddChanged':
 				var name = msg.a;
 				return _Utils_Tuple2(
@@ -14773,9 +14765,6 @@ var $author$project$Main$update = F2(
 								model.safetyBehaviors)
 						}),
 					$elm$core$Platform$Cmd$none);
-			case 'ShowBehaviorEditor':
-				var index = msg.a;
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			case 'BehaviorNameEdited':
 				var name = msg.a;
 				var _v4 = model.behaviorEditing;
@@ -14798,14 +14787,72 @@ var $author$project$Main$update = F2(
 							}),
 						$elm$core$Platform$Cmd$none);
 				}
-			case 'SaveBehavior':
-				var id = msg.a;
+			case 'RemoveSubmit':
+				var timestamp = msg.a;
 				var _v6 = model.behaviorEditing;
 				if (_v6.$ === 'Nothing') {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				} else {
 					var _v7 = _v6.a;
+					var old = _v7.a;
 					var _new = _v7.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								behaviorEditing: $elm$core$Maybe$Just(
+									_Utils_Tuple2(
+										old,
+										_Utils_update(
+											_new,
+											{
+												submits: A2(
+													$elm$core$List$filter,
+													function (submit) {
+														return !_Utils_eq(submit, timestamp);
+													},
+													_new.submits)
+											})))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'RemoveResist':
+				var timestamp = msg.a;
+				var _v8 = model.behaviorEditing;
+				if (_v8.$ === 'Nothing') {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				} else {
+					var _v9 = _v8.a;
+					var old = _v9.a;
+					var _new = _v9.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								behaviorEditing: $elm$core$Maybe$Just(
+									_Utils_Tuple2(
+										old,
+										_Utils_update(
+											_new,
+											{
+												resists: A2(
+													$elm$core$List$filter,
+													function (resist) {
+														return !_Utils_eq(resist, timestamp);
+													},
+													_new.resists)
+											})))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			default:
+				var id = msg.a;
+				var _v10 = model.behaviorEditing;
+				if (_v10.$ === 'Nothing') {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				} else {
+					var _v11 = _v10.a;
+					var _new = _v11.b;
 					return $elm$core$String$isEmpty(_new.name) ? _Utils_Tuple2(model, $elm$core$Platform$Cmd$none) : _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -14823,20 +14870,6 @@ var $author$project$Main$update = F2(
 							model.navKey,
 							$author$project$Main$routeToString($author$project$Main$HomeRoute)));
 				}
-			case 'HideBehaviorEditor':
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-			case 'ShowMenu':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{showMenu: true}),
-					$elm$core$Platform$Cmd$none);
-			default:
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{showMenu: false}),
-					$elm$core$Platform$Cmd$none);
 		}
 	});
 var $author$project$Main$AddBehavior = {$: 'AddBehavior'};
@@ -14850,6 +14883,7 @@ var $author$project$Main$buttonPrimary = F2(
 			_List_fromArray(
 				[
 					$elm$html$Html$Attributes$class('pushable'),
+					$elm$html$Html$Attributes$type_('button'),
 					$elm$html$Html$Events$onClick(action)
 				]),
 			_List_fromArray(
@@ -14968,7 +15002,8 @@ var $author$project$Main$viewAddBehavior = function (model) {
 				_List_fromArray(
 					[
 						$elm$html$Html$Events$onSubmit($author$project$Main$AddBehavior),
-						A2($elm$html$Html$Attributes$style, 'padding-top', '8rem'),
+						A2($elm$html$Html$Attributes$style, 'padding', '8rem 0.5rem 0 0.5rem'),
+						A2($elm$html$Html$Attributes$style, 'width', 'calc(100vw - 1rem)'),
 						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
 						A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
 						A2($elm$html$Html$Attributes$style, 'gap', '4rem')
@@ -15000,6 +15035,7 @@ var $author$project$Main$viewAddBehavior = function (model) {
 								_List_fromArray(
 									[
 										A2($elm$html$Html$Attributes$style, 'font-size', '2rem'),
+										A2($elm$html$Html$Attributes$style, 'width', '100%'),
 										$elm$html$Html$Attributes$value(model.behaviorNameToAdd),
 										$elm$html$Html$Events$onInput($author$project$Main$BehaviorNameToAddChanged)
 									]),
@@ -15148,6 +15184,7 @@ var $author$project$Main$buttonSecondary = F2(
 			_List_fromArray(
 				[
 					$elm$html$Html$Attributes$class('pushable'),
+					$elm$html$Html$Attributes$type_('button'),
 					$elm$html$Html$Events$onClick(action)
 				]),
 			_List_fromArray(
@@ -15340,8 +15377,258 @@ var $author$project$Main$viewBehaviorList = function (model) {
 var $author$project$Main$BehaviorNameEdited = function (a) {
 	return {$: 'BehaviorNameEdited', a: a};
 };
+var $author$project$Main$RemoveResist = function (a) {
+	return {$: 'RemoveResist', a: a};
+};
+var $author$project$Main$RemoveSubmit = function (a) {
+	return {$: 'RemoveSubmit', a: a};
+};
 var $author$project$Main$SaveBehavior = function (a) {
 	return {$: 'SaveBehavior', a: a};
+};
+var $author$project$Main$buttonSecondarySmall = F2(
+	function (label, action) {
+		return A2(
+			$elm$html$Html$button,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('pushable'),
+					$elm$html$Html$Attributes$type_('button'),
+					$elm$html$Html$Events$onClick(action)
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('shadow')
+						]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('edge edge-secondary')
+						]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('front front-secondary front-small')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(label)
+						]))
+				]));
+	});
+var $elm$html$Html$details = _VirtualDom_node('details');
+var $elm$html$Html$ol = _VirtualDom_node('ol');
+var $elm$html$Html$summary = _VirtualDom_node('summary');
+var $elm$core$String$cons = _String_cons;
+var $elm$core$String$fromChar = function (_char) {
+	return A2($elm$core$String$cons, _char, '');
+};
+var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var $elm$core$String$repeatHelp = F3(
+	function (n, chunk, result) {
+		return (n <= 0) ? result : A3(
+			$elm$core$String$repeatHelp,
+			n >> 1,
+			_Utils_ap(chunk, chunk),
+			(!(n & 1)) ? result : _Utils_ap(result, chunk));
+	});
+var $elm$core$String$repeat = F2(
+	function (n, chunk) {
+		return A3($elm$core$String$repeatHelp, n, chunk, '');
+	});
+var $elm$core$String$padLeft = F3(
+	function (n, _char, string) {
+		return _Utils_ap(
+			A2(
+				$elm$core$String$repeat,
+				n - $elm$core$String$length(string),
+				$elm$core$String$fromChar(_char)),
+			string);
+	});
+var $elm$time$Time$flooredDiv = F2(
+	function (numerator, denominator) {
+		return $elm$core$Basics$floor(numerator / denominator);
+	});
+var $elm$time$Time$posixToMillis = function (_v0) {
+	var millis = _v0.a;
+	return millis;
+};
+var $elm$time$Time$toAdjustedMinutesHelp = F3(
+	function (defaultOffset, posixMinutes, eras) {
+		toAdjustedMinutesHelp:
+		while (true) {
+			if (!eras.b) {
+				return posixMinutes + defaultOffset;
+			} else {
+				var era = eras.a;
+				var olderEras = eras.b;
+				if (_Utils_cmp(era.start, posixMinutes) < 0) {
+					return posixMinutes + era.offset;
+				} else {
+					var $temp$defaultOffset = defaultOffset,
+						$temp$posixMinutes = posixMinutes,
+						$temp$eras = olderEras;
+					defaultOffset = $temp$defaultOffset;
+					posixMinutes = $temp$posixMinutes;
+					eras = $temp$eras;
+					continue toAdjustedMinutesHelp;
+				}
+			}
+		}
+	});
+var $elm$time$Time$toAdjustedMinutes = F2(
+	function (_v0, time) {
+		var defaultOffset = _v0.a;
+		var eras = _v0.b;
+		return A3(
+			$elm$time$Time$toAdjustedMinutesHelp,
+			defaultOffset,
+			A2(
+				$elm$time$Time$flooredDiv,
+				$elm$time$Time$posixToMillis(time),
+				60000),
+			eras);
+	});
+var $elm$time$Time$toCivil = function (minutes) {
+	var rawDay = A2($elm$time$Time$flooredDiv, minutes, 60 * 24) + 719468;
+	var era = (((rawDay >= 0) ? rawDay : (rawDay - 146096)) / 146097) | 0;
+	var dayOfEra = rawDay - (era * 146097);
+	var yearOfEra = ((((dayOfEra - ((dayOfEra / 1460) | 0)) + ((dayOfEra / 36524) | 0)) - ((dayOfEra / 146096) | 0)) / 365) | 0;
+	var dayOfYear = dayOfEra - (((365 * yearOfEra) + ((yearOfEra / 4) | 0)) - ((yearOfEra / 100) | 0));
+	var mp = (((5 * dayOfYear) + 2) / 153) | 0;
+	var month = mp + ((mp < 10) ? 3 : (-9));
+	var year = yearOfEra + (era * 400);
+	return {
+		day: (dayOfYear - ((((153 * mp) + 2) / 5) | 0)) + 1,
+		month: month,
+		year: year + ((month <= 2) ? 1 : 0)
+	};
+};
+var $elm$time$Time$toDay = F2(
+	function (zone, time) {
+		return $elm$time$Time$toCivil(
+			A2($elm$time$Time$toAdjustedMinutes, zone, time)).day;
+	});
+var $elm$core$Basics$modBy = _Basics_modBy;
+var $elm$time$Time$toHour = F2(
+	function (zone, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			24,
+			A2(
+				$elm$time$Time$flooredDiv,
+				A2($elm$time$Time$toAdjustedMinutes, zone, time),
+				60));
+	});
+var $elm$time$Time$toMinute = F2(
+	function (zone, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			60,
+			A2($elm$time$Time$toAdjustedMinutes, zone, time));
+	});
+var $elm$time$Time$Apr = {$: 'Apr'};
+var $elm$time$Time$Aug = {$: 'Aug'};
+var $elm$time$Time$Dec = {$: 'Dec'};
+var $elm$time$Time$Feb = {$: 'Feb'};
+var $elm$time$Time$Jan = {$: 'Jan'};
+var $elm$time$Time$Jul = {$: 'Jul'};
+var $elm$time$Time$Jun = {$: 'Jun'};
+var $elm$time$Time$Mar = {$: 'Mar'};
+var $elm$time$Time$May = {$: 'May'};
+var $elm$time$Time$Nov = {$: 'Nov'};
+var $elm$time$Time$Oct = {$: 'Oct'};
+var $elm$time$Time$Sep = {$: 'Sep'};
+var $elm$time$Time$toMonth = F2(
+	function (zone, time) {
+		var _v0 = $elm$time$Time$toCivil(
+			A2($elm$time$Time$toAdjustedMinutes, zone, time)).month;
+		switch (_v0) {
+			case 1:
+				return $elm$time$Time$Jan;
+			case 2:
+				return $elm$time$Time$Feb;
+			case 3:
+				return $elm$time$Time$Mar;
+			case 4:
+				return $elm$time$Time$Apr;
+			case 5:
+				return $elm$time$Time$May;
+			case 6:
+				return $elm$time$Time$Jun;
+			case 7:
+				return $elm$time$Time$Jul;
+			case 8:
+				return $elm$time$Time$Aug;
+			case 9:
+				return $elm$time$Time$Sep;
+			case 10:
+				return $elm$time$Time$Oct;
+			case 11:
+				return $elm$time$Time$Nov;
+			default:
+				return $elm$time$Time$Dec;
+		}
+	});
+var $elm$time$Time$toYear = F2(
+	function (zone, time) {
+		return $elm$time$Time$toCivil(
+			A2($elm$time$Time$toAdjustedMinutes, zone, time)).year;
+	});
+var $elm$time$Time$utc = A2($elm$time$Time$Zone, 0, _List_Nil);
+var $author$project$Main$timePrettyPrint = function (time) {
+	var year = $elm$core$String$fromInt(
+		A2($elm$time$Time$toYear, $elm$time$Time$utc, time));
+	var month = function () {
+		var _v0 = A2($elm$time$Time$toMonth, $elm$time$Time$utc, time);
+		switch (_v0.$) {
+			case 'Jan':
+				return 'Jan';
+			case 'Feb':
+				return 'Feb';
+			case 'Mar':
+				return 'Mar';
+			case 'Apr':
+				return 'Apr';
+			case 'May':
+				return 'May';
+			case 'Jun':
+				return 'Jun';
+			case 'Jul':
+				return 'Jul';
+			case 'Aug':
+				return 'Aug';
+			case 'Sep':
+				return 'Sep';
+			case 'Oct':
+				return 'Oct';
+			case 'Nov':
+				return 'Nov';
+			default:
+				return 'Dec';
+		}
+	}();
+	var minute = A3(
+		$elm$core$String$padLeft,
+		2,
+		_Utils_chr('0'),
+		$elm$core$String$fromInt(
+			A2($elm$time$Time$toMinute, $elm$time$Time$utc, time)));
+	var hour = A2($elm$time$Time$toHour, $elm$time$Time$utc, time);
+	var hourStr = $elm$core$String$fromInt(
+		(!hour) ? 12 : ((hour > 12) ? (hour - 12) : hour));
+	var day = $elm$core$String$fromInt(
+		A2($elm$time$Time$toDay, $elm$time$Time$utc, time));
+	var amPm = (hour > 11) ? 'PM' : 'AM';
+	return month + (' ' + (day + (', ' + (year + (' at ' + (hourStr + (':' + (minute + (' ' + amPm)))))))));
 };
 var $author$project$Main$viewEditBehavior = F2(
 	function (id, model) {
@@ -15367,7 +15654,8 @@ var $author$project$Main$viewEditBehavior = F2(
 					[
 						$elm$html$Html$Events$onSubmit(
 						$author$project$Main$SaveBehavior(id)),
-						A2($elm$html$Html$Attributes$style, 'padding-top', '8rem'),
+						A2($elm$html$Html$Attributes$style, 'padding', '8rem 0.5rem 0 0.5rem'),
+						A2($elm$html$Html$Attributes$style, 'width', 'calc(100vw - 1rem)'),
 						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
 						A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
 						A2($elm$html$Html$Attributes$style, 'gap', '4rem')
@@ -15412,10 +15700,91 @@ var $author$project$Main$viewEditBehavior = F2(
 								_List_fromArray(
 									[
 										A2($elm$html$Html$Attributes$style, 'font-size', '2rem'),
+										A2($elm$html$Html$Attributes$style, 'width', '100%'),
 										$elm$html$Html$Attributes$value(edited.name),
 										$elm$html$Html$Events$onInput($author$project$Main$BehaviorNameEdited)
 									]),
 								_List_Nil)
+							])),
+						A2(
+						$elm$html$Html$details,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'width', '100%'),
+								A2($elm$html$Html$Attributes$style, 'padding', '0 1rem')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$summary,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Submits')
+									])),
+								A2(
+								$elm$html$Html$ol,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'list-style', 'none')
+									]),
+								A2(
+									$elm$core$List$map,
+									function (submit) {
+										return A2(
+											$elm$html$Html$li,
+											_List_Nil,
+											_List_fromArray(
+												[
+													$elm$html$Html$text(
+													$author$project$Main$timePrettyPrint(submit)),
+													A2(
+													$author$project$Main$buttonSecondarySmall,
+													'Remove',
+													$author$project$Main$RemoveSubmit(submit))
+												]));
+									},
+									edited.submits))
+							])),
+						A2(
+						$elm$html$Html$details,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'width', '100%'),
+								A2($elm$html$Html$Attributes$style, 'padding', '0 1rem')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$summary,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Resists')
+									])),
+								A2(
+								$elm$html$Html$ol,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'list-style', 'none')
+									]),
+								A2(
+									$elm$core$List$map,
+									function (resist) {
+										return A2(
+											$elm$html$Html$li,
+											_List_Nil,
+											_List_fromArray(
+												[
+													$elm$html$Html$text(
+													$author$project$Main$timePrettyPrint(resist)),
+													A2(
+													$author$project$Main$buttonSecondarySmall,
+													'Remove',
+													$author$project$Main$RemoveResist(resist))
+												]));
+									},
+									edited.resists))
 							])),
 						A2(
 						$elm$html$Html$div,
@@ -15436,16 +15805,16 @@ var $author$project$Main$viewEditBehavior = F2(
 					]));
 		}
 	});
-var $author$project$Main$HideMenu = {$: 'HideMenu'};
 var $elm$html$Html$br = _VirtualDom_node('br');
-var $author$project$Main$buttonSecondarySmall = F2(
-	function (label, action) {
+var $author$project$Main$linkSecondarySmall = F2(
+	function (label, route) {
 		return A2(
-			$elm$html$Html$button,
+			$elm$html$Html$a,
 			_List_fromArray(
 				[
 					$elm$html$Html$Attributes$class('pushable'),
-					$elm$html$Html$Events$onClick(action)
+					$elm$html$Html$Attributes$href(
+					$author$project$Main$routeToString(route))
 				]),
 			_List_fromArray(
 				[
@@ -15501,7 +15870,7 @@ var $author$project$Main$viewMenu = function (model) {
 					]),
 				_List_fromArray(
 					[
-						A2($author$project$Main$buttonSecondarySmall, 'Back', $author$project$Main$HideMenu)
+						A2($author$project$Main$linkSecondarySmall, 'Back', $author$project$Main$HomeRoute)
 					])),
 				A2(
 				$elm$html$Html$div,
@@ -15579,4 +15948,4 @@ var $author$project$Main$main = $elm$browser$Browser$application(
 		view: $author$project$Main$viewport
 	});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"UrlChanged":["Url.Url"],"UrlRequested":["Browser.UrlRequest"],"ShowAddBehaviorClicked":[],"DismissAddBehaviorClicked":[],"AddBehavior":[],"BehaviorNameToAddChanged":["String.String"],"SubmittedToBehavior":["Basics.Int"],"SubmittedToBehaviorAt":["Basics.Int","Time.Posix"],"ResistedBehavior":["Basics.Int"],"ResistedBehaviorAt":["Basics.Int","Time.Posix"],"ShowBehaviorEditor":["Basics.Int"],"BehaviorNameEdited":["String.String"],"SaveBehavior":["Basics.Int"],"HideBehaviorEditor":[],"ShowMenu":[],"HideMenu":[]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));
+	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"UrlChanged":["Url.Url"],"UrlRequested":["Browser.UrlRequest"],"AddBehavior":[],"BehaviorNameToAddChanged":["String.String"],"SubmittedToBehavior":["Basics.Int"],"SubmittedToBehaviorAt":["Basics.Int","Time.Posix"],"ResistedBehavior":["Basics.Int"],"ResistedBehaviorAt":["Basics.Int","Time.Posix"],"BehaviorNameEdited":["String.String"],"RemoveSubmit":["Time.Posix"],"RemoveResist":["Time.Posix"],"SaveBehavior":["Basics.Int"]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));

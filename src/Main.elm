@@ -31,9 +31,7 @@ type alias Model =
     { navKey : Browser.Navigation.Key
     , route : Route
     , safetyBehaviors : List Behavior
-    , showAddBehavior : Bool
     , behaviorNameToAdd : String
-    , showMenu : Bool
     , behaviorEditing : Maybe ( Behavior, Behavior )
     }
 
@@ -105,9 +103,7 @@ init () url navKey =
     ( { navKey = navKey
       , route = routeFromUrl url
       , safetyBehaviors = []
-      , showAddBehavior = False
       , behaviorNameToAdd = ""
-      , showMenu = False
       , behaviorEditing = Nothing
       }
     , Cmd.none
@@ -122,21 +118,16 @@ type Msg
     = UrlChanged Url
     | UrlRequested Browser.UrlRequest
       --
-    | ShowAddBehaviorClicked
-    | DismissAddBehaviorClicked
     | AddBehavior
     | BehaviorNameToAddChanged String
     | SubmittedToBehavior Int
     | SubmittedToBehaviorAt Int Time.Posix
     | ResistedBehavior Int
     | ResistedBehaviorAt Int Time.Posix
-    | ShowBehaviorEditor Int
     | BehaviorNameEdited String
+    | RemoveSubmit Time.Posix
+    | RemoveResist Time.Posix
     | SaveBehavior Int
-    | HideBehaviorEditor
-      --
-    | ShowMenu
-    | HideMenu
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -147,9 +138,9 @@ update msg model =
                 route =
                     routeFromUrl url
             in
-            case Debug.log "url changed" route of
+            case route of
                 EditBehaviorRoute id ->
-                    case Debug.log "behavior found?" <| findBehaviorById id model.safetyBehaviors of
+                    case findBehaviorById id model.safetyBehaviors of
                         Nothing ->
                             ( { model
                                 | route = route
@@ -185,12 +176,6 @@ update msg model =
                     ( model
                     , Browser.Navigation.load url
                     )
-
-        ShowAddBehaviorClicked ->
-            ( { model | showAddBehavior = True }, Cmd.none )
-
-        DismissAddBehaviorClicked ->
-            ( { model | showAddBehavior = False }, Cmd.none )
 
         BehaviorNameToAddChanged name ->
             ( { model | behaviorNameToAdd = name }, Cmd.none )
@@ -245,9 +230,6 @@ update msg model =
             , Cmd.none
             )
 
-        ShowBehaviorEditor index ->
-            ( model, Cmd.none )
-
         BehaviorNameEdited name ->
             case model.behaviorEditing of
                 Nothing ->
@@ -255,6 +237,48 @@ update msg model =
 
                 Just ( old, new ) ->
                     ( { model | behaviorEditing = Just ( old, { new | name = name } ) }, Cmd.none )
+
+        RemoveSubmit timestamp ->
+            case model.behaviorEditing of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just ( old, new ) ->
+                    ( { model
+                        | behaviorEditing =
+                            Just
+                                ( old
+                                , { new
+                                    | submits =
+                                        List.filter
+                                            (\submit -> submit /= timestamp)
+                                            new.submits
+                                  }
+                                )
+                      }
+                    , Cmd.none
+                    )
+
+        RemoveResist timestamp ->
+            case model.behaviorEditing of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just ( old, new ) ->
+                    ( { model
+                        | behaviorEditing =
+                            Just
+                                ( old
+                                , { new
+                                    | resists =
+                                        List.filter
+                                            (\resist -> resist /= timestamp)
+                                            new.resists
+                                  }
+                                )
+                      }
+                    , Cmd.none
+                    )
 
         SaveBehavior id ->
             case model.behaviorEditing of
@@ -280,15 +304,6 @@ update msg model =
                           }
                         , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
                         )
-
-        HideBehaviorEditor ->
-            ( model, Cmd.none )
-
-        ShowMenu ->
-            ( { model | showMenu = True }, Cmd.none )
-
-        HideMenu ->
-            ( { model | showMenu = False }, Cmd.none )
 
 
 findBehaviorById : Int -> List Behavior -> Maybe Behavior
@@ -341,7 +356,8 @@ viewEditBehavior id model =
         Just ( current, edited ) ->
             Html.form
                 [ Html.Events.onSubmit (SaveBehavior id)
-                , Attr.style "padding-top" "8rem"
+                , Attr.style "padding" "8rem 0.5rem 0 0.5rem"
+                , Attr.style "width" "calc(100vw - 1rem)"
                 , Attr.style "display" "flex"
                 , Attr.style "flex-direction" "column"
                 , Attr.style "gap" "4rem"
@@ -358,10 +374,47 @@ viewEditBehavior id model =
                         [ Html.text "Name" ]
                     , Html.input
                         [ Attr.style "font-size" "2rem"
+                        , Attr.style "width" "100%"
                         , Attr.value edited.name
                         , Html.Events.onInput BehaviorNameEdited
                         ]
                         []
+                    ]
+                , Html.details
+                    [ Attr.style "width" "100%"
+                    , Attr.style "padding" "0 1rem"
+                    ]
+                    [ Html.summary [] [ Html.text "Submits" ]
+                    , edited.submits
+                        |> List.map
+                            (\submit ->
+                                Html.li []
+                                    [ Html.text <| timePrettyPrint submit
+                                    , buttonSecondarySmall "Remove"
+                                        (RemoveSubmit submit)
+                                    ]
+                            )
+                        |> Html.ol
+                            [ Attr.style "list-style" "none"
+                            ]
+                    ]
+                , Html.details
+                    [ Attr.style "width" "100%"
+                    , Attr.style "padding" "0 1rem"
+                    ]
+                    [ Html.summary [] [ Html.text "Resists" ]
+                    , edited.resists
+                        |> List.map
+                            (\resist ->
+                                Html.li []
+                                    [ Html.text <| timePrettyPrint resist
+                                    , buttonSecondarySmall "Remove"
+                                        (RemoveResist resist)
+                                    ]
+                            )
+                        |> Html.ol
+                            [ Attr.style "list-style" "none"
+                            ]
                     ]
                 , Html.div
                     [ Attr.style "display" "flex"
@@ -373,6 +426,84 @@ viewEditBehavior id model =
                     , buttonPrimary "Save" (SaveBehavior id)
                     ]
                 ]
+
+
+timePrettyPrint : Time.Posix -> String
+timePrettyPrint time =
+    let
+        month =
+            case Time.toMonth Time.utc time of
+                Time.Jan ->
+                    "Jan"
+
+                Time.Feb ->
+                    "Feb"
+
+                Time.Mar ->
+                    "Mar"
+
+                Time.Apr ->
+                    "Apr"
+
+                Time.May ->
+                    "May"
+
+                Time.Jun ->
+                    "Jun"
+
+                Time.Jul ->
+                    "Jul"
+
+                Time.Aug ->
+                    "Aug"
+
+                Time.Sep ->
+                    "Sep"
+
+                Time.Oct ->
+                    "Oct"
+
+                Time.Nov ->
+                    "Nov"
+
+                Time.Dec ->
+                    "Dec"
+
+        day =
+            Time.toDay Time.utc time
+                |> String.fromInt
+
+        year =
+            Time.toYear Time.utc time
+                |> String.fromInt
+
+        hour =
+            Time.toHour Time.utc time
+
+        minute =
+            Time.toMinute Time.utc time
+                |> String.fromInt
+                |> String.padLeft 2 '0'
+
+        amPm =
+            if hour > 11 then
+                "PM"
+
+            else
+                "AM"
+
+        hourStr =
+            String.fromInt <|
+                if hour == 0 then
+                    12
+
+                else if hour > 12 then
+                    hour - 12
+
+                else
+                    hour
+    in
+    month ++ " " ++ day ++ ", " ++ year ++ " at " ++ hourStr ++ ":" ++ minute ++ " " ++ amPm
 
 
 viewMenu : Model -> Html Msg
@@ -392,8 +523,8 @@ viewMenu model =
             , Attr.style "justify-content" "space-between"
             , Attr.style "padding" "0.5rem"
             ]
-            [ buttonSecondarySmall "Back"
-                HideMenu
+            [ linkSecondarySmall "Back"
+                HomeRoute
             ]
         , Html.div
             [ Attr.style "height" "93vh"
@@ -517,7 +648,8 @@ viewAddBehavior model =
         [ Html.h1 [] [ Html.text "Add behavior" ]
         , Html.form
             [ Html.Events.onSubmit AddBehavior
-            , Attr.style "padding-top" "8rem"
+            , Attr.style "padding" "8rem 0.5rem 0 0.5rem"
+            , Attr.style "width" "calc(100vw - 1rem)"
             , Attr.style "display" "flex"
             , Attr.style "flex-direction" "column"
             , Attr.style "gap" "4rem"
@@ -533,6 +665,7 @@ viewAddBehavior model =
                     [ Html.text "Name" ]
                 , Html.input
                     [ Attr.style "font-size" "2rem"
+                    , Attr.style "width" "100%"
                     , Attr.value model.behaviorNameToAdd
                     , Html.Events.onInput BehaviorNameToAddChanged
                     ]
@@ -555,6 +688,7 @@ buttonPrimary : String -> Msg -> Html Msg
 buttonPrimary label action =
     Html.button
         [ Attr.class "pushable"
+        , Attr.type_ "button"
         , Html.Events.onClick action
         ]
         [ Html.span [ Attr.class "shadow" ] []
@@ -579,6 +713,7 @@ buttonPrimarySmall : String -> Msg -> Html Msg
 buttonPrimarySmall label action =
     Html.button
         [ Attr.class "pushable"
+        , Attr.type_ "button"
         , Html.Events.onClick action
         ]
         [ Html.span [ Attr.class "shadow" ] []
@@ -603,6 +738,7 @@ buttonSecondary : String -> Msg -> Html Msg
 buttonSecondary label action =
     Html.button
         [ Attr.class "pushable"
+        , Attr.type_ "button"
         , Html.Events.onClick action
         ]
         [ Html.span [ Attr.class "shadow" ] []
@@ -627,6 +763,7 @@ buttonSecondarySmall : String -> Msg -> Html Msg
 buttonSecondarySmall label action =
     Html.button
         [ Attr.class "pushable"
+        , Attr.type_ "button"
         , Html.Events.onClick action
         ]
         [ Html.span [ Attr.class "shadow" ] []
@@ -651,6 +788,7 @@ buttonSecondaryIcon : String -> Msg -> Html Msg
 buttonSecondaryIcon label action =
     Html.button
         [ Attr.class "pushable"
+        , Attr.type_ "button"
         , Html.Events.onClick action
         ]
         [ Html.span [ Attr.class "shadow" ] []
