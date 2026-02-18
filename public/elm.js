@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1771442211929"
+    "1771455279518"
   );
   var ORIGINAL_COMPILATION_MODE = "debug";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -14373,6 +14373,9 @@ var $elm$core$Basics$never = function (_v0) {
 };
 var $elm$browser$Browser$application = _Browser_application;
 var $author$project$Main$AddBehaviorRoute = {$: 'AddBehaviorRoute'};
+var $author$project$Main$EditBehaviorRoute = function (a) {
+	return {$: 'EditBehaviorRoute', a: a};
+};
 var $author$project$Main$HomeRoute = {$: 'HomeRoute'};
 var $author$project$Main$SettingsRoute = {$: 'SettingsRoute'};
 var $elm$core$Maybe$map = F2(
@@ -14468,22 +14471,45 @@ var $lydell$elm_app_url$AppUrl$fromUrl = function (url) {
 var $author$project$Main$routeFromUrl = function (url) {
 	var appUrl = $lydell$elm_app_url$AppUrl$fromUrl(url);
 	var _v0 = appUrl.path;
-	_v0$3:
+	_v0$4:
 	while (true) {
 		if (!_v0.b) {
 			return $author$project$Main$HomeRoute;
 		} else {
-			if (!_v0.b.b) {
-				switch (_v0.a) {
-					case 'add-behavior':
-						return $author$project$Main$AddBehaviorRoute;
-					case 'settings':
-						return $author$project$Main$SettingsRoute;
-					default:
-						break _v0$3;
+			if (_v0.b.b) {
+				if (_v0.a === 'behavior') {
+					if (!_v0.b.b.b) {
+						if (_v0.b.a === 'add') {
+							var _v1 = _v0.b;
+							return $author$project$Main$AddBehaviorRoute;
+						} else {
+							break _v0$4;
+						}
+					} else {
+						if ((_v0.b.b.a === 'edit') && (!_v0.b.b.b.b)) {
+							var _v2 = _v0.b;
+							var idStr = _v2.a;
+							var _v3 = _v2.b;
+							var _v4 = $elm$core$String$toInt(idStr);
+							if (_v4.$ === 'Nothing') {
+								return $author$project$Main$HomeRoute;
+							} else {
+								var id = _v4.a;
+								return $author$project$Main$EditBehaviorRoute(id);
+							}
+						} else {
+							break _v0$4;
+						}
+					}
+				} else {
+					break _v0$4;
 				}
 			} else {
-				break _v0$3;
+				if (_v0.a === 'settings') {
+					return $author$project$Main$SettingsRoute;
+				} else {
+					break _v0$4;
+				}
 			}
 		}
 	}
@@ -14493,6 +14519,7 @@ var $author$project$Main$init = F3(
 	function (_v0, url, navKey) {
 		return _Utils_Tuple2(
 			{
+				behaviorEditing: $elm$core$Maybe$Nothing,
 				behaviorNameToAdd: '',
 				navKey: navKey,
 				route: $author$project$Main$routeFromUrl(url),
@@ -14512,7 +14539,22 @@ var $author$project$Main$SubmittedToBehaviorAt = F2(
 	function (a, b) {
 		return {$: 'SubmittedToBehaviorAt', a: a, b: b};
 	});
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Main$findBehaviorById = F2(
+	function (id, behaviors) {
+		return $elm$core$List$head(
+			A2($elm$core$List$drop, id, behaviors));
+	});
 var $elm$browser$Browser$Navigation$load = _Browser_load;
+var $elm$core$Debug$log = _Debug_log;
 var $elm$time$Time$Name = function (a) {
 	return {$: 'Name', a: a};
 };
@@ -14535,7 +14577,10 @@ var $author$project$Main$routeToString = function (route) {
 		case 'HomeRoute':
 			return '/';
 		case 'AddBehaviorRoute':
-			return '/add-behavior';
+			return '/behavior/add';
+		case 'EditBehaviorRoute':
+			var id = route.a;
+			return '/behavior/' + ($elm$core$String$fromInt(id) + '/edit');
 		default:
 			return '/settings';
 	}
@@ -14589,13 +14634,39 @@ var $author$project$Main$update = F2(
 		switch (msg.$) {
 			case 'UrlChanged':
 				var url = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							route: $author$project$Main$routeFromUrl(url)
-						}),
-					$elm$core$Platform$Cmd$none);
+				var route = $author$project$Main$routeFromUrl(url);
+				var _v1 = A2($elm$core$Debug$log, 'url changed', route);
+				if (_v1.$ === 'EditBehaviorRoute') {
+					var id = _v1.a;
+					var _v2 = A2(
+						$elm$core$Debug$log,
+						'behavior found?',
+						A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors));
+					if (_v2.$ === 'Nothing') {
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{behaviorEditing: $elm$core$Maybe$Nothing, route: route}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						var behavior = _v2.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									behaviorEditing: $elm$core$Maybe$Just(
+										_Utils_Tuple2(behavior, behavior)),
+									route: route
+								}),
+							$elm$core$Platform$Cmd$none);
+					}
+				} else {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{behaviorEditing: $elm$core$Maybe$Nothing, route: route}),
+						$elm$core$Platform$Cmd$none);
+				}
 			case 'UrlRequested':
 				var urlRequest = msg.a;
 				if (urlRequest.$ === 'Internal') {
@@ -14705,6 +14776,53 @@ var $author$project$Main$update = F2(
 			case 'ShowBehaviorEditor':
 				var index = msg.a;
 				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+			case 'BehaviorNameEdited':
+				var name = msg.a;
+				var _v4 = model.behaviorEditing;
+				if (_v4.$ === 'Nothing') {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				} else {
+					var _v5 = _v4.a;
+					var old = _v5.a;
+					var _new = _v5.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								behaviorEditing: $elm$core$Maybe$Just(
+									_Utils_Tuple2(
+										old,
+										_Utils_update(
+											_new,
+											{name: name})))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'SaveBehavior':
+				var id = msg.a;
+				var _v6 = model.behaviorEditing;
+				if (_v6.$ === 'Nothing') {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				} else {
+					var _v7 = _v6.a;
+					var _new = _v7.b;
+					return $elm$core$String$isEmpty(_new.name) ? _Utils_Tuple2(model, $elm$core$Platform$Cmd$none) : _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								safetyBehaviors: A2(
+									$elm$core$List$indexedMap,
+									F2(
+										function (index, behavior) {
+											return _Utils_eq(index, id) ? _new : behavior;
+										}),
+									model.safetyBehaviors)
+							}),
+						A2(
+							$elm$browser$Browser$Navigation$pushUrl,
+							model.navKey,
+							$author$project$Main$routeToString($author$project$Main$HomeRoute)));
+				}
 			case 'HideBehaviorEditor':
 				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			case 'ShowMenu':
@@ -15020,9 +15138,6 @@ var $author$project$Main$linkSecondaryIcon = F2(
 var $author$project$Main$ResistedBehavior = function (a) {
 	return {$: 'ResistedBehavior', a: a};
 };
-var $author$project$Main$ShowBehaviorEditor = function (a) {
-	return {$: 'ShowBehaviorEditor', a: a};
-};
 var $author$project$Main$SubmittedToBehavior = function (a) {
 	return {$: 'SubmittedToBehavior', a: a};
 };
@@ -15063,43 +15178,6 @@ var $author$project$Main$buttonSecondary = F2(
 						]))
 				]));
 	});
-var $author$project$Main$buttonSecondaryIcon = F2(
-	function (label, action) {
-		return A2(
-			$elm$html$Html$button,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('pushable'),
-					$elm$html$Html$Events$onClick(action)
-				]),
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('shadow')
-						]),
-					_List_Nil),
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('edge edge-secondary')
-						]),
-					_List_Nil),
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('front front-secondary front-icon')
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text(label)
-						]))
-				]));
-	});
 var $author$project$Main$viewBehaviorInList = F2(
 	function (index, behavior) {
 		return A2(
@@ -15132,9 +15210,9 @@ var $author$project$Main$viewBehaviorInList = F2(
 									$elm$html$Html$text(behavior.name)
 								])),
 							A2(
-							$author$project$Main$buttonSecondaryIcon,
+							$author$project$Main$linkSecondaryIcon,
 							'✎',
-							$author$project$Main$ShowBehaviorEditor(index))
+							$author$project$Main$EditBehaviorRoute(index))
 						])),
 					A2(
 					$elm$html$Html$div,
@@ -15259,6 +15337,105 @@ var $author$project$Main$viewBehaviorList = function (model) {
 				]));
 	}
 };
+var $author$project$Main$BehaviorNameEdited = function (a) {
+	return {$: 'BehaviorNameEdited', a: a};
+};
+var $author$project$Main$SaveBehavior = function (a) {
+	return {$: 'SaveBehavior', a: a};
+};
+var $author$project$Main$viewEditBehavior = F2(
+	function (id, model) {
+		var _v0 = model.behaviorEditing;
+		if (_v0.$ === 'Nothing') {
+			return A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2($elm$html$Html$Attributes$style, 'padding', '1rem')
+					]),
+				_List_fromArray(
+					[
+						A2($author$project$Main$linkSecondary, 'Sorry, looks like we made a mistake', $author$project$Main$HomeRoute)
+					]));
+		} else {
+			var _v1 = _v0.a;
+			var current = _v1.a;
+			var edited = _v1.b;
+			return A2(
+				$elm$html$Html$form,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onSubmit(
+						$author$project$Main$SaveBehavior(id)),
+						A2($elm$html$Html$Attributes$style, 'padding-top', '8rem'),
+						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+						A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+						A2($elm$html$Html$Attributes$style, 'gap', '4rem')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$h1,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$span,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Editing: ' + current.name)
+									]))
+							])),
+						A2(
+						$elm$html$Html$label,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+								A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+								A2($elm$html$Html$Attributes$style, 'align-items', 'start')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$span,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'font-size', '2rem')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Name')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'font-size', '2rem'),
+										$elm$html$Html$Attributes$value(edited.name),
+										$elm$html$Html$Events$onInput($author$project$Main$BehaviorNameEdited)
+									]),
+								_List_Nil)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+								A2($elm$html$Html$Attributes$style, 'width', '100%'),
+								A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between')
+							]),
+						_List_fromArray(
+							[
+								A2($author$project$Main$linkSecondary, 'Cancel', $author$project$Main$HomeRoute),
+								A2(
+								$author$project$Main$buttonPrimary,
+								'Save',
+								$author$project$Main$SaveBehavior(id))
+							]))
+					]));
+		}
+	});
 var $author$project$Main$HideMenu = {$: 'HideMenu'};
 var $elm$html$Html$br = _VirtualDom_node('br');
 var $author$project$Main$buttonSecondarySmall = F2(
@@ -15376,6 +15553,9 @@ var $author$project$Main$view = function (model) {
 			return $author$project$Main$viewBehaviorList(model);
 		case 'AddBehaviorRoute':
 			return $author$project$Main$viewAddBehavior(model);
+		case 'EditBehaviorRoute':
+			var id = _v0.a;
+			return A2($author$project$Main$viewEditBehavior, id, model);
 		default:
 			return $author$project$Main$viewMenu(model);
 	}
@@ -15399,4 +15579,4 @@ var $author$project$Main$main = $elm$browser$Browser$application(
 		view: $author$project$Main$viewport
 	});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"UrlChanged":["Url.Url"],"UrlRequested":["Browser.UrlRequest"],"ShowAddBehaviorClicked":[],"DismissAddBehaviorClicked":[],"AddBehavior":[],"BehaviorNameToAddChanged":["String.String"],"SubmittedToBehavior":["Basics.Int"],"SubmittedToBehaviorAt":["Basics.Int","Time.Posix"],"ResistedBehavior":["Basics.Int"],"ResistedBehaviorAt":["Basics.Int","Time.Posix"],"ShowBehaviorEditor":["Basics.Int"],"HideBehaviorEditor":[],"ShowMenu":[],"HideMenu":[]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));
+	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"UrlChanged":["Url.Url"],"UrlRequested":["Browser.UrlRequest"],"ShowAddBehaviorClicked":[],"DismissAddBehaviorClicked":[],"AddBehavior":[],"BehaviorNameToAddChanged":["String.String"],"SubmittedToBehavior":["Basics.Int"],"SubmittedToBehaviorAt":["Basics.Int","Time.Posix"],"ResistedBehavior":["Basics.Int"],"ResistedBehaviorAt":["Basics.Int","Time.Posix"],"ShowBehaviorEditor":["Basics.Int"],"BehaviorNameEdited":["String.String"],"SaveBehavior":["Basics.Int"],"HideBehaviorEditor":[],"ShowMenu":[],"HideMenu":[]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));

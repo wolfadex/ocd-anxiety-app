@@ -34,6 +34,7 @@ type alias Model =
     , showAddBehavior : Bool
     , behaviorNameToAdd : String
     , showMenu : Bool
+    , behaviorEditing : Maybe ( Behavior, Behavior )
     }
 
 
@@ -47,6 +48,7 @@ type alias Behavior =
 type Route
     = HomeRoute
     | AddBehaviorRoute
+    | EditBehaviorRoute Int
     | SettingsRoute
 
 
@@ -57,7 +59,10 @@ routeToString route =
             "/"
 
         AddBehaviorRoute ->
-            "/add-behavior"
+            "/behavior/add"
+
+        EditBehaviorRoute id ->
+            "/behavior/" ++ String.fromInt id ++ "/edit"
 
         SettingsRoute ->
             "/settings"
@@ -73,8 +78,16 @@ routeFromUrl url =
         [] ->
             HomeRoute
 
-        [ "add-behavior" ] ->
+        [ "behavior", "add" ] ->
             AddBehaviorRoute
+
+        [ "behavior", idStr, "edit" ] ->
+            case String.toInt idStr of
+                Nothing ->
+                    HomeRoute
+
+                Just id ->
+                    EditBehaviorRoute id
 
         [ "settings" ] ->
             SettingsRoute
@@ -95,6 +108,7 @@ init () url navKey =
       , showAddBehavior = False
       , behaviorNameToAdd = ""
       , showMenu = False
+      , behaviorEditing = Nothing
       }
     , Cmd.none
     )
@@ -107,6 +121,7 @@ init () url navKey =
 type Msg
     = UrlChanged Url
     | UrlRequested Browser.UrlRequest
+      --
     | ShowAddBehaviorClicked
     | DismissAddBehaviorClicked
     | AddBehavior
@@ -116,7 +131,10 @@ type Msg
     | ResistedBehavior Int
     | ResistedBehaviorAt Int Time.Posix
     | ShowBehaviorEditor Int
+    | BehaviorNameEdited String
+    | SaveBehavior Int
     | HideBehaviorEditor
+      --
     | ShowMenu
     | HideMenu
 
@@ -125,7 +143,36 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         UrlChanged url ->
-            ( { model | route = routeFromUrl url }, Cmd.none )
+            let
+                route =
+                    routeFromUrl url
+            in
+            case Debug.log "url changed" route of
+                EditBehaviorRoute id ->
+                    case Debug.log "behavior found?" <| findBehaviorById id model.safetyBehaviors of
+                        Nothing ->
+                            ( { model
+                                | route = route
+                                , behaviorEditing = Nothing
+                              }
+                            , Cmd.none
+                            )
+
+                        Just behavior ->
+                            ( { model
+                                | route = route
+                                , behaviorEditing = Just ( behavior, behavior )
+                              }
+                            , Cmd.none
+                            )
+
+                _ ->
+                    ( { model
+                        | route = route
+                        , behaviorEditing = Nothing
+                      }
+                    , Cmd.none
+                    )
 
         UrlRequested urlRequest ->
             case urlRequest of
@@ -201,6 +248,39 @@ update msg model =
         ShowBehaviorEditor index ->
             ( model, Cmd.none )
 
+        BehaviorNameEdited name ->
+            case model.behaviorEditing of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just ( old, new ) ->
+                    ( { model | behaviorEditing = Just ( old, { new | name = name } ) }, Cmd.none )
+
+        SaveBehavior id ->
+            case model.behaviorEditing of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just ( _, new ) ->
+                    if String.isEmpty new.name then
+                        ( model, Cmd.none )
+
+                    else
+                        ( { model
+                            | safetyBehaviors =
+                                List.indexedMap
+                                    (\index behavior ->
+                                        if index == id then
+                                            new
+
+                                        else
+                                            behavior
+                                    )
+                                    model.safetyBehaviors
+                          }
+                        , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
+                        )
+
         HideBehaviorEditor ->
             ( model, Cmd.none )
 
@@ -209,6 +289,13 @@ update msg model =
 
         HideMenu ->
             ( { model | showMenu = False }, Cmd.none )
+
+
+findBehaviorById : Int -> List Behavior -> Maybe Behavior
+findBehaviorById id behaviors =
+    behaviors
+        |> List.drop id
+        |> List.head
 
 
 
@@ -233,8 +320,59 @@ view model =
         AddBehaviorRoute ->
             viewAddBehavior model
 
+        EditBehaviorRoute id ->
+            viewEditBehavior id model
+
         SettingsRoute ->
             viewMenu model
+
+
+viewEditBehavior : Int -> Model -> Html Msg
+viewEditBehavior id model =
+    case model.behaviorEditing of
+        Nothing ->
+            Html.div
+                [ Attr.style "padding" "1rem"
+                ]
+                [ linkSecondary "Sorry, looks like we made a mistake"
+                    HomeRoute
+                ]
+
+        Just ( current, edited ) ->
+            Html.form
+                [ Html.Events.onSubmit (SaveBehavior id)
+                , Attr.style "padding-top" "8rem"
+                , Attr.style "display" "flex"
+                , Attr.style "flex-direction" "column"
+                , Attr.style "gap" "4rem"
+                ]
+                [ Html.h1 [] [ Html.span [] [ Html.text ("Editing: " ++ current.name) ] ]
+                , Html.label
+                    [ Attr.style "display" "flex"
+                    , Attr.style "flex-direction" "column"
+                    , Attr.style "align-items" "start"
+                    ]
+                    [ Html.span
+                        [ Attr.style "font-size" "2rem"
+                        ]
+                        [ Html.text "Name" ]
+                    , Html.input
+                        [ Attr.style "font-size" "2rem"
+                        , Attr.value edited.name
+                        , Html.Events.onInput BehaviorNameEdited
+                        ]
+                        []
+                    ]
+                , Html.div
+                    [ Attr.style "display" "flex"
+                    , Attr.style "width" "100%"
+                    , Attr.style "justify-content" "space-between"
+                    ]
+                    [ linkSecondary "Cancel"
+                        HomeRoute
+                    , buttonPrimary "Save" (SaveBehavior id)
+                    ]
+                ]
 
 
 viewMenu : Model -> Html Msg
@@ -341,8 +479,8 @@ viewBehaviorInList index behavior =
             , Attr.style "align-items" "center"
             ]
             [ Html.span [] [ Html.text behavior.name ]
-            , buttonSecondaryIcon "✎"
-                (ShowBehaviorEditor index)
+            , linkSecondaryIcon "✎"
+                (EditBehaviorRoute index)
             ]
         , Html.div
             [ Attr.style "display" "flex"
