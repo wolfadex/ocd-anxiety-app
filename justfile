@@ -1,23 +1,25 @@
 dev:
-    vite --host
+    run-pty run-pty.json
+
+dev-elm:
+    elm-watch hot
+
+dev-css:
+    css-in-elm watch public/styles.css src/Css.elm
+
+dev-review:
+    elm-review --watch --fix
 
 build:
-    vite build
+    build-review
+    build-css
+    build-elm
 
-sync: gen-assets build
-    npx cap sync
+build-review:
+    elm-review
 
-gen-assets:
-    capacitor-assets generate
+build-css:
+    css-in-elm build public/styles.css src/Css.elm
 
-open-android:
-    npx cap open android
-
-open-ios:
-    npx cap open ios
-
-run-android:
-    npx cap run android
-
-run-ios:
-    npx cap run ios
+build-elm:
+    elm-watch --optimize

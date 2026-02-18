@@ -8,14 +8,22 @@ import Task
 import Time
 
 
+main : Program Flags Model Msg
+main =
+    Browser.document
+        { init = init
+        , update = update
+        , view = viewport
+        , subscriptions = always Sub.none
+        }
+
+
 type alias Flags =
-    { safeAreaTopInPx : Int
-    }
+    ()
 
 
 type alias Model =
-    { safeAreaTopInPx : Int
-    , safetyBehaviors : List Behavior
+    { safetyBehaviors : List Behavior
     , showAddBehavior : Bool
     , behaviorNameToAdd : String
     , showMenu : Bool
@@ -34,9 +42,8 @@ type alias Behavior =
 
 
 init : Flags -> ( Model, Cmd Msg )
-init flags =
-    ( { safeAreaTopInPx = flags.safeAreaTopInPx
-      , safetyBehaviors = []
+init () =
+    ( { safetyBehaviors = []
       , showAddBehavior = False
       , behaviorNameToAdd = ""
       , showMenu = False
@@ -140,19 +147,9 @@ viewport : Model -> Browser.Document Msg
 viewport model =
     { title = "OCD / Anxiety App"
     , body =
-        [ safeAreaSpacer model.safeAreaTopInPx
-        , view model
+        [ view model
         ]
     }
-
-
-safeAreaSpacer : Int -> Html msg
-safeAreaSpacer topInPx =
-    Html.div
-        [ Attr.style "height" (String.fromInt topInPx ++ "px")
-        , Attr.style "background-color" "#1a1a2e"
-        ]
-        []
 
 
 view : Model -> Html Msg
@@ -172,8 +169,6 @@ viewMenu model =
     Html.div
         [ Attr.style "height" "100vh"
         , Attr.style "width" "100vw"
-        , Attr.style "background-color" "#1a1a2e"
-        , Attr.style "color" "#eee"
         , Attr.style "display" "flex"
         , Attr.style "flex-direction" "column"
         , Attr.style "gap" "0.125rem"
@@ -211,8 +206,6 @@ viewBehaviorList model =
             Html.div
                 [ Attr.style "height" "100vh"
                 , Attr.style "width" "100vw"
-                , Attr.style "background-color" "#1a1a2e"
-                , Attr.style "color" "#eee"
                 , Attr.style "display" "flex"
                 , Attr.style "flex-direction" "column"
                 , Attr.style "font-size" "7vw"
@@ -231,8 +224,6 @@ viewBehaviorList model =
             Html.div
                 [ Attr.style "height" "100vh"
                 , Attr.style "width" "100vw"
-                , Attr.style "background-color" "#1a1a2e"
-                , Attr.style "color" "#eee"
                 , Attr.style "display" "flex"
                 , Attr.style "flex-direction" "column"
                 , Attr.style "gap" "0.125rem"
@@ -268,7 +259,7 @@ viewBehaviorInList index behavior =
         , Attr.style "padding" "0.5rem 1rem 1rem 1rem"
         , Attr.style "margin" "0.5rem"
         , Attr.style "border-radius" "0.5rem"
-        , Attr.style "background" "hsl(265deg, 4.4%, 26.6%)"
+        , Attr.style "background" "hsl(265deg, 100%, 95%)"
         ]
         [ Html.span [] [ Html.text behavior.name ]
         , Html.div
@@ -297,27 +288,43 @@ viewBehaviorInList index behavior =
 viewAddBehavior : Model -> Html Msg
 viewAddBehavior model =
     Html.div
-        [ Attr.style "height" "100%"
-        , Attr.style "width" "100%"
-        , Attr.style "background-color" "#1a1a2e"
-        , Attr.style "color" "#eee"
-        , Attr.style "font-size" "10vw"
+        [ Attr.style "height" "100svh"
+        , Attr.style "width" "100dvw"
         , Attr.style "display" "flex"
         , Attr.style "flex-direction" "column"
         , Attr.style "align-items" "center"
         ]
-        [ Html.h2 [] [ Html.text "Add behavior" ]
-        , Html.form [ Html.Events.onSubmit AddBehavior ]
+        [ Html.h1 [] [ Html.text "Add behavior" ]
+        , Html.form
+            [ Html.Events.onSubmit AddBehavior
+            , Attr.style "padding-top" "8rem"
+            , Attr.style "display" "flex"
+            , Attr.style "flex-direction" "column"
+            , Attr.style "gap" "4rem"
+            ]
             [ Html.label
-                []
-                [ Html.span [ Attr.style "padding-left" "0.6rem" ] [ Html.text "Name" ]
+                [ Attr.style "display" "flex"
+                , Attr.style "flex-direction" "column"
+                , Attr.style "align-items" "start"
+                ]
+                [ Html.span
+                    [ Attr.style "font-size" "2rem"
+                    ]
+                    [ Html.text "Name" ]
                 , Html.input
-                    [ Attr.style "margin-left" "1rem"
-                    , Attr.style "font-size" "6vw"
+                    [ Attr.style "font-size" "2rem"
                     , Attr.value model.behaviorNameToAdd
                     , Html.Events.onInput BehaviorNameToAddChanged
                     ]
                     []
+                ]
+            , Html.div
+                [ Attr.style "display" "flex"
+                , Attr.style "width" "100%"
+                , Attr.style "justify-content" "space-between"
+                ]
+                [ buttonSecondary "Cancel"
+                    DismissAddBehaviorClicked
                 , buttonPrimary "Add" AddBehavior
                 ]
             ]
@@ -382,17 +389,3 @@ buttonSecondaryIcon label action =
         , Html.span [ Attr.class "edge edge-secondary" ] []
         , Html.span [ Attr.class "front front-secondary front-icon" ] [ Html.text label ]
         ]
-
-
-
--- MAIN
-
-
-main : Program Flags Model Msg
-main =
-    Browser.document
-        { init = init
-        , update = update
-        , view = viewport
-        , subscriptions = always Sub.none
-        }

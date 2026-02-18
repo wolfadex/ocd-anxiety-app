@@ -1,0 +1,11 @@
+[
+  {
+    "command": ["just", "dev-elm"]
+  },
+  {
+    "command": ["just", "dev-review"]
+  },
+  {
+    "command": ["just", "dev-css"]
+  }
+]
