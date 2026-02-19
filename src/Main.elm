@@ -3,45 +3,75 @@ port module Main exposing (Behavior, Flags, Model, Msg, Route, main)
 import AppUrl
 import Browser
 import Browser.Navigation
+import ConcurrentTask exposing (ConcurrentTask)
 import Css
 import Csv.Encode
 import DateFormat
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events
+import IndexedDb
+import Json.Decode
+import Json.Encode
+import Random
 import Task
 import Time
+import UUID exposing (UUID)
 import Url exposing (Url)
 
 
-main : Program Flags Model Msg
+main : Program Flags Application Msg
 main =
     Browser.application
         { init = init
         , update = update
-        , view = viewport
-        , subscriptions = always Sub.none
+        , view = view
+        , subscriptions = subscriptions
         , onUrlChange = UrlChanged
         , onUrlRequest = UrlRequested
         }
 
 
 type alias Flags =
-    ()
+    { seed1 : Int
+    , seed2 : Int
+    , seed3 : Int
+    , seed4 : Int
+    }
+
+
+type Application
+    = Initializing InitModel
+    | StartupFailure
+    | Initialized Model
+
+
+type alias InitModel =
+    { navKey : Browser.Navigation.Key
+    , dbTasks : ConcurrentTask.Pool Msg
+    , url : Url
+    , seeds : UUID.Seeds
+    }
 
 
 type alias Model =
     { navKey : Browser.Navigation.Key
+    , dbTasks : ConcurrentTask.Pool Msg
+    , seeds : UUID.Seeds
+    , db : IndexedDb.Db
     , route : Route
     , safetyBehaviors : List Behavior
     , behaviorNameToAdd : String
+    , addingBehavior : Bool
     , behaviorEditing : Maybe ( Behavior, Behavior )
-    , confirmDelete : Maybe Int
+    , confirmDelete : Maybe UUID
+    , deleting : Bool
     }
 
 
 type alias Behavior =
-    { name : String
+    { id : UUID
+    , name : String
     , submits : List Time.Posix
     , resists : List Time.Posix
     }
@@ -50,7 +80,7 @@ type alias Behavior =
 type Route
     = HomeRoute
     | AddBehaviorRoute
-    | EditBehaviorRoute Int
+    | EditBehaviorRoute UUID
     | SettingsRoute
 
 
@@ -64,7 +94,7 @@ routeToString route =
             "/behavior/add"
 
         EditBehaviorRoute id ->
-            "/behavior/" ++ String.fromInt id ++ "/edit"
+            "/behavior/" ++ UUID.toString id ++ "/edit"
 
         SettingsRoute ->
             "/settings"
@@ -84,11 +114,11 @@ routeFromUrl url =
             AddBehaviorRoute
 
         [ "behavior", idStr, "edit" ] ->
-            case String.toInt idStr of
-                Nothing ->
+            case UUID.fromString idStr of
+                Err _ ->
                     HomeRoute
 
-                Just id ->
+                Ok id ->
                     EditBehaviorRoute id
 
         [ "settings" ] ->
@@ -98,21 +128,110 @@ routeFromUrl url =
             HomeRoute
 
 
+behaviorStore : IndexedDb.Store IndexedDb.InlineKey
+behaviorStore =
+    IndexedDb.defineStore "safetyBehaviors"
+        |> IndexedDb.withKeyPath "id"
+
+
+appSchema : IndexedDb.Schema
+appSchema =
+    IndexedDb.schema "safetyBehaviorsTracking" 1
+        |> IndexedDb.withStore behaviorStore
+
+
+encodeBehavior : Behavior -> Json.Encode.Value
+encodeBehavior behavior =
+    Json.Encode.object
+        [ ( "id", UUID.toValue behavior.id )
+        , ( "name", Json.Encode.string behavior.name )
+        , ( "submits", Json.Encode.list (Time.posixToMillis >> Json.Encode.int) behavior.submits )
+        , ( "resists", Json.Encode.list (Time.posixToMillis >> Json.Encode.int) behavior.resists )
+        ]
+
+
+decodeBehavior : Json.Decode.Decoder Behavior
+decodeBehavior =
+    Json.Decode.map4 Behavior
+        (Json.Decode.field "id" UUID.jsonDecoder)
+        (Json.Decode.field "name" Json.Decode.string)
+        (Json.Decode.field "submits" (Json.Decode.list (Json.Decode.map Time.millisToPosix Json.Decode.int)))
+        (Json.Decode.field "resists" (Json.Decode.list (Json.Decode.map Time.millisToPosix Json.Decode.int)))
+
+
 
 -- INIT
 
 
-init : Flags -> Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
-init () url navKey =
-    ( { navKey = navKey
-      , route = routeFromUrl url
-      , safetyBehaviors = []
-      , behaviorNameToAdd = ""
-      , behaviorEditing = Nothing
-      , confirmDelete = Nothing
-      }
-    , Cmd.none
+init : Flags -> Url -> Browser.Navigation.Key -> ( Application, Cmd Msg )
+init flags url navKey =
+    let
+        ( dbTasks, cmd ) =
+            ConcurrentTask.attempt
+                { send = sendToDb
+                , pool = ConcurrentTask.pool
+                , onComplete = DbLoaded
+                }
+                loadBehaviors
+    in
+    ( Initializing
+        { navKey = navKey
+        , dbTasks = dbTasks
+        , url = url
+        , seeds =
+            { seed1 = Random.initialSeed flags.seed1
+            , seed2 = Random.initialSeed flags.seed2
+            , seed3 = Random.initialSeed flags.seed3
+            , seed4 = Random.initialSeed flags.seed4
+            }
+        }
+    , cmd
     )
+
+
+loadBehaviors : ConcurrentTask IndexedDb.Error ( IndexedDb.Db, List Behavior )
+loadBehaviors =
+    IndexedDb.open appSchema
+        |> ConcurrentTask.andThen loadBehaviorsData
+
+
+loadBehaviorsData : IndexedDb.Db -> ConcurrentTask IndexedDb.Error ( IndexedDb.Db, List Behavior )
+loadBehaviorsData db =
+    IndexedDb.getAll db behaviorStore decodeBehavior
+        |> ConcurrentTask.map (Tuple.pair db)
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Application -> Sub Msg
+subscriptions app =
+    case app of
+        StartupFailure ->
+            Sub.none
+
+        Initializing model ->
+            ConcurrentTask.onProgress
+                { send = sendToDb
+                , receive = receiveFromDb
+                , onProgress = OnDbProgress
+                }
+                model.dbTasks
+
+        Initialized model ->
+            ConcurrentTask.onProgress
+                { send = sendToDb
+                , receive = receiveFromDb
+                , onProgress = OnDbProgress
+                }
+                model.dbTasks
+
+
+port sendToDb : Json.Encode.Value -> Cmd msg
+
+
+port receiveFromDb : (Json.Encode.Value -> msg) -> Sub msg
 
 
 
@@ -123,263 +242,521 @@ type Msg
     = UrlChanged Url
     | UrlRequested Browser.UrlRequest
       --
+    | OnDbProgress ( ConcurrentTask.Pool Msg, Cmd Msg )
+    | DbLoaded (ConcurrentTask.Response IndexedDb.Error ( IndexedDb.Db, List Behavior ))
+      --
     | AddBehavior
+    | BehaviorCreateResponded UUID (ConcurrentTask.Response IndexedDb.Error IndexedDb.Key)
     | BehaviorNameToAddChanged String
-    | SubmittedToBehavior Int
-    | SubmittedToBehaviorAt Int Time.Posix
-    | ResistedBehavior Int
-    | ResistedBehaviorAt Int Time.Posix
+    | SubmittedToBehavior UUID
+    | SubmittedToBehaviorAt UUID Time.Posix
+    | ResistedBehavior UUID
+    | ResistedBehaviorAt UUID Time.Posix
     | BehaviorNameEdited String
     | RemoveSubmit Time.Posix
     | RemoveResist Time.Posix
-    | SaveBehavior Int
-    | DeleteBehavior Int
-    | ConfirmDeleteBehavior Int
+    | SaveBehavior UUID
+    | BehaviorSaveResponded UUID (ConcurrentTask.Response IndexedDb.Error IndexedDb.Key)
+    | DeleteBehavior UUID
+    | ConfirmDeleteBehavior UUID
+    | BehaviorDeleteResponded UUID (ConcurrentTask.Response IndexedDb.Error ())
     | CancelDeleteBehavior
       --
     | Export
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        UrlChanged url ->
-            let
-                route =
-                    routeFromUrl url
-            in
-            case route of
-                EditBehaviorRoute id ->
-                    case findBehaviorById id model.safetyBehaviors of
-                        Nothing ->
-                            ( { model
-                                | route = route
-                                , behaviorEditing = Nothing
-                              }
-                            , Cmd.none
+update : Msg -> Application -> ( Application, Cmd Msg )
+update msg app =
+    case app of
+        StartupFailure ->
+            ( app, Cmd.none )
+
+        Initializing model ->
+            case msg of
+                UrlChanged url ->
+                    ( Initializing
+                        { model
+                            | url = url
+                        }
+                    , Cmd.none
+                    )
+
+                UrlRequested urlRequest ->
+                    case urlRequest of
+                        Browser.Internal url ->
+                            ( app
+                            , Browser.Navigation.pushUrl model.navKey (Url.toString url)
                             )
 
-                        Just behavior ->
-                            ( { model
-                                | route = route
-                                , behaviorEditing = Just ( behavior, behavior )
+                        Browser.External url ->
+                            ( app
+                            , Browser.Navigation.load url
+                            )
+
+                --
+                OnDbProgress ( dbTasks, cmd ) ->
+                    ( Initializing { model | dbTasks = dbTasks }, cmd )
+
+                DbLoaded response ->
+                    case response of
+                        ConcurrentTask.Error err ->
+                            Debug.todo (Debug.toString err)
+
+                        ConcurrentTask.UnexpectedError err ->
+                            Debug.todo (Debug.toString err)
+
+                        ConcurrentTask.Success ( db, behaviors ) ->
+                            ( Initialized
+                                { navKey = model.navKey
+                                , dbTasks = model.dbTasks
+                                , db = db
+                                , seeds = model.seeds
+                                , route = routeFromUrl model.url
+                                , safetyBehaviors = behaviors
+                                , behaviorNameToAdd = ""
+                                , addingBehavior = False
+                                , behaviorEditing = Nothing
                                 , confirmDelete = Nothing
-                              }
+                                , deleting = False
+                                }
                             , Cmd.none
                             )
 
                 _ ->
-                    ( { model
-                        | route = route
-                        , behaviorEditing = Nothing
-                      }
-                    , Cmd.none
-                    )
+                    ( app, Cmd.none )
 
-        UrlRequested urlRequest ->
-            case urlRequest of
-                Browser.Internal url ->
-                    ( model
-                    , Browser.Navigation.pushUrl model.navKey (Url.toString url)
-                    )
+        Initialized model ->
+            Tuple.mapFirst Initialized <|
+                case msg of
+                    UrlChanged url ->
+                        let
+                            route =
+                                routeFromUrl url
+                        in
+                        case route of
+                            EditBehaviorRoute key ->
+                                case findBehaviorById key model.safetyBehaviors of
+                                    Nothing ->
+                                        ( { model
+                                            | route = route
+                                            , behaviorEditing = Nothing
+                                            , deleting = False
+                                          }
+                                        , Cmd.none
+                                        )
 
-                Browser.External url ->
-                    ( model
-                    , Browser.Navigation.load url
-                    )
+                                    Just behavior ->
+                                        ( { model
+                                            | route = route
+                                            , behaviorEditing = Just ( behavior, behavior )
+                                            , confirmDelete = Nothing
+                                            , deleting = False
+                                          }
+                                        , Cmd.none
+                                        )
 
-        BehaviorNameToAddChanged name ->
-            ( { model | behaviorNameToAdd = name }, Cmd.none )
-
-        AddBehavior ->
-            if String.isEmpty model.behaviorNameToAdd then
-                ( model, Cmd.none )
-
-            else
-                ( { model
-                    | behaviorNameToAdd = ""
-                    , safetyBehaviors = { name = model.behaviorNameToAdd, submits = [], resists = [] } :: model.safetyBehaviors
-                  }
-                , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
-                )
-
-        SubmittedToBehavior index ->
-            ( model, Task.perform (SubmittedToBehaviorAt index) Time.now )
-
-        SubmittedToBehaviorAt index time ->
-            ( { model
-                | safetyBehaviors =
-                    List.indexedMap
-                        (\idx behavior ->
-                            if idx == index then
-                                { behavior | submits = time :: behavior.submits }
-
-                            else
-                                behavior
-                        )
-                        model.safetyBehaviors
-              }
-            , Cmd.none
-            )
-
-        ResistedBehavior index ->
-            ( model, Task.perform (ResistedBehaviorAt index) Time.now )
-
-        ResistedBehaviorAt index time ->
-            ( { model
-                | safetyBehaviors =
-                    List.indexedMap
-                        (\idx behavior ->
-                            if idx == index then
-                                { behavior | resists = time :: behavior.resists }
-
-                            else
-                                behavior
-                        )
-                        model.safetyBehaviors
-              }
-            , Cmd.none
-            )
-
-        BehaviorNameEdited name ->
-            case model.behaviorEditing of
-                Nothing ->
-                    ( model, Cmd.none )
-
-                Just ( old, new ) ->
-                    ( { model | behaviorEditing = Just ( old, { new | name = name } ) }, Cmd.none )
-
-        RemoveSubmit timestamp ->
-            case model.behaviorEditing of
-                Nothing ->
-                    ( model, Cmd.none )
-
-                Just ( old, new ) ->
-                    ( { model
-                        | behaviorEditing =
-                            Just
-                                ( old
-                                , { new
-                                    | submits =
-                                        List.filter
-                                            (\submit -> submit /= timestamp)
-                                            new.submits
+                            AddBehaviorRoute ->
+                                ( { model
+                                    | route = route
+                                    , addingBehavior = False
                                   }
+                                , Cmd.none
                                 )
-                      }
-                    , Cmd.none
-                    )
 
-        RemoveResist timestamp ->
-            case model.behaviorEditing of
-                Nothing ->
-                    ( model, Cmd.none )
-
-                Just ( old, new ) ->
-                    ( { model
-                        | behaviorEditing =
-                            Just
-                                ( old
-                                , { new
-                                    | resists =
-                                        List.filter
-                                            (\resist -> resist /= timestamp)
-                                            new.resists
+                            _ ->
+                                ( { model
+                                    | route = route
+                                    , behaviorEditing = Nothing
                                   }
+                                , Cmd.none
                                 )
-                      }
-                    , Cmd.none
-                    )
 
-        SaveBehavior id ->
-            case model.behaviorEditing of
-                Nothing ->
-                    ( model, Cmd.none )
+                    UrlRequested urlRequest ->
+                        case urlRequest of
+                            Browser.Internal url ->
+                                ( model
+                                , Browser.Navigation.pushUrl model.navKey (Url.toString url)
+                                )
 
-                Just ( _, new ) ->
-                    if String.isEmpty new.name then
+                            Browser.External url ->
+                                ( model
+                                , Browser.Navigation.load url
+                                )
+
+                    --
+                    OnDbProgress ( dbTasks, cmd ) ->
+                        ( { model | dbTasks = dbTasks }, cmd )
+
+                    DbLoaded _ ->
                         ( model, Cmd.none )
 
-                    else
-                        ( { model
-                            | safetyBehaviors =
-                                List.indexedMap
-                                    (\index behavior ->
-                                        if index == id then
-                                            new
+                    --
+                    BehaviorNameToAddChanged name ->
+                        ( { model | behaviorNameToAdd = name }, Cmd.none )
 
-                                        else
-                                            behavior
-                                    )
-                                    model.safetyBehaviors
-                          }
-                        , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
-                        )
+                    AddBehavior ->
+                        if model.addingBehavior then
+                            ( model, Cmd.none )
 
-        DeleteBehavior id ->
-            ( { model | confirmDelete = Just id }, Cmd.none )
+                        else if String.isEmpty model.behaviorNameToAdd then
+                            ( model, Cmd.none )
 
-        ConfirmDeleteBehavior id ->
-            ( { model
-                | confirmDelete = Nothing
-                , safetyBehaviors =
-                    List.take id model.safetyBehaviors
-                        ++ List.drop (id + 1) model.safetyBehaviors
-              }
-            , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
-            )
-
-        CancelDeleteBehavior ->
-            ( { model | confirmDelete = Nothing }, Cmd.none )
-
-        Export ->
-            ( model
-            , model.safetyBehaviors
-                |> List.map
-                    (\behavior ->
-                        { name =
-                            String.filter
-                                (\char -> Char.isAlphaNum char || char == '_' || char == '-')
-                                behavior.name
-                                ++ "-safety-behavior-data.csv"
-                        , type_ = "text/csv"
-                        , data =
+                        else
                             let
-                                timestamps =
-                                    List.map
-                                        (\submit ->
-                                            ( submit
-                                            , "x"
-                                            , ""
+                                ( id, seeds ) =
+                                    UUID.step model.seeds
+
+                                ( dbTasks, cmd ) =
+                                    doDbTask
+                                        (BehaviorCreateResponded id)
+                                        (IndexedDb.add model.db
+                                            behaviorStore
+                                            (encodeBehavior
+                                                { id = id
+                                                , name = model.behaviorNameToAdd
+                                                , submits = []
+                                                , resists = []
+                                                }
                                             )
                                         )
-                                        behavior.submits
-                                        ++ List.map
-                                            (\resist ->
-                                                ( resist
-                                                , ""
-                                                , "x"
-                                                )
-                                            )
-                                            behavior.resists
                             in
-                            timestamps
-                                |> List.sortBy (\( t, _, _ ) -> Time.posixToMillis t)
-                                |> Csv.Encode.encode
-                                    { encoder =
-                                        Csv.Encode.withFieldNames
-                                            (\( date, submit, resist ) ->
-                                                [ ( "date", exportDateFormatter Time.utc date )
-                                                , ( "submit", submit )
-                                                , ( "resist", resist )
-                                                ]
+                            ( { model
+                                | addingBehavior = True
+                                , dbTasks = dbTasks
+                                , seeds = seeds
+                              }
+                            , cmd
+                            )
+
+                    BehaviorCreateResponded id response ->
+                        case response of
+                            ConcurrentTask.Error err ->
+                                let
+                                    _ =
+                                        Debug.todo (Debug.toString err)
+                                in
+                                ( { model
+                                    | addingBehavior = False
+                                  }
+                                , Cmd.none
+                                )
+
+                            ConcurrentTask.UnexpectedError err ->
+                                let
+                                    _ =
+                                        Debug.todo (Debug.toString err)
+                                in
+                                ( { model
+                                    | addingBehavior = False
+                                  }
+                                , Cmd.none
+                                )
+
+                            ConcurrentTask.Success _ ->
+                                ( { model
+                                    | behaviorNameToAdd = ""
+                                    , safetyBehaviors =
+                                        { id = id
+                                        , name = model.behaviorNameToAdd
+                                        , submits = []
+                                        , resists = []
+                                        }
+                                            :: model.safetyBehaviors
+                                  }
+                                , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
+                                )
+
+                    SubmittedToBehavior key ->
+                        ( model, Task.perform (SubmittedToBehaviorAt key) Time.now )
+
+                    SubmittedToBehaviorAt id time ->
+                        case findBehaviorById id model.safetyBehaviors of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just b ->
+                                let
+                                    ( dbTasks, cmd ) =
+                                        doDbTask
+                                            (BehaviorSaveResponded id)
+                                            (IndexedDb.put model.db
+                                                behaviorStore
+                                                (encodeBehavior b)
                                             )
-                                    , fieldSeparator = ','
+                                in
+                                ( { model
+                                    | safetyBehaviors =
+                                        List.map
+                                            (\behavior ->
+                                                if behavior.id == id then
+                                                    { behavior | submits = time :: behavior.submits }
+
+                                                else
+                                                    behavior
+                                            )
+                                            model.safetyBehaviors
+                                  }
+                                , Cmd.none
+                                )
+
+                    ResistedBehavior key ->
+                        ( model, Task.perform (ResistedBehaviorAt key) Time.now )
+
+                    ResistedBehaviorAt id time ->
+                        case findBehaviorById id model.safetyBehaviors of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just b ->
+                                let
+                                    ( dbTasks, cmd ) =
+                                        doDbTask
+                                            (BehaviorSaveResponded id)
+                                            (IndexedDb.put model.db
+                                                behaviorStore
+                                                (encodeBehavior b)
+                                            )
+                                in
+                                ( { model
+                                    | safetyBehaviors =
+                                        List.map
+                                            (\behavior ->
+                                                if behavior.id == id then
+                                                    { behavior | resists = time :: behavior.resists }
+
+                                                else
+                                                    behavior
+                                            )
+                                            model.safetyBehaviors
+                                  }
+                                , Cmd.none
+                                )
+
+                    BehaviorNameEdited name ->
+                        case model.behaviorEditing of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just ( old, new ) ->
+                                ( { model | behaviorEditing = Just ( old, { new | name = name } ) }, Cmd.none )
+
+                    RemoveSubmit timestamp ->
+                        case model.behaviorEditing of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just ( old, new ) ->
+                                ( { model
+                                    | behaviorEditing =
+                                        Just
+                                            ( old
+                                            , { new
+                                                | submits =
+                                                    List.filter
+                                                        (\submit -> submit /= timestamp)
+                                                        new.submits
+                                              }
+                                            )
+                                  }
+                                , Cmd.none
+                                )
+
+                    RemoveResist timestamp ->
+                        case model.behaviorEditing of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just ( old, new ) ->
+                                ( { model
+                                    | behaviorEditing =
+                                        Just
+                                            ( old
+                                            , { new
+                                                | resists =
+                                                    List.filter
+                                                        (\resist -> resist /= timestamp)
+                                                        new.resists
+                                              }
+                                            )
+                                  }
+                                , Cmd.none
+                                )
+
+                    SaveBehavior id ->
+                        case model.behaviorEditing of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just ( _, new ) ->
+                                if String.isEmpty new.name then
+                                    ( model, Cmd.none )
+
+                                else
+                                    let
+                                        ( dbTasks, cmd ) =
+                                            doDbTask
+                                                (BehaviorSaveResponded id)
+                                                (IndexedDb.put model.db
+                                                    behaviorStore
+                                                    (encodeBehavior new)
+                                                )
+                                    in
+                                    ( { model
+                                        | safetyBehaviors =
+                                            List.map
+                                                (\behavior ->
+                                                    if behavior.id == id then
+                                                        new
+
+                                                    else
+                                                        behavior
+                                                )
+                                                model.safetyBehaviors
+                                      }
+                                    , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
+                                    )
+
+                    BehaviorSaveResponded id response ->
+                        case response of
+                            ConcurrentTask.Error err ->
+                                let
+                                    _ =
+                                        Debug.todo (Debug.toString err)
+                                in
+                                ( model
+                                , Cmd.none
+                                )
+
+                            ConcurrentTask.UnexpectedError err ->
+                                let
+                                    _ =
+                                        Debug.todo (Debug.toString err)
+                                in
+                                ( model
+                                , Cmd.none
+                                )
+
+                            ConcurrentTask.Success _ ->
+                                ( model
+                                , Cmd.none
+                                )
+
+                    DeleteBehavior id ->
+                        ( { model | confirmDelete = Just id }, Cmd.none )
+
+                    ConfirmDeleteBehavior id ->
+                        let
+                            ( dbTasks, cmd ) =
+                                doDbTask
+                                    (BehaviorDeleteResponded id)
+                                    (IndexedDb.delete model.db behaviorStore (uuidToKey id))
+                        in
+                        ( { model
+                            | deleting = True
+                            , dbTasks = dbTasks
+                          }
+                        , cmd
+                        )
+
+                    BehaviorDeleteResponded key response ->
+                        case response of
+                            ConcurrentTask.Error err ->
+                                let
+                                    _ =
+                                        Debug.todo (Debug.toString err)
+                                in
+                                ( { model
+                                    | deleting = False
+                                  }
+                                , Cmd.none
+                                )
+
+                            ConcurrentTask.UnexpectedError err ->
+                                let
+                                    _ =
+                                        Debug.todo (Debug.toString err)
+                                in
+                                ( { model
+                                    | deleting = False
+                                  }
+                                , Cmd.none
+                                )
+
+                            ConcurrentTask.Success () ->
+                                ( { model
+                                    | confirmDelete = Nothing
+                                    , deleting = False
+                                    , safetyBehaviors = List.filter (\b -> b.id /= key) model.safetyBehaviors
+                                  }
+                                , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
+                                )
+
+                    CancelDeleteBehavior ->
+                        ( { model | confirmDelete = Nothing }, Cmd.none )
+
+                    Export ->
+                        ( model
+                        , model.safetyBehaviors
+                            |> List.map
+                                (\behavior ->
+                                    { name =
+                                        String.filter
+                                            (\char -> Char.isAlphaNum char || char == '_' || char == '-')
+                                            behavior.name
+                                            ++ "-safety-behavior-data.csv"
+                                    , type_ = "text/csv"
+                                    , data =
+                                        let
+                                            timestamps =
+                                                List.map
+                                                    (\submit ->
+                                                        ( submit
+                                                        , "x"
+                                                        , ""
+                                                        )
+                                                    )
+                                                    behavior.submits
+                                                    ++ List.map
+                                                        (\resist ->
+                                                            ( resist
+                                                            , ""
+                                                            , "x"
+                                                            )
+                                                        )
+                                                        behavior.resists
+                                        in
+                                        timestamps
+                                            |> List.sortBy (\( t, _, _ ) -> Time.posixToMillis t)
+                                            |> Csv.Encode.encode
+                                                { encoder =
+                                                    Csv.Encode.withFieldNames
+                                                        (\( date, submit, resist ) ->
+                                                            [ ( "date", exportDateFormatter Time.utc date )
+                                                            , ( "submit", submit )
+                                                            , ( "resist", resist )
+                                                            ]
+                                                        )
+                                                , fieldSeparator = ','
+                                                }
                                     }
-                        }
-                    )
-                |> export
-            )
+                                )
+                            |> export
+                        )
+
+
+uuidToKey : UUID -> IndexedDb.Key
+uuidToKey uuid =
+    IndexedDb.StringKey (UUID.toString uuid)
+
+
+doDbTask : (ConcurrentTask.Response IndexedDb.Error a -> Msg) -> ConcurrentTask IndexedDb.Error a -> ( ConcurrentTask.Pool Msg, Cmd Msg )
+doDbTask onComplete task =
+    ConcurrentTask.attempt
+        { pool = ConcurrentTask.pool
+        , send = sendToDb
+        , onComplete = onComplete
+        }
+        task
 
 
 port export : List { name : String, data : String, type_ : String } -> Cmd msg
@@ -402,43 +779,63 @@ exportDateFormatter =
         ]
 
 
-findBehaviorById : Int -> List Behavior -> Maybe Behavior
+findBehaviorById : UUID -> List Behavior -> Maybe Behavior
 findBehaviorById id behaviors =
-    behaviors
-        |> List.drop id
-        |> List.head
+    case behaviors of
+        [] ->
+            Nothing
+
+        behavior :: rest ->
+            if behavior.id == id then
+                Just behavior
+
+            else
+                findBehaviorById id rest
 
 
 
 -- VIEW
 
 
-viewport : Model -> Browser.Document Msg
-viewport model =
+view : Application -> Browser.Document Msg
+view app =
     { title = "OCD / Anxiety App"
     , body =
-        [ view model
+        [ viewApp app
         ]
     }
 
 
-view : Model -> Html Msg
-view model =
-    case model.route of
-        HomeRoute ->
-            viewBehaviorList model
+viewApp : Application -> Html Msg
+viewApp app =
+    case app of
+        StartupFailure ->
+            Html.div []
+                [ Html.text "Initialization failure. Try reloading the page" ]
 
-        AddBehaviorRoute ->
-            viewAddBehavior model
+        Initializing _ ->
+            Html.div
+                [ Attr.style "width" "3rem"
+                , Attr.style "height" "3rem"
+                ]
+                [ spinner ]
 
-        EditBehaviorRoute id ->
-            viewEditBehavior id model
+        Initialized model ->
+            case model.route of
+                HomeRoute ->
+                    viewBehaviorList model
 
-        SettingsRoute ->
-            viewMenu
+                AddBehaviorRoute ->
+                    viewAddBehavior model
+
+                EditBehaviorRoute id ->
+                    viewEditBehavior id model
+
+                SettingsRoute ->
+                    viewMenu
 
 
-viewEditBehavior : Int -> Model -> Html Msg
+viewEditBehavior : UUID -> Model -> Html Msg
 viewEditBehavior id model =
     case model.behaviorEditing of
         Nothing ->
@@ -546,7 +943,7 @@ viewEditBehavior id model =
                         ]
                         [ linkSecondary "Cancel"
                             HomeRoute
-                        , buttonPrimary "Save" (SaveBehavior id)
+                        , buttonPrimary (Html.text "Save") (SaveBehavior id)
                         ]
                     , case model.confirmDelete of
                         Nothing ->
@@ -666,15 +1063,15 @@ viewBehaviorList model =
                     [ Attr.style "height" "93vh"
                     , Attr.style "overflow" "auto"
                     ]
-                    (List.indexedMap
+                    (List.map
                         viewBehaviorInList
                         safetyBehaviors
                     )
                 ]
 
 
-viewBehaviorInList : Int -> Behavior -> Html Msg
-viewBehaviorInList index behavior =
+viewBehaviorInList : Behavior -> Html Msg
+viewBehaviorInList behavior =
     Html.div
         [ Attr.style "width" "calc(100% - 1rem)"
         , Attr.style "padding" "0.5rem 1rem 1rem 1rem"
@@ -689,7 +1086,7 @@ viewBehaviorInList index behavior =
             ]
             [ Html.span [] [ Html.text behavior.name ]
             , linkSecondaryIcon "✎"
-                (EditBehaviorRoute index)
+                (EditBehaviorRoute behavior.id)
             ]
         , Html.div
             [ Attr.style "display" "flex"
@@ -701,14 +1098,14 @@ viewBehaviorInList index behavior =
                 , Attr.style "align-self" "center"
                 ]
                 [ buttonSecondary "Submit"
-                    (SubmittedToBehavior index)
+                    (SubmittedToBehavior behavior.id)
                 ]
             , Html.div
                 [ Attr.style "font-size" "6vw"
                 , Attr.style "align-self" "center"
                 ]
                 [ buttonSecondary "Resist"
-                    (ResistedBehavior index)
+                    (ResistedBehavior behavior.id)
                 ]
             ]
         ]
@@ -756,7 +1153,24 @@ viewAddBehavior model =
                 ]
                 [ linkSecondary "Cancel"
                     HomeRoute
-                , buttonPrimary "Add" AddBehavior
+                , buttonPrimary
+                    (Html.div
+                        [ Attr.style "display" "flex"
+                        , Attr.style "gap" "1rem"
+                        ]
+                        [ Html.text "Add"
+                        , if model.addingBehavior then
+                            Html.div
+                                [ Attr.style "width" "1rem"
+                                , Attr.style "height" "1rem"
+                                ]
+                                [ spinner ]
+
+                          else
+                            noHtml
+                        ]
+                    )
+                    AddBehavior
                 ]
             ]
         ]
@@ -766,7 +1180,17 @@ viewAddBehavior model =
 --
 
 
-buttonPrimary : String -> Msg -> Html Msg
+spinner : Html msg
+spinner =
+    Html.span [ Css.loader ] []
+
+
+noHtml : Html msg
+noHtml =
+    Html.text ""
+
+
+buttonPrimary : Html Msg -> Msg -> Html Msg
 buttonPrimary label action =
     Html.button
         [ Css.pushable
@@ -775,7 +1199,7 @@ buttonPrimary label action =
         ]
         [ Html.span [ Css.shadow ] []
         , Html.span [ Css.edge ] []
-        , Html.span [ Css.front ] [ Html.text label ]
+        , Html.span [ Css.front ] [ label ]
         ]
 
 

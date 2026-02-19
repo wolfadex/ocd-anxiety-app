@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1771467269504"
+    "1771555902647"
   );
   var ORIGINAL_COMPILATION_MODE = "debug";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -3584,271 +3584,6 @@ function A9(fun, a, b, c, d, e, f, g, h, i) {
 console.warn('Compiled in DEBUG mode. Follow the advice at https://elm-lang.org/0.19.1/optimize for better performance and smaller assets.');
 
 
-// EQUALITY
-
-function _Utils_eq(x, y)
-{
-	for (
-		var pair, stack = [], isEqual = _Utils_eqHelp(x, y, 0, stack);
-		isEqual && (pair = stack.pop());
-		isEqual = _Utils_eqHelp(pair.a, pair.b, 0, stack)
-		)
-	{}
-
-	return isEqual;
-}
-
-function _Utils_eqHelp(x, y, depth, stack)
-{
-	if (x === y)
-	{
-		return true;
-	}
-
-	if (typeof x !== 'object' || x === null || y === null)
-	{
-		typeof x === 'function' && _Debug_crash(5);
-		return false;
-	}
-
-	if (depth > 100)
-	{
-		stack.push(_Utils_Tuple2(x,y));
-		return true;
-	}
-
-	/**/
-	if (x.$ === 'Set_elm_builtin')
-	{
-		x = $elm$core$Set$toList(x);
-		y = $elm$core$Set$toList(y);
-	}
-	if (x.$ === 'RBNode_elm_builtin' || x.$ === 'RBEmpty_elm_builtin')
-	{
-		x = $elm$core$Dict$toList(x);
-		y = $elm$core$Dict$toList(y);
-	}
-	//*/
-
-	/**_UNUSED/
-	if (x.$ < 0)
-	{
-		x = $elm$core$Dict$toList(x);
-		y = $elm$core$Dict$toList(y);
-	}
-	//*/
-
-	for (var key in x)
-	{
-		if (!_Utils_eqHelp(x[key], y[key], depth + 1, stack))
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-var _Utils_equal = F2(_Utils_eq);
-var _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
-
-
-
-// COMPARISONS
-
-// Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
-// the particular integer values assigned to LT, EQ, and GT.
-
-function _Utils_cmp(x, y, ord)
-{
-	if (typeof x !== 'object')
-	{
-		return x === y ? /*EQ*/ 0 : x < y ? /*LT*/ -1 : /*GT*/ 1;
-	}
-
-	/**/
-	if (x instanceof String)
-	{
-		var a = x.valueOf();
-		var b = y.valueOf();
-		return a === b ? 0 : a < b ? -1 : 1;
-	}
-	//*/
-
-	/**_UNUSED/
-	if (typeof x.$ === 'undefined')
-	//*/
-	/**/
-	if (x.$[0] === '#')
-	//*/
-	{
-		return (ord = _Utils_cmp(x.a, y.a))
-			? ord
-			: (ord = _Utils_cmp(x.b, y.b))
-				? ord
-				: _Utils_cmp(x.c, y.c);
-	}
-
-	// traverse conses until end of a list or a mismatch
-	for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); x = x.b, y = y.b) {} // WHILE_CONSES
-	return ord || (x.b ? /*GT*/ 1 : y.b ? /*LT*/ -1 : /*EQ*/ 0);
-}
-
-var _Utils_lt = F2(function(a, b) { return _Utils_cmp(a, b) < 0; });
-var _Utils_le = F2(function(a, b) { return _Utils_cmp(a, b) < 1; });
-var _Utils_gt = F2(function(a, b) { return _Utils_cmp(a, b) > 0; });
-var _Utils_ge = F2(function(a, b) { return _Utils_cmp(a, b) >= 0; });
-
-var _Utils_compare = F2(function(x, y)
-{
-	var n = _Utils_cmp(x, y);
-	return n < 0 ? $elm$core$Basics$LT : n ? $elm$core$Basics$GT : $elm$core$Basics$EQ;
-});
-
-
-// COMMON VALUES
-
-var _Utils_Tuple0_UNUSED = 0;
-var _Utils_Tuple0 = { $: '#0' };
-
-function _Utils_Tuple2_UNUSED(a, b) { return { a: a, b: b }; }
-function _Utils_Tuple2(a, b) { return { $: '#2', a: a, b: b }; }
-
-function _Utils_Tuple3_UNUSED(a, b, c) { return { a: a, b: b, c: c }; }
-function _Utils_Tuple3(a, b, c) { return { $: '#3', a: a, b: b, c: c }; }
-
-function _Utils_chr_UNUSED(c) { return c; }
-function _Utils_chr(c) { return new String(c); }
-
-
-// RECORDS
-
-function _Utils_update(oldRecord, updatedFields)
-{
-	var newRecord = {};
-
-	for (var key in oldRecord)
-	{
-		newRecord[key] = oldRecord[key];
-	}
-
-	for (var key in updatedFields)
-	{
-		newRecord[key] = updatedFields[key];
-	}
-
-	return newRecord;
-}
-
-
-// APPEND
-
-var _Utils_append = F2(_Utils_ap);
-
-function _Utils_ap(xs, ys)
-{
-	// append Strings
-	if (typeof xs === 'string')
-	{
-		return xs + ys;
-	}
-
-	// append Lists
-	if (!xs.b)
-	{
-		return ys;
-	}
-	var root = _List_Cons(xs.a, ys);
-	xs = xs.b
-	for (var curr = root; xs.b; xs = xs.b) // WHILE_CONS
-	{
-		curr = curr.b = _List_Cons(xs.a, ys);
-	}
-	return root;
-}
-
-
-
-var _List_Nil_UNUSED = { $: 0 };
-var _List_Nil = { $: '[]' };
-
-function _List_Cons_UNUSED(hd, tl) { return { $: 1, a: hd, b: tl }; }
-function _List_Cons(hd, tl) { return { $: '::', a: hd, b: tl }; }
-
-
-var _List_cons = F2(_List_Cons);
-
-function _List_fromArray(arr)
-{
-	var out = _List_Nil;
-	for (var i = arr.length; i--; )
-	{
-		out = _List_Cons(arr[i], out);
-	}
-	return out;
-}
-
-function _List_toArray(xs)
-{
-	for (var out = []; xs.b; xs = xs.b) // WHILE_CONS
-	{
-		out.push(xs.a);
-	}
-	return out;
-}
-
-var _List_map2 = F3(function(f, xs, ys)
-{
-	for (var arr = []; xs.b && ys.b; xs = xs.b, ys = ys.b) // WHILE_CONSES
-	{
-		arr.push(A2(f, xs.a, ys.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map3 = F4(function(f, xs, ys, zs)
-{
-	for (var arr = []; xs.b && ys.b && zs.b; xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A3(f, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map4 = F5(function(f, ws, xs, ys, zs)
-{
-	for (var arr = []; ws.b && xs.b && ys.b && zs.b; ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A4(f, ws.a, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map5 = F6(function(f, vs, ws, xs, ys, zs)
-{
-	for (var arr = []; vs.b && ws.b && xs.b && ys.b && zs.b; vs = vs.b, ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A5(f, vs.a, ws.a, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_sortBy = F2(function(f, xs)
-{
-	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
-		return _Utils_cmp(f(a), f(b));
-	}));
-});
-
-var _List_sortWith = F2(function(f, xs)
-{
-	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
-		var ord = A2(f, a, b);
-		return ord === $elm$core$Basics$EQ ? 0 : ord === $elm$core$Basics$LT ? -1 : 1;
-	}));
-});
-
-
-
 var _JsArray_empty = [];
 
 function _JsArray_singleton(value)
@@ -4294,6 +4029,271 @@ function _Debug_regionToString(region)
 	}
 	return 'on lines ' + region.start.line + ' through ' + region.end.line;
 }
+
+
+
+// EQUALITY
+
+function _Utils_eq(x, y)
+{
+	for (
+		var pair, stack = [], isEqual = _Utils_eqHelp(x, y, 0, stack);
+		isEqual && (pair = stack.pop());
+		isEqual = _Utils_eqHelp(pair.a, pair.b, 0, stack)
+		)
+	{}
+
+	return isEqual;
+}
+
+function _Utils_eqHelp(x, y, depth, stack)
+{
+	if (x === y)
+	{
+		return true;
+	}
+
+	if (typeof x !== 'object' || x === null || y === null)
+	{
+		typeof x === 'function' && _Debug_crash(5);
+		return false;
+	}
+
+	if (depth > 100)
+	{
+		stack.push(_Utils_Tuple2(x,y));
+		return true;
+	}
+
+	/**/
+	if (x.$ === 'Set_elm_builtin')
+	{
+		x = $elm$core$Set$toList(x);
+		y = $elm$core$Set$toList(y);
+	}
+	if (x.$ === 'RBNode_elm_builtin' || x.$ === 'RBEmpty_elm_builtin')
+	{
+		x = $elm$core$Dict$toList(x);
+		y = $elm$core$Dict$toList(y);
+	}
+	//*/
+
+	/**_UNUSED/
+	if (x.$ < 0)
+	{
+		x = $elm$core$Dict$toList(x);
+		y = $elm$core$Dict$toList(y);
+	}
+	//*/
+
+	for (var key in x)
+	{
+		if (!_Utils_eqHelp(x[key], y[key], depth + 1, stack))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+var _Utils_equal = F2(_Utils_eq);
+var _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
+
+
+
+// COMPARISONS
+
+// Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
+// the particular integer values assigned to LT, EQ, and GT.
+
+function _Utils_cmp(x, y, ord)
+{
+	if (typeof x !== 'object')
+	{
+		return x === y ? /*EQ*/ 0 : x < y ? /*LT*/ -1 : /*GT*/ 1;
+	}
+
+	/**/
+	if (x instanceof String)
+	{
+		var a = x.valueOf();
+		var b = y.valueOf();
+		return a === b ? 0 : a < b ? -1 : 1;
+	}
+	//*/
+
+	/**_UNUSED/
+	if (typeof x.$ === 'undefined')
+	//*/
+	/**/
+	if (x.$[0] === '#')
+	//*/
+	{
+		return (ord = _Utils_cmp(x.a, y.a))
+			? ord
+			: (ord = _Utils_cmp(x.b, y.b))
+				? ord
+				: _Utils_cmp(x.c, y.c);
+	}
+
+	// traverse conses until end of a list or a mismatch
+	for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); x = x.b, y = y.b) {} // WHILE_CONSES
+	return ord || (x.b ? /*GT*/ 1 : y.b ? /*LT*/ -1 : /*EQ*/ 0);
+}
+
+var _Utils_lt = F2(function(a, b) { return _Utils_cmp(a, b) < 0; });
+var _Utils_le = F2(function(a, b) { return _Utils_cmp(a, b) < 1; });
+var _Utils_gt = F2(function(a, b) { return _Utils_cmp(a, b) > 0; });
+var _Utils_ge = F2(function(a, b) { return _Utils_cmp(a, b) >= 0; });
+
+var _Utils_compare = F2(function(x, y)
+{
+	var n = _Utils_cmp(x, y);
+	return n < 0 ? $elm$core$Basics$LT : n ? $elm$core$Basics$GT : $elm$core$Basics$EQ;
+});
+
+
+// COMMON VALUES
+
+var _Utils_Tuple0_UNUSED = 0;
+var _Utils_Tuple0 = { $: '#0' };
+
+function _Utils_Tuple2_UNUSED(a, b) { return { a: a, b: b }; }
+function _Utils_Tuple2(a, b) { return { $: '#2', a: a, b: b }; }
+
+function _Utils_Tuple3_UNUSED(a, b, c) { return { a: a, b: b, c: c }; }
+function _Utils_Tuple3(a, b, c) { return { $: '#3', a: a, b: b, c: c }; }
+
+function _Utils_chr_UNUSED(c) { return c; }
+function _Utils_chr(c) { return new String(c); }
+
+
+// RECORDS
+
+function _Utils_update(oldRecord, updatedFields)
+{
+	var newRecord = {};
+
+	for (var key in oldRecord)
+	{
+		newRecord[key] = oldRecord[key];
+	}
+
+	for (var key in updatedFields)
+	{
+		newRecord[key] = updatedFields[key];
+	}
+
+	return newRecord;
+}
+
+
+// APPEND
+
+var _Utils_append = F2(_Utils_ap);
+
+function _Utils_ap(xs, ys)
+{
+	// append Strings
+	if (typeof xs === 'string')
+	{
+		return xs + ys;
+	}
+
+	// append Lists
+	if (!xs.b)
+	{
+		return ys;
+	}
+	var root = _List_Cons(xs.a, ys);
+	xs = xs.b
+	for (var curr = root; xs.b; xs = xs.b) // WHILE_CONS
+	{
+		curr = curr.b = _List_Cons(xs.a, ys);
+	}
+	return root;
+}
+
+
+
+var _List_Nil_UNUSED = { $: 0 };
+var _List_Nil = { $: '[]' };
+
+function _List_Cons_UNUSED(hd, tl) { return { $: 1, a: hd, b: tl }; }
+function _List_Cons(hd, tl) { return { $: '::', a: hd, b: tl }; }
+
+
+var _List_cons = F2(_List_Cons);
+
+function _List_fromArray(arr)
+{
+	var out = _List_Nil;
+	for (var i = arr.length; i--; )
+	{
+		out = _List_Cons(arr[i], out);
+	}
+	return out;
+}
+
+function _List_toArray(xs)
+{
+	for (var out = []; xs.b; xs = xs.b) // WHILE_CONS
+	{
+		out.push(xs.a);
+	}
+	return out;
+}
+
+var _List_map2 = F3(function(f, xs, ys)
+{
+	for (var arr = []; xs.b && ys.b; xs = xs.b, ys = ys.b) // WHILE_CONSES
+	{
+		arr.push(A2(f, xs.a, ys.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map3 = F4(function(f, xs, ys, zs)
+{
+	for (var arr = []; xs.b && ys.b && zs.b; xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A3(f, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map4 = F5(function(f, ws, xs, ys, zs)
+{
+	for (var arr = []; ws.b && xs.b && ys.b && zs.b; ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A4(f, ws.a, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map5 = F6(function(f, vs, ws, xs, ys, zs)
+{
+	for (var arr = []; vs.b && ws.b && xs.b && ys.b && zs.b; vs = vs.b, ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A5(f, vs.a, ws.a, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_sortBy = F2(function(f, xs)
+{
+	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
+		return _Utils_cmp(f(a), f(b));
+	}));
+});
+
+var _List_sortWith = F2(function(f, xs)
+{
+	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
+		var ord = A2(f, a, b);
+		return ord === $elm$core$Basics$EQ ? 0 : ord === $elm$core$Basics$LT ? -1 : 1;
+	}));
+});
 
 
 
@@ -8704,23 +8704,6 @@ function _Browser_load(url)
 }
 
 
-function _Url_percentEncode(string)
-{
-	return encodeURIComponent(string);
-}
-
-function _Url_percentDecode(string)
-{
-	try
-	{
-		return $elm$core$Maybe$Just(decodeURIComponent(string));
-	}
-	catch (e)
-	{
-		return $elm$core$Maybe$Nothing;
-	}
-}
-
 
 function _Time_now(millisToPosix)
 {
@@ -8765,20 +8748,54 @@ function _Time_getZoneName()
 		callback(_Scheduler_succeed(name));
 	});
 }
-var $author$project$Main$UrlChanged = function (a) {
+
+
+function _Url_percentEncode(string)
+{
+	return encodeURIComponent(string);
+}
+
+function _Url_percentDecode(string)
+{
+	try
+	{
+		return $elm$core$Maybe$Just(decodeURIComponent(string));
+	}
+	catch (e)
+	{
+		return $elm$core$Maybe$Nothing;
+	}
+}var $author$project$Main$UrlChanged = function (a) {
 	return {$: 'UrlChanged', a: a};
 };
 var $author$project$Main$UrlRequested = function (a) {
 	return {$: 'UrlRequested', a: a};
 };
-var $elm$core$Basics$always = F2(
-	function (a, _v0) {
-		return a;
-	});
-var $elm$core$Basics$EQ = {$: 'EQ'};
-var $elm$core$Basics$GT = {$: 'GT'};
-var $elm$core$Basics$LT = {$: 'LT'};
 var $elm$core$List$cons = _List_cons;
+var $elm$core$Elm$JsArray$foldr = _JsArray_foldr;
+var $elm$core$Array$foldr = F3(
+	function (func, baseCase, _v0) {
+		var tree = _v0.c;
+		var tail = _v0.d;
+		var helper = F2(
+			function (node, acc) {
+				if (node.$ === 'SubTree') {
+					var subTree = node.a;
+					return A3($elm$core$Elm$JsArray$foldr, helper, acc, subTree);
+				} else {
+					var values = node.a;
+					return A3($elm$core$Elm$JsArray$foldr, func, acc, values);
+				}
+			});
+		return A3(
+			$elm$core$Elm$JsArray$foldr,
+			helper,
+			A3($elm$core$Elm$JsArray$foldr, func, baseCase, tail),
+			tree);
+	});
+var $elm$core$Array$toList = function (array) {
+	return A3($elm$core$Array$foldr, $elm$core$List$cons, _List_Nil, array);
+};
 var $elm$core$Dict$foldr = F3(
 	function (func, acc, t) {
 		foldr:
@@ -8831,30 +8848,9 @@ var $elm$core$Set$toList = function (_v0) {
 	var dict = _v0.a;
 	return $elm$core$Dict$keys(dict);
 };
-var $elm$core$Elm$JsArray$foldr = _JsArray_foldr;
-var $elm$core$Array$foldr = F3(
-	function (func, baseCase, _v0) {
-		var tree = _v0.c;
-		var tail = _v0.d;
-		var helper = F2(
-			function (node, acc) {
-				if (node.$ === 'SubTree') {
-					var subTree = node.a;
-					return A3($elm$core$Elm$JsArray$foldr, helper, acc, subTree);
-				} else {
-					var values = node.a;
-					return A3($elm$core$Elm$JsArray$foldr, func, acc, values);
-				}
-			});
-		return A3(
-			$elm$core$Elm$JsArray$foldr,
-			helper,
-			A3($elm$core$Elm$JsArray$foldr, func, baseCase, tail),
-			tree);
-	});
-var $elm$core$Array$toList = function (array) {
-	return A3($elm$core$Array$foldr, $elm$core$List$cons, _List_Nil, array);
-};
+var $elm$core$Basics$EQ = {$: 'EQ'};
+var $elm$core$Basics$GT = {$: 'GT'};
+var $elm$core$Basics$LT = {$: 'LT'};
 var $elm$core$Result$Err = function (a) {
 	return {$: 'Err', a: a};
 };
@@ -9250,6 +9246,7 @@ var $elm$core$Result$isOk = function (result) {
 		return false;
 	}
 };
+var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $elm$json$Json$Decode$map = _Json_map1;
 var $elm$json$Json$Decode$map2 = _Json_map2;
 var $elm$json$Json$Decode$succeed = _Json_succeed;
@@ -12542,6 +12539,10 @@ var $elm$browser$Debugger$History$add = F3(
 			return A3($elm$browser$Debugger$History$History, snapshots, newRecent, numMessages + 1);
 		}
 	});
+var $elm$core$Basics$always = F2(
+	function (a, _v0) {
+		return a;
+	});
 var $elm$browser$Debugger$Overlay$BadImport = function (a) {
 	return {$: 'BadImport', a: a};
 };
@@ -14372,12 +14373,1297 @@ var $elm$core$Basics$never = function (_v0) {
 	}
 };
 var $elm$browser$Browser$application = _Browser_application;
-var $author$project$Main$AddBehaviorRoute = {$: 'AddBehaviorRoute'};
-var $author$project$Main$EditBehaviorRoute = function (a) {
-	return {$: 'EditBehaviorRoute', a: a};
+var $author$project$Main$DbLoaded = function (a) {
+	return {$: 'DbLoaded', a: a};
 };
-var $author$project$Main$HomeRoute = {$: 'HomeRoute'};
-var $author$project$Main$SettingsRoute = {$: 'SettingsRoute'};
+var $author$project$Main$Initializing = function (a) {
+	return {$: 'Initializing', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Error = function (a) {
+	return {$: 'Error', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Success = function (a) {
+	return {$: 'Success', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$UnexpectedError = function (a) {
+	return {$: 'UnexpectedError', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$get = function (_v0) {
+	var id = _v0.a;
+	return $elm$core$String$fromInt(id);
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$currentAttemptId = function (_v0) {
+	var pool_ = _v0.a;
+	var _v1 = pool_.poolId;
+	if (_v1.$ === 'Just') {
+		var id = _v1.a;
+		return $elm$core$String$fromInt(id) + (':' + $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$get(pool_.attemptIds));
+	} else {
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$get(pool_.attemptIds);
+	}
+};
+var $elm$core$Set$Set_elm_builtin = function (a) {
+	return {$: 'Set_elm_builtin', a: a};
+};
+var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
+var $elm$json$Json$Encode$array = F2(
+	function (func, entries) {
+		return _Json_wrap(
+			A3(
+				$elm$core$Array$foldl,
+				_Json_addEntry(func),
+				_Json_emptyArray(_Utils_Tuple0),
+				entries));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$encodeDefinitions = function (attemptId) {
+	return $elm$json$Json$Encode$array(
+		function (def) {
+			return $elm$json$Json$Encode$object(
+				_List_fromArray(
+					[
+						_Utils_Tuple2(
+						'attemptId',
+						$elm$json$Json$Encode$string(attemptId)),
+						_Utils_Tuple2(
+						'taskId',
+						$elm$json$Json$Encode$string(def.taskId)),
+						_Utils_Tuple2(
+						'function',
+						$elm$json$Json$Encode$string(def._function)),
+						_Utils_Tuple2('args', def.args)
+					]));
+		});
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$Sequence = function (a) {
+	return {$: 'Sequence', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$init = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$Sequence(0);
+var $elm$core$Set$insert = F2(
+	function (key, _v0) {
+		var dict = _v0.a;
+		return $elm$core$Set$Set_elm_builtin(
+			A3($elm$core$Dict$insert, key, _Utils_Tuple0, dict));
+	});
+var $elm$core$Set$fromList = function (list) {
+	return A3($elm$core$List$foldl, $elm$core$Set$insert, $elm$core$Set$empty, list);
+};
+var $elm$core$Elm$JsArray$map = _JsArray_map;
+var $elm$core$Array$map = F2(
+	function (func, _v0) {
+		var len = _v0.a;
+		var startShift = _v0.b;
+		var tree = _v0.c;
+		var tail = _v0.d;
+		var helper = function (node) {
+			if (node.$ === 'SubTree') {
+				var subTree = node.a;
+				return $elm$core$Array$SubTree(
+					A2($elm$core$Elm$JsArray$map, helper, subTree));
+			} else {
+				var values = node.a;
+				return $elm$core$Array$Leaf(
+					A2($elm$core$Elm$JsArray$map, func, values));
+			}
+		};
+		return A4(
+			$elm$core$Array$Array_elm_builtin,
+			len,
+			startShift,
+			A2($elm$core$Elm$JsArray$map, helper, tree),
+			A2($elm$core$Elm$JsArray$map, func, tail));
+	});
+var $elm$core$Dict$union = F2(
+	function (t1, t2) {
+		return A3($elm$core$Dict$foldl, $elm$core$Dict$insert, t2, t1);
+	});
+var $elm$core$Set$union = F2(
+	function (_v0, _v1) {
+		var dict1 = _v0.a;
+		var dict2 = _v1.a;
+		return $elm$core$Set$Set_elm_builtin(
+			A2($elm$core$Dict$union, dict1, dict2));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$recordSent = F2(
+	function (defs, inFlight) {
+		var sentIds = $elm$core$Set$fromList(
+			$elm$core$Array$toList(
+				A2(
+					$elm$core$Array$map,
+					function ($) {
+						return $.taskId;
+					},
+					defs)));
+		return A2($elm$core$Set$union, inFlight, sentIds);
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$sendResult = F2(
+	function (onComplete, res) {
+		return A2(
+			$elm$core$Task$perform,
+			onComplete,
+			$elm$core$Task$succeed(res));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Pool = function (a) {
+	return {$: 'Pool', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$mapPool = F2(
+	function (f, _v0) {
+		var p = _v0.a;
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Pool(
+			f(p));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$next = function (_v0) {
+	var id = _v0.a;
+	return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$Sequence(id + 1);
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$nextAttemptId = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$mapPool(
+	function (pool_) {
+		return _Utils_update(
+			pool_,
+			{
+				attemptIds: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$next(pool_.attemptIds)
+			});
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$startAttempt = F2(
+	function (id, progress) {
+		return A2(
+			$elm$core$Basics$composeR,
+			$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$mapPool(
+				function (pool_) {
+					return _Utils_update(
+						pool_,
+						{
+							attempts: A3($elm$core$Dict$insert, id, progress, pool_.attempts)
+						});
+				}),
+			$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$nextAttemptId);
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$stepTask = F2(
+	function (res, _v0) {
+		var ids = _v0.a;
+		var run = _v0.b.a;
+		return A2(run, res, ids);
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$attempt = F2(
+	function (attempt_, task) {
+		var id = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$currentAttemptId(attempt_.pool);
+		var _v0 = A2(
+			$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$stepTask,
+			$elm$core$Dict$empty,
+			_Utils_Tuple2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$init, task));
+		if (_v0.b.$ === 'Done') {
+			var res = _v0.b.a;
+			return _Utils_Tuple3(
+				id,
+				attempt_.pool,
+				A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$sendResult, attempt_.onComplete, res));
+		} else {
+			var _v1 = _v0.b;
+			var defs = _v1.a;
+			var progress = {
+				inFlight: A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$recordSent, defs, $elm$core$Set$empty),
+				onComplete: attempt_.onComplete,
+				task: _Utils_Tuple2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$init, task)
+			};
+			return _Utils_Tuple3(
+				id,
+				A3($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$startAttempt, id, progress, attempt_.pool),
+				attempt_.send(
+					A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$encodeDefinitions, id, defs)));
+		}
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Done = function (a) {
+	return {$: 'Done', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Pending = F2(
+	function (a, b) {
+		return {$: 'Pending', a: a, b: b};
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Task = function (a) {
+	return {$: 'Task', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Error = function (a) {
+	return {$: 'Error', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Success = function (a) {
+	return {$: 'Success', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError = function (a) {
+	return {$: 'UnexpectedError', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$mapResponse = F2(
+	function (f, res) {
+		switch (res.$) {
+			case 'Success':
+				var a = res.a;
+				return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Success(
+					f(a));
+			case 'Error':
+				var e = res.a;
+				return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Error(e);
+			default:
+				var e = res.a;
+				return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError(e);
+		}
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$map = F2(
+	function (f, _v0) {
+		var run = _v0.a;
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Task(
+			F2(
+				function (result, ids) {
+					var _v1 = A2(run, result, ids);
+					var ids_ = _v1.a;
+					var task = _v1.b;
+					return _Utils_Tuple2(
+						ids_,
+						function () {
+							if (task.$ === 'Pending') {
+								var defs = task.a;
+								var next = task.b;
+								return A2(
+									$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Pending,
+									defs,
+									A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$map, f, next));
+							} else {
+								var a = task.a;
+								return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Done(
+									A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$mapResponse, f, a));
+							}
+						}());
+				}));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$map = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$map;
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$onError = F2(
+	function (f, _v0) {
+		var run = _v0.a;
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Task(
+			F2(
+				function (res, ids) {
+					var _v1 = A2(run, res, ids);
+					var ids_ = _v1.a;
+					var task = _v1.b;
+					if (task.$ === 'Done') {
+						var a = task.a;
+						switch (a.$) {
+							case 'Success':
+								var a_ = a.a;
+								return _Utils_Tuple2(
+									ids_,
+									$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Done(
+										$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Success(a_)));
+							case 'Error':
+								var e = a.a;
+								return A2(
+									$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$stepTask,
+									res,
+									_Utils_Tuple2(
+										ids_,
+										f(e)));
+							default:
+								var e = a.a;
+								return _Utils_Tuple2(
+									ids_,
+									$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Done(
+										$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError(e)));
+						}
+					} else {
+						var defs = task.a;
+						var next = task.b;
+						return _Utils_Tuple2(
+							ids_,
+							A2(
+								$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Pending,
+								defs,
+								A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$onError, f, next)));
+					}
+				}));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$onError = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$onError;
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$wrap = function (res) {
+	return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Task(
+		F2(
+			function (_v0, ids) {
+				return _Utils_Tuple2(
+					ids,
+					$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Done(res));
+			}));
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$succeed = function (a) {
+	return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$wrap(
+		$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Success(a));
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$succeed = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$succeed;
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$ErrorsDecoderFailure = function (a) {
+	return {$: 'ErrorsDecoderFailure', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$InternalError = function (a) {
+	return {$: 'InternalError', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$MissingFunction = function (a) {
+	return {$: 'MissingFunction', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$ResponseDecoderFailure = function (a) {
+	return {$: 'ResponseDecoderFailure', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$UnhandledJsException = function (a) {
+	return {$: 'UnhandledJsException', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$toUnexpectedError = function (err) {
+	switch (err.$) {
+		case 'UnhandledJsException':
+			var e = err.a;
+			return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$UnhandledJsException(e);
+		case 'ResponseDecoderFailure':
+			var e = err.a;
+			return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$ResponseDecoderFailure(e);
+		case 'ErrorsDecoderFailure':
+			var e = err.a;
+			return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$ErrorsDecoderFailure(e);
+		case 'MissingFunction':
+			var e = err.a;
+			return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$MissingFunction(e);
+		default:
+			var e = err.a;
+			return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$InternalError(e);
+	}
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$attemptWithId = F2(
+	function (config, task) {
+		var onComplete = function (res) {
+			switch (res.$) {
+				case 'Success':
+					var s = res.a;
+					return s;
+				case 'Error':
+					var e = res.a;
+					return e;
+				default:
+					var e = res.a;
+					return config.onComplete(
+						$andrewMacmurray$elm_concurrent_task$ConcurrentTask$UnexpectedError(
+							$andrewMacmurray$elm_concurrent_task$ConcurrentTask$toUnexpectedError(e)));
+			}
+		};
+		var mappedTask = A2(
+			$andrewMacmurray$elm_concurrent_task$ConcurrentTask$onError,
+			function (err) {
+				return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$succeed(
+					config.onComplete(
+						$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Error(err)));
+			},
+			A2(
+				$andrewMacmurray$elm_concurrent_task$ConcurrentTask$map,
+				function (res) {
+					return config.onComplete(
+						$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Success(res));
+				},
+				task));
+		return A2(
+			$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$attempt,
+			{onComplete: onComplete, pool: config.pool, send: config.send},
+			mappedTask);
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$attempt = F2(
+	function (options, task) {
+		var _v0 = A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$attemptWithId, options, task);
+		var p = _v0.b;
+		var cmd = _v0.c;
+		return _Utils_Tuple2(p, cmd);
+	});
+var $elm$random$Random$Seed = F2(
+	function (a, b) {
+		return {$: 'Seed', a: a, b: b};
+	});
+var $elm$random$Random$next = function (_v0) {
+	var state0 = _v0.a;
+	var incr = _v0.b;
+	return A2($elm$random$Random$Seed, ((state0 * 1664525) + incr) >>> 0, incr);
+};
+var $elm$random$Random$initialSeed = function (x) {
+	var _v0 = $elm$random$Random$next(
+		A2($elm$random$Random$Seed, 0, 1013904223));
+	var state1 = _v0.a;
+	var incr = _v0.b;
+	var state2 = (state1 + x) >>> 0;
+	return $elm$random$Random$next(
+		A2($elm$random$Random$Seed, state2, incr));
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$andThen = F2(
+	function (f, _v0) {
+		var run = _v0.a;
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Task(
+			F2(
+				function (res, ids) {
+					var _v1 = A2(run, res, ids);
+					var ids_ = _v1.a;
+					var task = _v1.b;
+					if (task.$ === 'Done') {
+						var a = task.a;
+						switch (a.$) {
+							case 'Success':
+								var a_ = a.a;
+								return A2(
+									$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$stepTask,
+									res,
+									_Utils_Tuple2(
+										ids_,
+										f(a_)));
+							case 'Error':
+								var e = a.a;
+								return _Utils_Tuple2(
+									ids_,
+									$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Done(
+										$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Error(e)));
+							default:
+								var e = a.a;
+								return _Utils_Tuple2(
+									ids,
+									$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Done(
+										$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError(e)));
+						}
+					} else {
+						var defs = task.a;
+						var next = task.b;
+						return _Utils_Tuple2(
+							ids_,
+							A2(
+								$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Pending,
+								defs,
+								A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$andThen, f, next)));
+					}
+				}));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$andThen = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$andThen;
+var $author$project$IndexedDb$Store = function (a) {
+	return {$: 'Store', a: a};
+};
+var $author$project$IndexedDb$defineStore = function (name) {
+	return $author$project$IndexedDb$Store(
+		{autoIncrement: false, keyPath: $elm$core$Maybe$Nothing, name: name});
+};
+var $author$project$IndexedDb$withKeyPath = F2(
+	function (path, _v0) {
+		var config = _v0.a;
+		return $author$project$IndexedDb$Store(
+			_Utils_update(
+				config,
+				{
+					keyPath: $elm$core$Maybe$Just(path)
+				}));
+	});
+var $author$project$Main$behaviorStore = A2(
+	$author$project$IndexedDb$withKeyPath,
+	'id',
+	$author$project$IndexedDb$defineStore('safetyBehaviors'));
+var $author$project$IndexedDb$Schema = function (a) {
+	return {$: 'Schema', a: a};
+};
+var $author$project$IndexedDb$schema = F2(
+	function (name, version) {
+		return $author$project$IndexedDb$Schema(
+			{name: name, stores: _List_Nil, version: version});
+	});
+var $author$project$IndexedDb$withStore = F2(
+	function (_v0, _v1) {
+		var config = _v0.a;
+		var s = _v1.a;
+		return $author$project$IndexedDb$Schema(
+			_Utils_update(
+				s,
+				{
+					stores: A2($elm$core$List$cons, config, s.stores)
+				}));
+	});
+var $author$project$Main$appSchema = A2(
+	$author$project$IndexedDb$withStore,
+	$author$project$Main$behaviorStore,
+	A2($author$project$IndexedDb$schema, 'safetyBehaviorsTracking', 1));
+var $author$project$Main$Behavior = F4(
+	function (id, name, submits, resists) {
+		return {id: id, name: name, resists: resists, submits: submits};
+	});
+var $elm$json$Json$Decode$fail = _Json_fail;
+var $TSFoster$elm_uuid$UUID$WrongFormat = {$: 'WrongFormat'};
+var $TSFoster$elm_uuid$UUID$WrongLength = {$: 'WrongLength'};
+var $elm$core$String$endsWith = _String_endsWith;
+var $TSFoster$elm_uuid$UUID$IsNil = {$: 'IsNil'};
+var $TSFoster$elm_uuid$UUID$NoVersion = {$: 'NoVersion'};
+var $TSFoster$elm_uuid$UUID$UUID = F4(
+	function (a, b, c, d) {
+		return {$: 'UUID', a: a, b: b, c: c, d: d};
+	});
+var $TSFoster$elm_uuid$UUID$UnsupportedVariant = {$: 'UnsupportedVariant'};
+var $TSFoster$elm_uuid$UUID$isVariant1 = function (_v0) {
+	var c = _v0.c;
+	return (c >>> 30) === 2;
+};
+var $TSFoster$elm_uuid$UUID$version = function (_v0) {
+	var b = _v0.b;
+	return 15 & (b >>> 12);
+};
+var $TSFoster$elm_uuid$UUID$fromInt32s = F4(
+	function (a, b, c, d) {
+		var wouldBeUUID = A4($TSFoster$elm_uuid$UUID$UUID, a, b, c, d);
+		return ((!a) && ((!b) && ((!c) && (!d)))) ? $elm$core$Result$Err($TSFoster$elm_uuid$UUID$IsNil) : (($TSFoster$elm_uuid$UUID$version(wouldBeUUID) > 5) ? $elm$core$Result$Err($TSFoster$elm_uuid$UUID$NoVersion) : ((!$TSFoster$elm_uuid$UUID$isVariant1(wouldBeUUID)) ? $elm$core$Result$Err($TSFoster$elm_uuid$UUID$UnsupportedVariant) : $elm$core$Result$Ok(wouldBeUUID)));
+	});
+var $TSFoster$elm_uuid$UUID$forceUnsigned = $elm$core$Bitwise$shiftRightZfBy(0);
+var $elm$core$Bitwise$or = _Bitwise_or;
+var $TSFoster$elm_uuid$UUID$nibbleValuesToU32 = F8(
+	function (a, b, c, d, e, f, g, h) {
+		return $TSFoster$elm_uuid$UUID$forceUnsigned((a << 28) | ((b << 24) | ((c << 20) | ((d << 16) | ((e << 12) | ((f << 8) | ((g << 4) | h)))))));
+	});
+var $elm$core$String$replace = F3(
+	function (before, after, string) {
+		return A2(
+			$elm$core$String$join,
+			after,
+			A2($elm$core$String$split, before, string));
+	});
+var $elm$core$String$foldr = _String_foldr;
+var $elm$core$String$toList = function (string) {
+	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
+};
+var $elm$core$String$toLower = _String_toLower;
+var $TSFoster$elm_uuid$UUID$toNibbleValue = function (_char) {
+	switch (_char.valueOf()) {
+		case '0':
+			return $elm$core$Maybe$Just(0);
+		case '1':
+			return $elm$core$Maybe$Just(1);
+		case '2':
+			return $elm$core$Maybe$Just(2);
+		case '3':
+			return $elm$core$Maybe$Just(3);
+		case '4':
+			return $elm$core$Maybe$Just(4);
+		case '5':
+			return $elm$core$Maybe$Just(5);
+		case '6':
+			return $elm$core$Maybe$Just(6);
+		case '7':
+			return $elm$core$Maybe$Just(7);
+		case '8':
+			return $elm$core$Maybe$Just(8);
+		case '9':
+			return $elm$core$Maybe$Just(9);
+		case 'a':
+			return $elm$core$Maybe$Just(10);
+		case 'b':
+			return $elm$core$Maybe$Just(11);
+		case 'c':
+			return $elm$core$Maybe$Just(12);
+		case 'd':
+			return $elm$core$Maybe$Just(13);
+		case 'e':
+			return $elm$core$Maybe$Just(14);
+		case 'f':
+			return $elm$core$Maybe$Just(15);
+		default:
+			return $elm$core$Maybe$Nothing;
+	}
+};
+var $TSFoster$elm_uuid$UUID$fromString = function (string) {
+	var normalized = function (str) {
+		return A2($elm$core$String$startsWith, 'urn:uuid:', str) ? A2($elm$core$String$dropLeft, 9, str) : ((A2($elm$core$String$startsWith, '{', str) && A2($elm$core$String$endsWith, '}', str)) ? A3($elm$core$String$slice, 1, -1, str) : str);
+	}(
+		$elm$core$String$toLower(
+			A3(
+				$elm$core$String$replace,
+				'-',
+				'',
+				A3(
+					$elm$core$String$replace,
+					' ',
+					'',
+					A3(
+						$elm$core$String$replace,
+						'\t',
+						'',
+						A3($elm$core$String$replace, '\n', '', string))))));
+	if ($elm$core$String$length(normalized) !== 32) {
+		return $elm$core$Result$Err($TSFoster$elm_uuid$UUID$WrongLength);
+	} else {
+		var _v0 = A2(
+			$elm$core$List$filterMap,
+			$TSFoster$elm_uuid$UUID$toNibbleValue,
+			$elm$core$String$toList(normalized));
+		if ((((((((((((((((((((((((((((((((_v0.b && _v0.b.b) && _v0.b.b.b) && _v0.b.b.b.b) && _v0.b.b.b.b.b) && _v0.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && _v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b) && (!_v0.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b.b)) {
+			var a1 = _v0.a;
+			var _v1 = _v0.b;
+			var a2 = _v1.a;
+			var _v2 = _v1.b;
+			var a3 = _v2.a;
+			var _v3 = _v2.b;
+			var a4 = _v3.a;
+			var _v4 = _v3.b;
+			var a5 = _v4.a;
+			var _v5 = _v4.b;
+			var a6 = _v5.a;
+			var _v6 = _v5.b;
+			var a7 = _v6.a;
+			var _v7 = _v6.b;
+			var a8 = _v7.a;
+			var _v8 = _v7.b;
+			var b1 = _v8.a;
+			var _v9 = _v8.b;
+			var b2 = _v9.a;
+			var _v10 = _v9.b;
+			var b3 = _v10.a;
+			var _v11 = _v10.b;
+			var b4 = _v11.a;
+			var _v12 = _v11.b;
+			var b5 = _v12.a;
+			var _v13 = _v12.b;
+			var b6 = _v13.a;
+			var _v14 = _v13.b;
+			var b7 = _v14.a;
+			var _v15 = _v14.b;
+			var b8 = _v15.a;
+			var _v16 = _v15.b;
+			var c1 = _v16.a;
+			var _v17 = _v16.b;
+			var c2 = _v17.a;
+			var _v18 = _v17.b;
+			var c3 = _v18.a;
+			var _v19 = _v18.b;
+			var c4 = _v19.a;
+			var _v20 = _v19.b;
+			var c5 = _v20.a;
+			var _v21 = _v20.b;
+			var c6 = _v21.a;
+			var _v22 = _v21.b;
+			var c7 = _v22.a;
+			var _v23 = _v22.b;
+			var c8 = _v23.a;
+			var _v24 = _v23.b;
+			var d1 = _v24.a;
+			var _v25 = _v24.b;
+			var d2 = _v25.a;
+			var _v26 = _v25.b;
+			var d3 = _v26.a;
+			var _v27 = _v26.b;
+			var d4 = _v27.a;
+			var _v28 = _v27.b;
+			var d5 = _v28.a;
+			var _v29 = _v28.b;
+			var d6 = _v29.a;
+			var _v30 = _v29.b;
+			var d7 = _v30.a;
+			var _v31 = _v30.b;
+			var d8 = _v31.a;
+			return A4(
+				$TSFoster$elm_uuid$UUID$fromInt32s,
+				A8($TSFoster$elm_uuid$UUID$nibbleValuesToU32, a1, a2, a3, a4, a5, a6, a7, a8),
+				A8($TSFoster$elm_uuid$UUID$nibbleValuesToU32, b1, b2, b3, b4, b5, b6, b7, b8),
+				A8($TSFoster$elm_uuid$UUID$nibbleValuesToU32, c1, c2, c3, c4, c5, c6, c7, c8),
+				A8($TSFoster$elm_uuid$UUID$nibbleValuesToU32, d1, d2, d3, d4, d5, d6, d7, d8));
+		} else {
+			return $elm$core$Result$Err($TSFoster$elm_uuid$UUID$WrongFormat);
+		}
+	}
+};
+var $TSFoster$elm_uuid$UUID$stringToJsonDecoder = function (string) {
+	var _v0 = $TSFoster$elm_uuid$UUID$fromString(string);
+	if (_v0.$ === 'Ok') {
+		var uuid = _v0.a;
+		return $elm$json$Json$Decode$succeed(uuid);
+	} else {
+		switch (_v0.a.$) {
+			case 'WrongFormat':
+				var _v1 = _v0.a;
+				return $elm$json$Json$Decode$fail('UUID is in wrong format');
+			case 'WrongLength':
+				var _v2 = _v0.a;
+				return $elm$json$Json$Decode$fail('UUID is wrong length');
+			case 'UnsupportedVariant':
+				var _v3 = _v0.a;
+				return $elm$json$Json$Decode$fail('UUID is an unsupported variant');
+			case 'IsNil':
+				var _v4 = _v0.a;
+				return $elm$json$Json$Decode$fail('UUID is nil');
+			default:
+				var _v5 = _v0.a;
+				return $elm$json$Json$Decode$fail('UUID is not properly versioned');
+		}
+	}
+};
+var $TSFoster$elm_uuid$UUID$jsonDecoder = A2($elm$json$Json$Decode$andThen, $TSFoster$elm_uuid$UUID$stringToJsonDecoder, $elm$json$Json$Decode$string);
+var $elm$json$Json$Decode$map4 = _Json_map4;
+var $elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
+var $author$project$Main$decodeBehavior = A5(
+	$elm$json$Json$Decode$map4,
+	$author$project$Main$Behavior,
+	A2($elm$json$Json$Decode$field, 'id', $TSFoster$elm_uuid$UUID$jsonDecoder),
+	A2($elm$json$Json$Decode$field, 'name', $elm$json$Json$Decode$string),
+	A2(
+		$elm$json$Json$Decode$field,
+		'submits',
+		$elm$json$Json$Decode$list(
+			A2($elm$json$Json$Decode$map, $elm$time$Time$millisToPosix, $elm$json$Json$Decode$int))),
+	A2(
+		$elm$json$Json$Decode$field,
+		'resists',
+		$elm$json$Json$Decode$list(
+			A2($elm$json$Json$Decode$map, $elm$time$Time$millisToPosix, $elm$json$Json$Decode$int))));
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ErrorsDecoderFailure = function (a) {
+	return {$: 'ErrorsDecoderFailure', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$InternalError = function (a) {
+	return {$: 'InternalError', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$MissingFunction = function (a) {
+	return {$: 'MissingFunction', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ResponseDecoderFailure = function (a) {
+	return {$: 'ResponseDecoderFailure', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnhandledJsException = function (a) {
+	return {$: 'UnhandledJsException', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$decodeResponse = F2(
+	function (def, val) {
+		var decodeRunnerSuccess = function () {
+			var _v12 = def.expect;
+			var expect = _v12.a;
+			return A2($elm$json$Json$Decode$field, 'value', expect);
+		}();
+		var decodeRunnerError = A2(
+			$elm$json$Json$Decode$field,
+			'error',
+			A2(
+				$elm$json$Json$Decode$andThen,
+				function (reason) {
+					switch (reason) {
+						case 'js_exception':
+							return A3(
+								$elm$json$Json$Decode$map2,
+								F2(
+									function (msg, raw) {
+										return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnhandledJsException(
+											{_function: def._function, message: msg, raw: raw});
+									}),
+								A2($elm$json$Json$Decode$field, 'message', $elm$json$Json$Decode$string),
+								A2($elm$json$Json$Decode$field, 'raw', $elm$json$Json$Decode$value));
+						case 'missing_function':
+							return A2(
+								$elm$json$Json$Decode$field,
+								'message',
+								A2($elm$json$Json$Decode$map, $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$MissingFunction, $elm$json$Json$Decode$string));
+						default:
+							return $elm$json$Json$Decode$succeed(
+								$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$InternalError('Unknown runner error reason: ' + reason));
+					}
+				},
+				A2($elm$json$Json$Decode$field, 'reason', $elm$json$Json$Decode$string)));
+		var decodeExpectThrows = function (_catch) {
+			var _v8 = A2($elm$json$Json$Decode$decodeValue, decodeRunnerError, val);
+			if (_v8.$ === 'Ok') {
+				var err = _v8.a;
+				if (err.$ === 'UnhandledJsException') {
+					var e = err.a;
+					return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Error(
+						_catch(e.message));
+				} else {
+					return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError(err);
+				}
+			} else {
+				var _v10 = A2($elm$json$Json$Decode$decodeValue, decodeRunnerSuccess, val);
+				if (_v10.$ === 'Ok') {
+					var a = _v10.a;
+					return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Success(a);
+				} else {
+					var e = _v10.a;
+					return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError(
+						$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ResponseDecoderFailure(
+							{error: e, _function: def._function}));
+				}
+			}
+		};
+		var decodeExpectNoErrors = function (_v7) {
+			var _v5 = A2($elm$json$Json$Decode$decodeValue, decodeRunnerError, val);
+			if (_v5.$ === 'Ok') {
+				var err = _v5.a;
+				return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError(err);
+			} else {
+				var _v6 = A2($elm$json$Json$Decode$decodeValue, decodeRunnerSuccess, val);
+				if (_v6.$ === 'Ok') {
+					var a = _v6.a;
+					return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Success(a);
+				} else {
+					var e = _v6.a;
+					return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError(
+						$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ResponseDecoderFailure(
+							{error: e, _function: def._function}));
+				}
+			}
+		};
+		var decodeExpectErrors = function (expect) {
+			var decodeExpectErrorField = function (decoder) {
+				return A2(
+					$elm$json$Json$Decode$field,
+					'value',
+					A2($elm$json$Json$Decode$field, 'error', decoder));
+			};
+			var _v1 = A2($elm$json$Json$Decode$decodeValue, decodeRunnerError, val);
+			if (_v1.$ === 'Ok') {
+				var err = _v1.a;
+				return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError(err);
+			} else {
+				var _v2 = A2(
+					$elm$json$Json$Decode$decodeValue,
+					decodeExpectErrorField($elm$json$Json$Decode$value),
+					val);
+				if (_v2.$ === 'Ok') {
+					var _v3 = A2(
+						$elm$json$Json$Decode$decodeValue,
+						decodeExpectErrorField(expect),
+						val);
+					if (_v3.$ === 'Ok') {
+						var err_ = _v3.a;
+						return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Error(err_);
+					} else {
+						var e_ = _v3.a;
+						return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError(
+							$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ErrorsDecoderFailure(
+								{error: e_, _function: def._function}));
+					}
+				} else {
+					var _v4 = A2($elm$json$Json$Decode$decodeValue, decodeRunnerSuccess, val);
+					if (_v4.$ === 'Ok') {
+						var a = _v4.a;
+						return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Success(a);
+					} else {
+						var e_ = _v4.a;
+						return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$UnexpectedError(
+							$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ResponseDecoderFailure(
+								{error: e_, _function: def._function}));
+					}
+				}
+			}
+		};
+		var _v0 = def.errors;
+		switch (_v0.$) {
+			case 'ExpectThrows':
+				var _catch = _v0.a;
+				return decodeExpectThrows(_catch);
+			case 'ExpectErrors':
+				var expect = _v0.a;
+				return decodeExpectErrors(expect);
+			default:
+				return decodeExpectNoErrors(_Utils_Tuple0);
+		}
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$runWith = F2(
+	function (s, _v0) {
+		var run = _v0.a;
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Task(
+			F2(
+				function (res, _v1) {
+					return A2(run, res, s);
+				}));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$define = function (def) {
+	return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Task(
+		F2(
+			function (results, ids) {
+				var taskId = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$get(ids);
+				return _Utils_Tuple2(
+					$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$next(ids),
+					A2(
+						$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Pending,
+						$elm$core$Array$fromList(
+							_List_fromArray(
+								[
+									{args: def.args, _function: def._function, taskId: taskId}
+								])),
+						function () {
+							var _v0 = A2($elm$core$Dict$get, taskId, results);
+							if (_v0.$ === 'Just') {
+								var result = _v0.a;
+								return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$wrap(
+									A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$decodeResponse, def, result));
+							} else {
+								return A2(
+									$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$runWith,
+									ids,
+									$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$define(def));
+							}
+						}()));
+			}));
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$define = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$define;
+var $author$project$IndexedDb$AlreadyExists = {$: 'AlreadyExists'};
+var $author$project$IndexedDb$DatabaseError = function (a) {
+	return {$: 'DatabaseError', a: a};
+};
+var $author$project$IndexedDb$QuotaExceeded = {$: 'QuotaExceeded'};
+var $author$project$IndexedDb$TransactionError = function (a) {
+	return {$: 'TransactionError', a: a};
+};
+var $author$project$IndexedDb$splitOnce = F2(
+	function (sep, str) {
+		var _v0 = A2($elm$core$String$indexes, sep, str);
+		if (_v0.b) {
+			var i = _v0.a;
+			return $elm$core$Maybe$Just(
+				_Utils_Tuple2(
+					A2($elm$core$String$left, i, str),
+					A2(
+						$elm$core$String$dropLeft,
+						i + $elm$core$String$length(sep),
+						str)));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$IndexedDb$errorDecoder = A2(
+	$elm$json$Json$Decode$andThen,
+	function (err) {
+		if (err === 'ALREADY_EXISTS') {
+			return $elm$json$Json$Decode$succeed($author$project$IndexedDb$AlreadyExists);
+		} else {
+			if (err === 'QUOTA_EXCEEDED') {
+				return $elm$json$Json$Decode$succeed($author$project$IndexedDb$QuotaExceeded);
+			} else {
+				var _v0 = A2($author$project$IndexedDb$splitOnce, ':', err);
+				_v0$2:
+				while (true) {
+					if (_v0.$ === 'Just') {
+						switch (_v0.a.a) {
+							case 'TRANSACTION_ERROR':
+								var _v1 = _v0.a;
+								var msg = _v1.b;
+								return $elm$json$Json$Decode$succeed(
+									$author$project$IndexedDb$TransactionError(msg));
+							case 'DATABASE_ERROR':
+								var _v2 = _v0.a;
+								var msg = _v2.b;
+								return $elm$json$Json$Decode$succeed(
+									$author$project$IndexedDb$DatabaseError(msg));
+							default:
+								break _v0$2;
+						}
+					} else {
+						break _v0$2;
+					}
+				}
+				return $elm$json$Json$Decode$fail('Unknown IndexedDB error: ' + err);
+			}
+		}
+	},
+	$elm$json$Json$Decode$string);
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ExpectErrors = function (a) {
+	return {$: 'ExpectErrors', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectErrors = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ExpectErrors;
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ExpectJson = function (a) {
+	return {$: 'ExpectJson', a: a};
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectJson = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ExpectJson;
+var $author$project$IndexedDb$getDbName = function (_v0) {
+	var name = _v0.a;
+	return name;
+};
+var $author$project$IndexedDb$getStoreName = function (_v0) {
+	var config = _v0.a;
+	return config.name;
+};
+var $author$project$IndexedDb$getAll = F3(
+	function (db, store, decoder) {
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$define(
+			{
+				args: $elm$json$Json$Encode$object(
+					_List_fromArray(
+						[
+							_Utils_Tuple2(
+							'db',
+							$elm$json$Json$Encode$string(
+								$author$project$IndexedDb$getDbName(db))),
+							_Utils_Tuple2(
+							'store',
+							$elm$json$Json$Encode$string(
+								$author$project$IndexedDb$getStoreName(store)))
+						])),
+				errors: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectErrors($author$project$IndexedDb$errorDecoder),
+				expect: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectJson(
+					$elm$json$Json$Decode$list(decoder)),
+				_function: 'indexeddb:getAll'
+			});
+	});
+var $elm$core$Tuple$pair = F2(
+	function (a, b) {
+		return _Utils_Tuple2(a, b);
+	});
+var $author$project$Main$loadBehaviorsData = function (db) {
+	return A2(
+		$andrewMacmurray$elm_concurrent_task$ConcurrentTask$map,
+		$elm$core$Tuple$pair(db),
+		A3($author$project$IndexedDb$getAll, db, $author$project$Main$behaviorStore, $author$project$Main$decodeBehavior));
+};
+var $author$project$IndexedDb$Db = function (a) {
+	return {$: 'Db', a: a};
+};
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$json$Json$Encode$null = _Json_encodeNull;
+var $author$project$IndexedDb$encodeStoreConfig = function (config) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'name',
+				$elm$json$Json$Encode$string(config.name)),
+				_Utils_Tuple2(
+				'keyPath',
+				function () {
+					var _v0 = config.keyPath;
+					if (_v0.$ === 'Just') {
+						var p = _v0.a;
+						return $elm$json$Json$Encode$string(p);
+					} else {
+						return $elm$json$Json$Encode$null;
+					}
+				}()),
+				_Utils_Tuple2(
+				'autoIncrement',
+				$elm$json$Json$Encode$bool(config.autoIncrement))
+			]));
+};
+var $elm$json$Json$Encode$int = _Json_wrap;
+var $author$project$IndexedDb$encodeSchema = F3(
+	function (name, version, stores) {
+		return $elm$json$Json$Encode$object(
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'name',
+					$elm$json$Json$Encode$string(name)),
+					_Utils_Tuple2(
+					'version',
+					$elm$json$Json$Encode$int(version)),
+					_Utils_Tuple2(
+					'stores',
+					A2($elm$json$Json$Encode$list, $author$project$IndexedDb$encodeStoreConfig, stores))
+				]));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectWhatever = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$ExpectJson(
+	$elm$json$Json$Decode$succeed(_Utils_Tuple0));
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$fail = function (x) {
+	return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$wrap(
+		$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Error(x));
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$fail = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$fail;
+var $elm$core$Dict$member = F2(
+	function (key, dict) {
+		var _v0 = A2($elm$core$Dict$get, key, dict);
+		if (_v0.$ === 'Just') {
+			return true;
+		} else {
+			return false;
+		}
+	});
+var $elm$core$Set$member = F2(
+	function (key, _v0) {
+		var dict = _v0.a;
+		return A2($elm$core$Dict$member, key, dict);
+	});
+var $author$project$IndexedDb$findDuplicates = function (names) {
+	return $elm$core$Set$toList(
+		A3(
+			$elm$core$List$foldl,
+			F2(
+				function (name, _v0) {
+					var seen = _v0.a;
+					var dupes = _v0.b;
+					return A2($elm$core$Set$member, name, seen) ? _Utils_Tuple2(
+						seen,
+						A2($elm$core$Set$insert, name, dupes)) : _Utils_Tuple2(
+						A2($elm$core$Set$insert, name, seen),
+						dupes);
+				}),
+			_Utils_Tuple2($elm$core$Set$empty, $elm$core$Set$empty),
+			names).b);
+};
+var $author$project$IndexedDb$open = function (_v0) {
+	var s = _v0.a;
+	var stores = $elm$core$List$reverse(s.stores);
+	var names = A2(
+		$elm$core$List$map,
+		function ($) {
+			return $.name;
+		},
+		stores);
+	var duplicates = $author$project$IndexedDb$findDuplicates(names);
+	return $elm$core$List$isEmpty(duplicates) ? A2(
+		$andrewMacmurray$elm_concurrent_task$ConcurrentTask$map,
+		function (_v1) {
+			return $author$project$IndexedDb$Db(s.name);
+		},
+		$andrewMacmurray$elm_concurrent_task$ConcurrentTask$define(
+			{
+				args: A3($author$project$IndexedDb$encodeSchema, s.name, s.version, stores),
+				errors: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectErrors($author$project$IndexedDb$errorDecoder),
+				expect: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectWhatever,
+				_function: 'indexeddb:open'
+			})) : $andrewMacmurray$elm_concurrent_task$ConcurrentTask$fail(
+		$author$project$IndexedDb$DatabaseError(
+			'Duplicate store names in schema: ' + A2($elm$core$String$join, ', ', duplicates)));
+};
+var $author$project$Main$loadBehaviors = A2(
+	$andrewMacmurray$elm_concurrent_task$ConcurrentTask$andThen,
+	$author$project$Main$loadBehaviorsData,
+	$author$project$IndexedDb$open($author$project$Main$appSchema));
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$pool = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Pool(
+	{attemptIds: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$init, attempts: $elm$core$Dict$empty, poolId: $elm$core$Maybe$Nothing});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$pool = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$pool;
+var $author$project$Main$sendToDb = _Platform_outgoingPort('sendToDb', $elm$core$Basics$identity);
+var $author$project$Main$init = F3(
+	function (flags, url, navKey) {
+		var _v0 = A2(
+			$andrewMacmurray$elm_concurrent_task$ConcurrentTask$attempt,
+			{onComplete: $author$project$Main$DbLoaded, pool: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$pool, send: $author$project$Main$sendToDb},
+			$author$project$Main$loadBehaviors);
+		var dbTasks = _v0.a;
+		var cmd = _v0.b;
+		return _Utils_Tuple2(
+			$author$project$Main$Initializing(
+				{
+					dbTasks: dbTasks,
+					navKey: navKey,
+					seeds: {
+						seed1: $elm$random$Random$initialSeed(flags.seed1),
+						seed2: $elm$random$Random$initialSeed(flags.seed2),
+						seed3: $elm$random$Random$initialSeed(flags.seed3),
+						seed4: $elm$random$Random$initialSeed(flags.seed4)
+					},
+					url: url
+				}),
+			cmd);
+	});
+var $author$project$Main$OnDbProgress = function (a) {
+	return {$: 'OnDbProgress', a: a};
+};
+var $elm$core$Platform$Sub$batch = _Platform_batch;
+var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$findAttempt = F2(
+	function (attemptId, _v0) {
+		var p = _v0.a;
+		return A2($elm$core$Dict$get, attemptId, p.attempts);
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$RawResult = F3(
+	function (attemptId, taskId, result) {
+		return {attemptId: attemptId, result: result, taskId: taskId};
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$decodeRawResult = A4(
+	$elm$json$Json$Decode$map3,
+	$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$RawResult,
+	A2($elm$json$Json$Decode$field, 'attemptId', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'taskId', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'result', $elm$json$Json$Decode$value));
+var $elm$core$Result$map = F2(
+	function (func, ra) {
+		if (ra.$ === 'Ok') {
+			var a = ra.a;
+			return $elm$core$Result$Ok(
+				func(a));
+		} else {
+			var e = ra.a;
+			return $elm$core$Result$Err(e);
+		}
+	});
+var $elm$core$Dict$singleton = F2(
+	function (key, value) {
+		return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
+	});
+var $elm$core$Result$withDefault = F2(
+	function (def, result) {
+		if (result.$ === 'Ok') {
+			var a = result.a;
+			return a;
+		} else {
+			return def;
+		}
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$toBatchResults = function () {
+	var toBatchResults_ = A2(
+		$elm$core$List$foldl,
+		F2(
+			function (result, batch_) {
+				return A3(
+					$elm$core$Dict$update,
+					result.attemptId,
+					function (attempt_) {
+						if (attempt_.$ === 'Nothing') {
+							return $elm$core$Maybe$Just(
+								A2($elm$core$Dict$singleton, result.taskId, result.result));
+						} else {
+							var attempt__ = attempt_.a;
+							return $elm$core$Maybe$Just(
+								A3($elm$core$Dict$insert, result.taskId, result.result, attempt__));
+						}
+					},
+					batch_);
+			}),
+		$elm$core$Dict$empty);
+	return A2(
+		$elm$core$Basics$composeR,
+		$elm$json$Json$Decode$decodeValue(
+			$elm$json$Json$Decode$list($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$decodeRawResult)),
+		A2(
+			$elm$core$Basics$composeR,
+			$elm$core$Result$map(toBatchResults_),
+			$elm$core$Result$withDefault($elm$core$Dict$empty)));
+}();
+var $elm$core$Array$filter = F2(
+	function (isGood, array) {
+		return $elm$core$Array$fromList(
+			A3(
+				$elm$core$Array$foldr,
+				F2(
+					function (x, xs) {
+						return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+					}),
+				_List_Nil,
+				array));
+	});
+var $elm$core$Dict$diff = F2(
+	function (t1, t2) {
+		return A3(
+			$elm$core$Dict$foldl,
+			F3(
+				function (k, v, t) {
+					return A2($elm$core$Dict$remove, k, t);
+				}),
+			t1,
+			t2);
+	});
+var $elm$core$Set$diff = F2(
+	function (_v0, _v1) {
+		var dict1 = _v0.a;
+		var dict2 = _v1.a;
+		return $elm$core$Set$Set_elm_builtin(
+			A2($elm$core$Dict$diff, dict1, dict2));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$removeCompleted = F2(
+	function (res, inFlight) {
+		return A2(
+			$elm$core$Set$diff,
+			inFlight,
+			$elm$core$Set$fromList(
+				$elm$core$Dict$keys(res)));
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$removeFromPool = function (attemptId) {
+	return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$mapPool(
+		function (pool_) {
+			return _Utils_update(
+				pool_,
+				{
+					attempts: A2($elm$core$Dict$remove, attemptId, pool_.attempts)
+				});
+		});
+};
 var $elm$core$Maybe$map = F2(
 	function (f, maybe) {
 		if (maybe.$ === 'Just') {
@@ -14388,148 +15674,154 @@ var $elm$core$Maybe$map = F2(
 			return $elm$core$Maybe$Nothing;
 		}
 	});
-var $elm$url$Url$percentDecode = _Url_percentDecode;
-var $lydell$elm_app_url$AppUrl$percentDecode = function (string) {
-	return A2(
-		$elm$core$Maybe$withDefault,
-		string,
-		$elm$url$Url$percentDecode(string));
-};
-var $lydell$elm_app_url$AppUrl$trimLeadingSlash = function (string) {
-	return A2($elm$core$String$startsWith, '/', string) ? A2($elm$core$String$dropLeft, 1, string) : string;
-};
-var $elm$core$String$dropRight = F2(
-	function (n, string) {
-		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$updateProgressFor = F2(
+	function (attemptId, progress_) {
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$mapPool(
+			function (pool_) {
+				return _Utils_update(
+					pool_,
+					{
+						attempts: A3(
+							$elm$core$Dict$update,
+							attemptId,
+							$elm$core$Maybe$map(
+								$elm$core$Basics$always(progress_)),
+							pool_.attempts)
+					});
+			});
 	});
-var $elm$core$String$endsWith = _String_endsWith;
-var $lydell$elm_app_url$AppUrl$trimTrailingSlash = function (string) {
-	return A2($elm$core$String$endsWith, '/', string) ? A2($elm$core$String$dropRight, 1, string) : string;
-};
-var $lydell$elm_app_url$AppUrl$parsePath = function (path) {
-	var trimmed = $lydell$elm_app_url$AppUrl$trimTrailingSlash(
-		$lydell$elm_app_url$AppUrl$trimLeadingSlash(path));
-	return $elm$core$String$isEmpty(trimmed) ? _List_Nil : A2(
-		$elm$core$List$map,
-		$lydell$elm_app_url$AppUrl$percentDecode,
-		A2($elm$core$String$split, '/', trimmed));
-};
-var $lydell$elm_app_url$AppUrl$insert = F2(
-	function (value, maybeList) {
-		return $elm$core$Maybe$Just(
-			A2(
-				$elm$core$List$cons,
-				value,
-				A2($elm$core$Maybe$withDefault, _List_Nil, maybeList)));
-	});
-var $elm$core$String$replace = F3(
-	function (before, after, string) {
-		return A2(
-			$elm$core$String$join,
-			after,
-			A2($elm$core$String$split, before, string));
-	});
-var $lydell$elm_app_url$AppUrl$queryParameterDecode = A2(
-	$elm$core$Basics$composeR,
-	A2($elm$core$String$replace, '+', ' '),
-	$lydell$elm_app_url$AppUrl$percentDecode);
-var $lydell$elm_app_url$AppUrl$parseQueryParameter = F2(
-	function (segment, queryParameters) {
-		var _v0 = A2($elm$core$String$split, '=', segment);
-		if (!_v0.b) {
-			return queryParameters;
-		} else {
-			if ((_v0.a === '') && (!_v0.b.b)) {
-				return queryParameters;
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$updateAttempt = F4(
+	function (options, pool_, _v0, progress) {
+		var attemptId = _v0.a;
+		var results = _v0.b;
+		var _v1 = A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$stepTask, results, progress.task);
+		if (_v1.b.$ === 'Pending') {
+			var ids_ = _v1.a;
+			var _v2 = _v1.b;
+			var next_ = _v2.b;
+			var notStarted = function (def) {
+				return !A2($elm$core$Set$member, def.taskId, progress.inFlight);
+			};
+			var nextProgress = _Utils_Tuple2(ids_, next_);
+			var _v3 = A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$stepTask, results, nextProgress);
+			if (_v3.b.$ === 'Done') {
+				var res = _v3.b.a;
+				return _Utils_Tuple2(
+					A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$removeFromPool, attemptId, pool_),
+					A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$sendResult, progress.onComplete, res));
 			} else {
-				var rawKey = _v0.a;
-				var rest = _v0.b;
-				return A3(
-					$elm$core$Dict$update,
-					$lydell$elm_app_url$AppUrl$queryParameterDecode(rawKey),
-					$lydell$elm_app_url$AppUrl$insert(
-						$lydell$elm_app_url$AppUrl$queryParameterDecode(
-							A2($elm$core$String$join, '=', rest))),
-					queryParameters);
+				var _v4 = _v3.b;
+				var defs = _v4.a;
+				return _Utils_Tuple2(
+					A3(
+						$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$updateProgressFor,
+						attemptId,
+						_Utils_update(
+							progress,
+							{
+								inFlight: A2(
+									$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$removeCompleted,
+									results,
+									A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$recordSent, defs, progress.inFlight)),
+								task: nextProgress
+							}),
+						pool_),
+					options.send(
+						A2(
+							$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$encodeDefinitions,
+							attemptId,
+							A2($elm$core$Array$filter, notStarted, defs))));
 			}
+		} else {
+			return _Utils_Tuple2(pool_, $elm$core$Platform$Cmd$none);
 		}
 	});
-var $lydell$elm_app_url$AppUrl$parseQueryParameters = A2(
-	$elm$core$Basics$composeR,
-	$elm$core$String$split('&'),
-	A2($elm$core$List$foldr, $lydell$elm_app_url$AppUrl$parseQueryParameter, $elm$core$Dict$empty));
-var $lydell$elm_app_url$AppUrl$fromUrl = function (url) {
-	return {
-		fragment: A2($elm$core$Maybe$map, $lydell$elm_app_url$AppUrl$percentDecode, url.fragment),
-		path: $lydell$elm_app_url$AppUrl$parsePath(url.path),
-		queryParameters: A2(
-			$elm$core$Maybe$withDefault,
-			$elm$core$Dict$empty,
-			A2($elm$core$Maybe$map, $lydell$elm_app_url$AppUrl$parseQueryParameters, url.query))
-	};
-};
-var $author$project$Main$routeFromUrl = function (url) {
-	var appUrl = $lydell$elm_app_url$AppUrl$fromUrl(url);
-	var _v0 = appUrl.path;
-	_v0$4:
-	while (true) {
-		if (!_v0.b) {
-			return $author$project$Main$HomeRoute;
-		} else {
-			if (_v0.b.b) {
-				if (_v0.a === 'behavior') {
-					if (!_v0.b.b.b) {
-						if (_v0.b.a === 'add') {
-							var _v1 = _v0.b;
-							return $author$project$Main$AddBehaviorRoute;
-						} else {
-							break _v0$4;
-						}
-					} else {
-						if ((_v0.b.b.a === 'edit') && (!_v0.b.b.b.b)) {
-							var _v2 = _v0.b;
-							var idStr = _v2.a;
-							var _v3 = _v2.b;
-							var _v4 = $elm$core$String$toInt(idStr);
-							if (_v4.$ === 'Nothing') {
-								return $author$project$Main$HomeRoute;
-							} else {
-								var id = _v4.a;
-								return $author$project$Main$EditBehaviorRoute(id);
-							}
-						} else {
-							break _v0$4;
-						}
-					}
-				} else {
-					break _v0$4;
-				}
-			} else {
-				if (_v0.a === 'settings') {
-					return $author$project$Main$SettingsRoute;
-				} else {
-					break _v0$4;
-				}
-			}
-		}
-	}
-	return $author$project$Main$HomeRoute;
-};
-var $author$project$Main$init = F3(
-	function (_v0, url, navKey) {
+var $elm$core$Tuple$mapSecond = F2(
+	function (func, _v0) {
+		var x = _v0.a;
+		var y = _v0.b;
 		return _Utils_Tuple2(
-			{
-				behaviorEditing: $elm$core$Maybe$Nothing,
-				behaviorNameToAdd: '',
-				confirmDelete: $elm$core$Maybe$Nothing,
-				navKey: navKey,
-				route: $author$project$Main$routeFromUrl(url),
-				safetyBehaviors: _List_Nil
-			},
-			$elm$core$Platform$Cmd$none);
+			x,
+			func(y));
 	});
-var $elm$core$Platform$Sub$batch = _Platform_batch;
-var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$withCmd = function (cmd) {
+	return $elm$core$Tuple$mapSecond(
+		function (c) {
+			return $elm$core$Platform$Cmd$batch(
+				_List_fromArray(
+					[c, cmd]));
+		});
+};
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$onProgress = F2(
+	function (options, pool_) {
+		return options.receive(
+			function (rawResults) {
+				return options.onProgress(
+					A3(
+						$elm$core$List$foldl,
+						F2(
+							function (_v0, _v1) {
+								var attempt_ = _v0.a;
+								var results = _v0.b;
+								var p = _v1.a;
+								var cmd = _v1.b;
+								var _v2 = A2($andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$findAttempt, attempt_, p);
+								if (_v2.$ === 'Nothing') {
+									return _Utils_Tuple2(p, cmd);
+								} else {
+									var progress = _v2.a;
+									return A2(
+										$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$withCmd,
+										cmd,
+										A4(
+											$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$updateAttempt,
+											options,
+											p,
+											_Utils_Tuple2(attempt_, results),
+											progress));
+								}
+							}),
+						_Utils_Tuple2(pool_, $elm$core$Platform$Cmd$none),
+						$elm$core$Dict$toList(
+							$andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$toBatchResults(rawResults))));
+			});
+	});
+var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$onProgress = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$onProgress;
+var $author$project$Main$receiveFromDb = _Platform_incomingPort('receiveFromDb', $elm$json$Json$Decode$value);
+var $author$project$Main$subscriptions = function (app) {
+	switch (app.$) {
+		case 'StartupFailure':
+			return $elm$core$Platform$Sub$none;
+		case 'Initializing':
+			var model = app.a;
+			return A2(
+				$andrewMacmurray$elm_concurrent_task$ConcurrentTask$onProgress,
+				{onProgress: $author$project$Main$OnDbProgress, receive: $author$project$Main$receiveFromDb, send: $author$project$Main$sendToDb},
+				model.dbTasks);
+		default:
+			var model = app.a;
+			return A2(
+				$andrewMacmurray$elm_concurrent_task$ConcurrentTask$onProgress,
+				{onProgress: $author$project$Main$OnDbProgress, receive: $author$project$Main$receiveFromDb, send: $author$project$Main$sendToDb},
+				model.dbTasks);
+	}
+};
+var $author$project$Main$BehaviorCreateResponded = F2(
+	function (a, b) {
+		return {$: 'BehaviorCreateResponded', a: a, b: b};
+	});
+var $author$project$Main$BehaviorDeleteResponded = F2(
+	function (a, b) {
+		return {$: 'BehaviorDeleteResponded', a: a, b: b};
+	});
+var $author$project$Main$BehaviorSaveResponded = F2(
+	function (a, b) {
+		return {$: 'BehaviorSaveResponded', a: a, b: b};
+	});
+var $author$project$Main$HomeRoute = {$: 'HomeRoute'};
+var $author$project$Main$Initialized = function (a) {
+	return {$: 'Initialized', a: a};
+};
 var $author$project$Main$ResistedBehaviorAt = F2(
 	function (a, b) {
 		return {$: 'ResistedBehaviorAt', a: a, b: b};
@@ -14537,6 +15829,175 @@ var $author$project$Main$ResistedBehaviorAt = F2(
 var $author$project$Main$SubmittedToBehaviorAt = F2(
 	function (a, b) {
 		return {$: 'SubmittedToBehaviorAt', a: a, b: b};
+	});
+var $author$project$IndexedDb$CompoundKey = function (a) {
+	return {$: 'CompoundKey', a: a};
+};
+var $author$project$IndexedDb$FloatKey = function (a) {
+	return {$: 'FloatKey', a: a};
+};
+var $author$project$IndexedDb$IntKey = function (a) {
+	return {$: 'IntKey', a: a};
+};
+var $author$project$IndexedDb$StringKey = function (a) {
+	return {$: 'StringKey', a: a};
+};
+var $elm$json$Json$Decode$lazy = function (thunk) {
+	return A2(
+		$elm$json$Json$Decode$andThen,
+		thunk,
+		$elm$json$Json$Decode$succeed(_Utils_Tuple0));
+};
+function $author$project$IndexedDb$cyclic$keyDecoder() {
+	return A2(
+		$elm$json$Json$Decode$andThen,
+		function (t) {
+			switch (t) {
+				case 'string':
+					return A2(
+						$elm$json$Json$Decode$map,
+						$author$project$IndexedDb$StringKey,
+						A2($elm$json$Json$Decode$field, 'value', $elm$json$Json$Decode$string));
+				case 'int':
+					return A2(
+						$elm$json$Json$Decode$map,
+						$author$project$IndexedDb$IntKey,
+						A2($elm$json$Json$Decode$field, 'value', $elm$json$Json$Decode$int));
+				case 'float':
+					return A2(
+						$elm$json$Json$Decode$map,
+						$author$project$IndexedDb$FloatKey,
+						A2($elm$json$Json$Decode$field, 'value', $elm$json$Json$Decode$float));
+				case 'compound':
+					return A2(
+						$elm$json$Json$Decode$map,
+						$author$project$IndexedDb$CompoundKey,
+						A2(
+							$elm$json$Json$Decode$field,
+							'value',
+							$elm$json$Json$Decode$list(
+								$elm$json$Json$Decode$lazy(
+									function (_v1) {
+										return $author$project$IndexedDb$cyclic$keyDecoder();
+									}))));
+				default:
+					return $elm$json$Json$Decode$fail('Unknown key type: ' + t);
+			}
+		},
+		A2($elm$json$Json$Decode$field, 'type', $elm$json$Json$Decode$string));
+}
+try {
+	var $author$project$IndexedDb$keyDecoder = $author$project$IndexedDb$cyclic$keyDecoder();
+	$author$project$IndexedDb$cyclic$keyDecoder = function () {
+		return $author$project$IndexedDb$keyDecoder;
+	};
+} catch ($) {
+	throw 'Some top-level definitions from `IndexedDb` are causing infinite recursion:\n\n  ┌─────┐\n  │    keyDecoder\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
+var $author$project$IndexedDb$add = F3(
+	function (db, store, value) {
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$define(
+			{
+				args: $elm$json$Json$Encode$object(
+					_List_fromArray(
+						[
+							_Utils_Tuple2(
+							'db',
+							$elm$json$Json$Encode$string(
+								$author$project$IndexedDb$getDbName(db))),
+							_Utils_Tuple2(
+							'store',
+							$elm$json$Json$Encode$string(
+								$author$project$IndexedDb$getStoreName(store))),
+							_Utils_Tuple2('value', value)
+						])),
+				errors: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectErrors($author$project$IndexedDb$errorDecoder),
+				expect: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectJson($author$project$IndexedDb$keyDecoder),
+				_function: 'indexeddb:add'
+			});
+	});
+var $elm$json$Json$Encode$float = _Json_wrap;
+var $author$project$IndexedDb$encodeKey = function (key) {
+	switch (key.$) {
+		case 'StringKey':
+			var s = key.a;
+			return $elm$json$Json$Encode$object(
+				_List_fromArray(
+					[
+						_Utils_Tuple2(
+						'type',
+						$elm$json$Json$Encode$string('string')),
+						_Utils_Tuple2(
+						'value',
+						$elm$json$Json$Encode$string(s))
+					]));
+		case 'IntKey':
+			var i = key.a;
+			return $elm$json$Json$Encode$object(
+				_List_fromArray(
+					[
+						_Utils_Tuple2(
+						'type',
+						$elm$json$Json$Encode$string('int')),
+						_Utils_Tuple2(
+						'value',
+						$elm$json$Json$Encode$int(i))
+					]));
+		case 'FloatKey':
+			var f = key.a;
+			return $elm$json$Json$Encode$object(
+				_List_fromArray(
+					[
+						_Utils_Tuple2(
+						'type',
+						$elm$json$Json$Encode$string('float')),
+						_Utils_Tuple2(
+						'value',
+						$elm$json$Json$Encode$float(f))
+					]));
+		default:
+			var keys = key.a;
+			return $elm$json$Json$Encode$object(
+				_List_fromArray(
+					[
+						_Utils_Tuple2(
+						'type',
+						$elm$json$Json$Encode$string('compound')),
+						_Utils_Tuple2(
+						'value',
+						A2($elm$json$Json$Encode$list, $author$project$IndexedDb$encodeKey, keys))
+					]));
+	}
+};
+var $author$project$IndexedDb$delete = F3(
+	function (db, store, key) {
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$define(
+			{
+				args: $elm$json$Json$Encode$object(
+					_List_fromArray(
+						[
+							_Utils_Tuple2(
+							'db',
+							$elm$json$Json$Encode$string(
+								$author$project$IndexedDb$getDbName(db))),
+							_Utils_Tuple2(
+							'store',
+							$elm$json$Json$Encode$string(
+								$author$project$IndexedDb$getStoreName(store))),
+							_Utils_Tuple2(
+							'key',
+							$author$project$IndexedDb$encodeKey(key))
+						])),
+				errors: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectErrors($author$project$IndexedDb$errorDecoder),
+				expect: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectWhatever,
+				_function: 'indexeddb:delete'
+			});
+	});
+var $author$project$Main$doDbTask = F2(
+	function (onComplete, task) {
+		return A2(
+			$andrewMacmurray$elm_concurrent_task$ConcurrentTask$attempt,
+			{onComplete: onComplete, pool: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$pool, send: $author$project$Main$sendToDb},
+			task);
 	});
 var $elm$core$List$sortBy = _List_sortBy;
 var $elm$core$List$sum = function (numbers) {
@@ -14651,6 +16112,161 @@ var $BrianHicks$elm_csv$Csv$Encode$encode = F2(
 						$BrianHicks$elm_csv$Csv$Encode$quoteIfNecessary(fieldSeparatorString))),
 				A2($BrianHicks$elm_csv$Csv$Encode$encodeItems, encoder, items)));
 	});
+var $elm$time$Time$posixToMillis = function (_v0) {
+	var millis = _v0.a;
+	return millis;
+};
+var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var $elm$core$String$repeatHelp = F3(
+	function (n, chunk, result) {
+		return (n <= 0) ? result : A3(
+			$elm$core$String$repeatHelp,
+			n >> 1,
+			_Utils_ap(chunk, chunk),
+			(!(n & 1)) ? result : _Utils_ap(result, chunk));
+	});
+var $elm$core$String$repeat = F2(
+	function (n, chunk) {
+		return A3($elm$core$String$repeatHelp, n, chunk, '');
+	});
+var $elm$core$String$padLeft = F3(
+	function (n, _char, string) {
+		return _Utils_ap(
+			A2(
+				$elm$core$String$repeat,
+				n - $elm$core$String$length(string),
+				$elm$core$String$fromChar(_char)),
+			string);
+	});
+var $elm$core$String$fromList = _String_fromList;
+var $TSFoster$elm_uuid$UUID$toHex = F2(
+	function (acc, _int) {
+		toHex:
+		while (true) {
+			if (!_int) {
+				return $elm$core$String$fromList(acc);
+			} else {
+				var _char = function () {
+					var _v0 = 15 & _int;
+					switch (_v0) {
+						case 0:
+							return _Utils_chr('0');
+						case 1:
+							return _Utils_chr('1');
+						case 2:
+							return _Utils_chr('2');
+						case 3:
+							return _Utils_chr('3');
+						case 4:
+							return _Utils_chr('4');
+						case 5:
+							return _Utils_chr('5');
+						case 6:
+							return _Utils_chr('6');
+						case 7:
+							return _Utils_chr('7');
+						case 8:
+							return _Utils_chr('8');
+						case 9:
+							return _Utils_chr('9');
+						case 10:
+							return _Utils_chr('a');
+						case 11:
+							return _Utils_chr('b');
+						case 12:
+							return _Utils_chr('c');
+						case 13:
+							return _Utils_chr('d');
+						case 14:
+							return _Utils_chr('e');
+						default:
+							return _Utils_chr('f');
+					}
+				}();
+				var $temp$acc = A2($elm$core$List$cons, _char, acc),
+					$temp$int = _int >>> 4;
+				acc = $temp$acc;
+				_int = $temp$int;
+				continue toHex;
+			}
+		}
+	});
+var $TSFoster$elm_uuid$UUID$toStringWith = F2(
+	function (sep, _v0) {
+		var a = _v0.a;
+		var b = _v0.b;
+		var c = _v0.c;
+		var d = _v0.d;
+		return _Utils_ap(
+			A3(
+				$elm$core$String$padLeft,
+				8,
+				_Utils_chr('0'),
+				A2($TSFoster$elm_uuid$UUID$toHex, _List_Nil, a)),
+			_Utils_ap(
+				sep,
+				_Utils_ap(
+					A3(
+						$elm$core$String$padLeft,
+						4,
+						_Utils_chr('0'),
+						A2($TSFoster$elm_uuid$UUID$toHex, _List_Nil, b >>> 16)),
+					_Utils_ap(
+						sep,
+						_Utils_ap(
+							A3(
+								$elm$core$String$padLeft,
+								4,
+								_Utils_chr('0'),
+								A2($TSFoster$elm_uuid$UUID$toHex, _List_Nil, 65535 & b)),
+							_Utils_ap(
+								sep,
+								_Utils_ap(
+									A3(
+										$elm$core$String$padLeft,
+										4,
+										_Utils_chr('0'),
+										A2($TSFoster$elm_uuid$UUID$toHex, _List_Nil, c >>> 16)),
+									_Utils_ap(
+										sep,
+										_Utils_ap(
+											A3(
+												$elm$core$String$padLeft,
+												4,
+												_Utils_chr('0'),
+												A2($TSFoster$elm_uuid$UUID$toHex, _List_Nil, 65535 & c)),
+											A3(
+												$elm$core$String$padLeft,
+												8,
+												_Utils_chr('0'),
+												A2($TSFoster$elm_uuid$UUID$toHex, _List_Nil, d)))))))))));
+	});
+var $TSFoster$elm_uuid$UUID$toString = $TSFoster$elm_uuid$UUID$toStringWith('-');
+var $TSFoster$elm_uuid$UUID$toValue = A2($elm$core$Basics$composeR, $TSFoster$elm_uuid$UUID$toString, $elm$json$Json$Encode$string);
+var $author$project$Main$encodeBehavior = function (behavior) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'id',
+				$TSFoster$elm_uuid$UUID$toValue(behavior.id)),
+				_Utils_Tuple2(
+				'name',
+				$elm$json$Json$Encode$string(behavior.name)),
+				_Utils_Tuple2(
+				'submits',
+				A2(
+					$elm$json$Json$Encode$list,
+					A2($elm$core$Basics$composeR, $elm$time$Time$posixToMillis, $elm$json$Json$Encode$int),
+					behavior.submits)),
+				_Utils_Tuple2(
+				'resists',
+				A2(
+					$elm$json$Json$Encode$list,
+					A2($elm$core$Basics$composeR, $elm$time$Time$posixToMillis, $elm$json$Json$Encode$int),
+					behavior.resists))
+			]));
+};
 var $author$project$Main$export = _Platform_outgoingPort(
 	'export',
 	$elm$json$Json$Encode$list(
@@ -14768,10 +16384,6 @@ var $elm$time$Time$flooredDiv = F2(
 	function (numerator, denominator) {
 		return $elm$core$Basics$floor(numerator / denominator);
 	});
-var $elm$time$Time$posixToMillis = function (_v0) {
-	var millis = _v0.a;
-	return millis;
-};
 var $elm$time$Time$toAdjustedMinutesHelp = F3(
 	function (defaultOffset, posixMinutes, eras) {
 		toAdjustedMinutesHelp:
@@ -15198,7 +16810,6 @@ var $ryan_haskell$date_format$DateFormat$toFixedLength = F2(
 				A2($elm$core$List$range, 1, numZerosNeeded)));
 		return _Utils_ap(zeros, numStr);
 	});
-var $elm$core$String$toLower = _String_toLower;
 var $elm$time$Time$toMillis = F2(
 	function (_v0, time) {
 		return A2(
@@ -15227,10 +16838,6 @@ var $elm$time$Time$toSecond = F2(
 				1000));
 	});
 var $elm$core$String$toUpper = _String_toUpper;
-var $elm$time$Time$Posix = function (a) {
-	return {$: 'Posix', a: a};
-};
-var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
 var $elm$core$Basics$round = _Basics_round;
 var $ryan_haskell$date_format$DateFormat$millisecondsPerYear = $elm$core$Basics$round((((1000 * 60) * 60) * 24) * 365.25);
 var $ryan_haskell$date_format$DateFormat$firstDayOfYear = F2(
@@ -15454,10 +17061,34 @@ var $author$project$Main$exportDateFormatter = $ryan_haskell$date_format$DateFor
 var $elm$core$String$filter = _String_filter;
 var $author$project$Main$findBehaviorById = F2(
 	function (id, behaviors) {
-		return $elm$core$List$head(
-			A2($elm$core$List$drop, id, behaviors));
+		findBehaviorById:
+		while (true) {
+			if (!behaviors.b) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var behavior = behaviors.a;
+				var rest = behaviors.b;
+				if (_Utils_eq(behavior.id, id)) {
+					return $elm$core$Maybe$Just(behavior);
+				} else {
+					var $temp$id = id,
+						$temp$behaviors = rest;
+					id = $temp$id;
+					behaviors = $temp$behaviors;
+					continue findBehaviorById;
+				}
+			}
+		}
 	});
 var $elm$browser$Browser$Navigation$load = _Browser_load;
+var $elm$core$Tuple$mapFirst = F2(
+	function (func, _v0) {
+		var x = _v0.a;
+		var y = _v0.b;
+		return _Utils_Tuple2(
+			func(x),
+			y);
+	});
 var $elm$time$Time$Name = function (a) {
 	return {$: 'Name', a: a};
 };
@@ -15471,6 +17102,152 @@ var $elm$time$Time$Zone = F2(
 var $elm$time$Time$customZone = $elm$time$Time$Zone;
 var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
 var $elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
+var $author$project$IndexedDb$put = F3(
+	function (db, store, value) {
+		return $andrewMacmurray$elm_concurrent_task$ConcurrentTask$define(
+			{
+				args: $elm$json$Json$Encode$object(
+					_List_fromArray(
+						[
+							_Utils_Tuple2(
+							'db',
+							$elm$json$Json$Encode$string(
+								$author$project$IndexedDb$getDbName(db))),
+							_Utils_Tuple2(
+							'store',
+							$elm$json$Json$Encode$string(
+								$author$project$IndexedDb$getStoreName(store))),
+							_Utils_Tuple2('value', value)
+						])),
+				errors: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectErrors($author$project$IndexedDb$errorDecoder),
+				expect: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$expectJson($author$project$IndexedDb$keyDecoder),
+				_function: 'indexeddb:put'
+			});
+	});
+var $author$project$Main$AddBehaviorRoute = {$: 'AddBehaviorRoute'};
+var $author$project$Main$EditBehaviorRoute = function (a) {
+	return {$: 'EditBehaviorRoute', a: a};
+};
+var $author$project$Main$SettingsRoute = {$: 'SettingsRoute'};
+var $elm$url$Url$percentDecode = _Url_percentDecode;
+var $lydell$elm_app_url$AppUrl$percentDecode = function (string) {
+	return A2(
+		$elm$core$Maybe$withDefault,
+		string,
+		$elm$url$Url$percentDecode(string));
+};
+var $lydell$elm_app_url$AppUrl$trimLeadingSlash = function (string) {
+	return A2($elm$core$String$startsWith, '/', string) ? A2($elm$core$String$dropLeft, 1, string) : string;
+};
+var $elm$core$String$dropRight = F2(
+	function (n, string) {
+		return (n < 1) ? string : A3($elm$core$String$slice, 0, -n, string);
+	});
+var $lydell$elm_app_url$AppUrl$trimTrailingSlash = function (string) {
+	return A2($elm$core$String$endsWith, '/', string) ? A2($elm$core$String$dropRight, 1, string) : string;
+};
+var $lydell$elm_app_url$AppUrl$parsePath = function (path) {
+	var trimmed = $lydell$elm_app_url$AppUrl$trimTrailingSlash(
+		$lydell$elm_app_url$AppUrl$trimLeadingSlash(path));
+	return $elm$core$String$isEmpty(trimmed) ? _List_Nil : A2(
+		$elm$core$List$map,
+		$lydell$elm_app_url$AppUrl$percentDecode,
+		A2($elm$core$String$split, '/', trimmed));
+};
+var $lydell$elm_app_url$AppUrl$insert = F2(
+	function (value, maybeList) {
+		return $elm$core$Maybe$Just(
+			A2(
+				$elm$core$List$cons,
+				value,
+				A2($elm$core$Maybe$withDefault, _List_Nil, maybeList)));
+	});
+var $lydell$elm_app_url$AppUrl$queryParameterDecode = A2(
+	$elm$core$Basics$composeR,
+	A2($elm$core$String$replace, '+', ' '),
+	$lydell$elm_app_url$AppUrl$percentDecode);
+var $lydell$elm_app_url$AppUrl$parseQueryParameter = F2(
+	function (segment, queryParameters) {
+		var _v0 = A2($elm$core$String$split, '=', segment);
+		if (!_v0.b) {
+			return queryParameters;
+		} else {
+			if ((_v0.a === '') && (!_v0.b.b)) {
+				return queryParameters;
+			} else {
+				var rawKey = _v0.a;
+				var rest = _v0.b;
+				return A3(
+					$elm$core$Dict$update,
+					$lydell$elm_app_url$AppUrl$queryParameterDecode(rawKey),
+					$lydell$elm_app_url$AppUrl$insert(
+						$lydell$elm_app_url$AppUrl$queryParameterDecode(
+							A2($elm$core$String$join, '=', rest))),
+					queryParameters);
+			}
+		}
+	});
+var $lydell$elm_app_url$AppUrl$parseQueryParameters = A2(
+	$elm$core$Basics$composeR,
+	$elm$core$String$split('&'),
+	A2($elm$core$List$foldr, $lydell$elm_app_url$AppUrl$parseQueryParameter, $elm$core$Dict$empty));
+var $lydell$elm_app_url$AppUrl$fromUrl = function (url) {
+	return {
+		fragment: A2($elm$core$Maybe$map, $lydell$elm_app_url$AppUrl$percentDecode, url.fragment),
+		path: $lydell$elm_app_url$AppUrl$parsePath(url.path),
+		queryParameters: A2(
+			$elm$core$Maybe$withDefault,
+			$elm$core$Dict$empty,
+			A2($elm$core$Maybe$map, $lydell$elm_app_url$AppUrl$parseQueryParameters, url.query))
+	};
+};
+var $author$project$Main$routeFromUrl = function (url) {
+	var appUrl = $lydell$elm_app_url$AppUrl$fromUrl(url);
+	var _v0 = appUrl.path;
+	_v0$4:
+	while (true) {
+		if (!_v0.b) {
+			return $author$project$Main$HomeRoute;
+		} else {
+			if (_v0.b.b) {
+				if (_v0.a === 'behavior') {
+					if (!_v0.b.b.b) {
+						if (_v0.b.a === 'add') {
+							var _v1 = _v0.b;
+							return $author$project$Main$AddBehaviorRoute;
+						} else {
+							break _v0$4;
+						}
+					} else {
+						if ((_v0.b.b.a === 'edit') && (!_v0.b.b.b.b)) {
+							var _v2 = _v0.b;
+							var idStr = _v2.a;
+							var _v3 = _v2.b;
+							var _v4 = $TSFoster$elm_uuid$UUID$fromString(idStr);
+							if (_v4.$ === 'Err') {
+								return $author$project$Main$HomeRoute;
+							} else {
+								var id = _v4.a;
+								return $author$project$Main$EditBehaviorRoute(id);
+							}
+						} else {
+							break _v0$4;
+						}
+					}
+				} else {
+					break _v0$4;
+				}
+			} else {
+				if (_v0.a === 'settings') {
+					return $author$project$Main$SettingsRoute;
+				} else {
+					break _v0$4;
+				}
+			}
+		}
+	}
+	return $author$project$Main$HomeRoute;
+};
 var $author$project$Main$routeToString = function (route) {
 	switch (route.$) {
 		case 'HomeRoute':
@@ -15479,11 +17256,128 @@ var $author$project$Main$routeToString = function (route) {
 			return '/behavior/add';
 		case 'EditBehaviorRoute':
 			var id = route.a;
-			return '/behavior/' + ($elm$core$String$fromInt(id) + '/edit');
+			return '/behavior/' + ($TSFoster$elm_uuid$UUID$toString(id) + '/edit');
 		default:
 			return '/settings';
 	}
 };
+var $TSFoster$elm_uuid$UUID$Seeds = F4(
+	function (seed1, seed2, seed3, seed4) {
+		return {seed1: seed1, seed2: seed2, seed3: seed3, seed4: seed4};
+	});
+var $elm$random$Random$Generator = function (a) {
+	return {$: 'Generator', a: a};
+};
+var $elm$core$Bitwise$xor = _Bitwise_xor;
+var $elm$random$Random$peel = function (_v0) {
+	var state = _v0.a;
+	var word = (state ^ (state >>> ((state >>> 28) + 4))) * 277803737;
+	return ((word >>> 22) ^ word) >>> 0;
+};
+var $elm$random$Random$int = F2(
+	function (a, b) {
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var _v0 = (_Utils_cmp(a, b) < 0) ? _Utils_Tuple2(a, b) : _Utils_Tuple2(b, a);
+				var lo = _v0.a;
+				var hi = _v0.b;
+				var range = (hi - lo) + 1;
+				if (!((range - 1) & range)) {
+					return _Utils_Tuple2(
+						(((range - 1) & $elm$random$Random$peel(seed0)) >>> 0) + lo,
+						$elm$random$Random$next(seed0));
+				} else {
+					var threshhold = (((-range) >>> 0) % range) >>> 0;
+					var accountForBias = function (seed) {
+						accountForBias:
+						while (true) {
+							var x = $elm$random$Random$peel(seed);
+							var seedN = $elm$random$Random$next(seed);
+							if (_Utils_cmp(x, threshhold) < 0) {
+								var $temp$seed = seedN;
+								seed = $temp$seed;
+								continue accountForBias;
+							} else {
+								return _Utils_Tuple2((x % range) + lo, seedN);
+							}
+						}
+					};
+					return accountForBias(seed0);
+				}
+			});
+	});
+var $elm$random$Random$map = F2(
+	function (func, _v0) {
+		var genA = _v0.a;
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var _v1 = genA(seed0);
+				var a = _v1.a;
+				var seed1 = _v1.b;
+				return _Utils_Tuple2(
+					func(a),
+					seed1);
+			});
+	});
+var $elm$random$Random$maxInt = 2147483647;
+var $elm$random$Random$minInt = -2147483648;
+var $TSFoster$elm_uuid$UUID$randomU32 = A2(
+	$elm$random$Random$map,
+	$TSFoster$elm_uuid$UUID$forceUnsigned,
+	A2($elm$random$Random$int, $elm$random$Random$minInt, $elm$random$Random$maxInt));
+var $elm$random$Random$step = F2(
+	function (_v0, seed) {
+		var generator = _v0.a;
+		return generator(seed);
+	});
+var $TSFoster$elm_uuid$UUID$toVariant1 = function (_v0) {
+	var a = _v0.a;
+	var b = _v0.b;
+	var c = _v0.c;
+	var d = _v0.d;
+	return A4(
+		$TSFoster$elm_uuid$UUID$UUID,
+		a,
+		b,
+		$TSFoster$elm_uuid$UUID$forceUnsigned(2147483648 | (1073741823 & c)),
+		d);
+};
+var $TSFoster$elm_uuid$UUID$toVersion = F2(
+	function (v, _v0) {
+		var a = _v0.a;
+		var b = _v0.b;
+		var c = _v0.c;
+		var d = _v0.d;
+		return A4(
+			$TSFoster$elm_uuid$UUID$UUID,
+			a,
+			$TSFoster$elm_uuid$UUID$forceUnsigned((v << 12) | (4294905855 & b)),
+			c,
+			d);
+	});
+var $TSFoster$elm_uuid$UUID$step = function (s) {
+	var _v0 = A2($elm$random$Random$step, $TSFoster$elm_uuid$UUID$randomU32, s.seed4);
+	var int4 = _v0.a;
+	var seed4 = _v0.b;
+	var _v1 = A2($elm$random$Random$step, $TSFoster$elm_uuid$UUID$randomU32, s.seed3);
+	var int3 = _v1.a;
+	var seed3 = _v1.b;
+	var _v2 = A2($elm$random$Random$step, $TSFoster$elm_uuid$UUID$randomU32, s.seed2);
+	var int2 = _v2.a;
+	var seed2 = _v2.b;
+	var _v3 = A2($elm$random$Random$step, $TSFoster$elm_uuid$UUID$randomU32, s.seed1);
+	var int1 = _v3.a;
+	var seed1 = _v3.b;
+	var uuid = $TSFoster$elm_uuid$UUID$toVariant1(
+		A2(
+			$TSFoster$elm_uuid$UUID$toVersion,
+			4,
+			A4($TSFoster$elm_uuid$UUID$UUID, int1, int2, int3, int4)));
+	return _Utils_Tuple2(
+		uuid,
+		A4($TSFoster$elm_uuid$UUID$Seeds, seed1, seed2, seed3, seed4));
+};
+var $elm$core$Debug$toString = _Debug_toString;
 var $elm$url$Url$addPort = F2(
 	function (maybePort, starter) {
 		if (maybePort.$ === 'Nothing') {
@@ -15528,340 +17422,647 @@ var $elm$url$Url$toString = function (url) {
 					_Utils_ap(http, url.host)),
 				url.path)));
 };
+var $elm$core$Debug$todo = _Debug_todo;
 var $elm$time$Time$utc = A2($elm$time$Time$Zone, 0, _List_Nil);
+var $author$project$Main$uuidToKey = function (uuid) {
+	return $author$project$IndexedDb$StringKey(
+		$TSFoster$elm_uuid$UUID$toString(uuid));
+};
 var $BrianHicks$elm_csv$Csv$Encode$WithFieldNames = function (a) {
 	return {$: 'WithFieldNames', a: a};
 };
 var $BrianHicks$elm_csv$Csv$Encode$withFieldNames = $BrianHicks$elm_csv$Csv$Encode$WithFieldNames;
 var $author$project$Main$update = F2(
-	function (msg, model) {
-		switch (msg.$) {
-			case 'UrlChanged':
-				var url = msg.a;
-				var route = $author$project$Main$routeFromUrl(url);
-				if (route.$ === 'EditBehaviorRoute') {
-					var id = route.a;
-					var _v2 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
-					if (_v2.$ === 'Nothing') {
+	function (msg, app) {
+		switch (app.$) {
+			case 'StartupFailure':
+				return _Utils_Tuple2(app, $elm$core$Platform$Cmd$none);
+			case 'Initializing':
+				var model = app.a;
+				switch (msg.$) {
+					case 'UrlChanged':
+						var url = msg.a;
 						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{behaviorEditing: $elm$core$Maybe$Nothing, route: route}),
+							$author$project$Main$Initializing(
+								_Utils_update(
+									model,
+									{url: url})),
 							$elm$core$Platform$Cmd$none);
-					} else {
-						var behavior = _v2.a;
+					case 'UrlRequested':
+						var urlRequest = msg.a;
+						if (urlRequest.$ === 'Internal') {
+							var url = urlRequest.a;
+							return _Utils_Tuple2(
+								app,
+								A2(
+									$elm$browser$Browser$Navigation$pushUrl,
+									model.navKey,
+									$elm$url$Url$toString(url)));
+						} else {
+							var url = urlRequest.a;
+							return _Utils_Tuple2(
+								app,
+								$elm$browser$Browser$Navigation$load(url));
+						}
+					case 'OnDbProgress':
+						var _v3 = msg.a;
+						var dbTasks = _v3.a;
+						var cmd = _v3.b;
 						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									behaviorEditing: $elm$core$Maybe$Just(
-										_Utils_Tuple2(behavior, behavior)),
-									confirmDelete: $elm$core$Maybe$Nothing,
-									route: route
-								}),
-							$elm$core$Platform$Cmd$none);
-					}
-				} else {
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{behaviorEditing: $elm$core$Maybe$Nothing, route: route}),
-						$elm$core$Platform$Cmd$none);
-				}
-			case 'UrlRequested':
-				var urlRequest = msg.a;
-				if (urlRequest.$ === 'Internal') {
-					var url = urlRequest.a;
-					return _Utils_Tuple2(
-						model,
-						A2(
-							$elm$browser$Browser$Navigation$pushUrl,
-							model.navKey,
-							$elm$url$Url$toString(url)));
-				} else {
-					var url = urlRequest.a;
-					return _Utils_Tuple2(
-						model,
-						$elm$browser$Browser$Navigation$load(url));
-				}
-			case 'BehaviorNameToAddChanged':
-				var name = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{behaviorNameToAdd: name}),
-					$elm$core$Platform$Cmd$none);
-			case 'AddBehavior':
-				return $elm$core$String$isEmpty(model.behaviorNameToAdd) ? _Utils_Tuple2(model, $elm$core$Platform$Cmd$none) : _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							behaviorNameToAdd: '',
-							safetyBehaviors: A2(
-								$elm$core$List$cons,
-								{name: model.behaviorNameToAdd, resists: _List_Nil, submits: _List_Nil},
-								model.safetyBehaviors)
-						}),
-					A2(
-						$elm$browser$Browser$Navigation$pushUrl,
-						model.navKey,
-						$author$project$Main$routeToString($author$project$Main$HomeRoute)));
-			case 'SubmittedToBehavior':
-				var index = msg.a;
-				return _Utils_Tuple2(
-					model,
-					A2(
-						$elm$core$Task$perform,
-						$author$project$Main$SubmittedToBehaviorAt(index),
-						$elm$time$Time$now));
-			case 'SubmittedToBehaviorAt':
-				var index = msg.a;
-				var time = msg.b;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							safetyBehaviors: A2(
-								$elm$core$List$indexedMap,
-								F2(
-									function (idx, behavior) {
-										return _Utils_eq(idx, index) ? _Utils_update(
-											behavior,
-											{
-												submits: A2($elm$core$List$cons, time, behavior.submits)
-											}) : behavior;
-									}),
-								model.safetyBehaviors)
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'ResistedBehavior':
-				var index = msg.a;
-				return _Utils_Tuple2(
-					model,
-					A2(
-						$elm$core$Task$perform,
-						$author$project$Main$ResistedBehaviorAt(index),
-						$elm$time$Time$now));
-			case 'ResistedBehaviorAt':
-				var index = msg.a;
-				var time = msg.b;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							safetyBehaviors: A2(
-								$elm$core$List$indexedMap,
-								F2(
-									function (idx, behavior) {
-										return _Utils_eq(idx, index) ? _Utils_update(
-											behavior,
-											{
-												resists: A2($elm$core$List$cons, time, behavior.resists)
-											}) : behavior;
-									}),
-								model.safetyBehaviors)
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'BehaviorNameEdited':
-				var name = msg.a;
-				var _v4 = model.behaviorEditing;
-				if (_v4.$ === 'Nothing') {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				} else {
-					var _v5 = _v4.a;
-					var old = _v5.a;
-					var _new = _v5.b;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								behaviorEditing: $elm$core$Maybe$Just(
-									_Utils_Tuple2(
-										old,
-										_Utils_update(
-											_new,
-											{name: name})))
-							}),
-						$elm$core$Platform$Cmd$none);
-				}
-			case 'RemoveSubmit':
-				var timestamp = msg.a;
-				var _v6 = model.behaviorEditing;
-				if (_v6.$ === 'Nothing') {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				} else {
-					var _v7 = _v6.a;
-					var old = _v7.a;
-					var _new = _v7.b;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								behaviorEditing: $elm$core$Maybe$Just(
-									_Utils_Tuple2(
-										old,
-										_Utils_update(
-											_new,
-											{
-												submits: A2(
-													$elm$core$List$filter,
-													function (submit) {
-														return !_Utils_eq(submit, timestamp);
-													},
-													_new.submits)
-											})))
-							}),
-						$elm$core$Platform$Cmd$none);
-				}
-			case 'RemoveResist':
-				var timestamp = msg.a;
-				var _v8 = model.behaviorEditing;
-				if (_v8.$ === 'Nothing') {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				} else {
-					var _v9 = _v8.a;
-					var old = _v9.a;
-					var _new = _v9.b;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								behaviorEditing: $elm$core$Maybe$Just(
-									_Utils_Tuple2(
-										old,
-										_Utils_update(
-											_new,
-											{
-												resists: A2(
-													$elm$core$List$filter,
-													function (resist) {
-														return !_Utils_eq(resist, timestamp);
-													},
-													_new.resists)
-											})))
-							}),
-						$elm$core$Platform$Cmd$none);
-				}
-			case 'SaveBehavior':
-				var id = msg.a;
-				var _v10 = model.behaviorEditing;
-				if (_v10.$ === 'Nothing') {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				} else {
-					var _v11 = _v10.a;
-					var _new = _v11.b;
-					return $elm$core$String$isEmpty(_new.name) ? _Utils_Tuple2(model, $elm$core$Platform$Cmd$none) : _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								safetyBehaviors: A2(
-									$elm$core$List$indexedMap,
-									F2(
-										function (index, behavior) {
-											return _Utils_eq(index, id) ? _new : behavior;
+							$author$project$Main$Initializing(
+								_Utils_update(
+									model,
+									{dbTasks: dbTasks})),
+							cmd);
+					case 'DbLoaded':
+						var response = msg.a;
+						switch (response.$) {
+							case 'Error':
+								var err = response.a;
+								return _Debug_todo(
+									'Main',
+									{
+										start: {line: 303, column: 29},
+										end: {line: 303, column: 39}
+									})(
+									$elm$core$Debug$toString(err));
+							case 'UnexpectedError':
+								var err = response.a;
+								return _Debug_todo(
+									'Main',
+									{
+										start: {line: 306, column: 29},
+										end: {line: 306, column: 39}
+									})(
+									$elm$core$Debug$toString(err));
+							default:
+								var _v5 = response.a;
+								var db = _v5.a;
+								var behaviors = _v5.b;
+								return _Utils_Tuple2(
+									$author$project$Main$Initialized(
+										{
+											addingBehavior: false,
+											behaviorEditing: $elm$core$Maybe$Nothing,
+											behaviorNameToAdd: '',
+											confirmDelete: $elm$core$Maybe$Nothing,
+											db: db,
+											dbTasks: model.dbTasks,
+											deleting: false,
+											navKey: model.navKey,
+											route: $author$project$Main$routeFromUrl(model.url),
+											safetyBehaviors: behaviors,
+											seeds: model.seeds
 										}),
-									model.safetyBehaviors)
-							}),
-						A2(
-							$elm$browser$Browser$Navigation$pushUrl,
-							model.navKey,
-							$author$project$Main$routeToString($author$project$Main$HomeRoute)));
+									$elm$core$Platform$Cmd$none);
+						}
+					default:
+						return _Utils_Tuple2(app, $elm$core$Platform$Cmd$none);
 				}
-			case 'DeleteBehavior':
-				var id = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							confirmDelete: $elm$core$Maybe$Just(id)
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'ConfirmDeleteBehavior':
-				var id = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							confirmDelete: $elm$core$Maybe$Nothing,
-							safetyBehaviors: _Utils_ap(
-								A2($elm$core$List$take, id, model.safetyBehaviors),
-								A2($elm$core$List$drop, id + 1, model.safetyBehaviors))
-						}),
-					A2(
-						$elm$browser$Browser$Navigation$pushUrl,
-						model.navKey,
-						$author$project$Main$routeToString($author$project$Main$HomeRoute)));
-			case 'CancelDeleteBehavior':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{confirmDelete: $elm$core$Maybe$Nothing}),
-					$elm$core$Platform$Cmd$none);
 			default:
-				return _Utils_Tuple2(
-					model,
-					$author$project$Main$export(
-						A2(
-							$elm$core$List$map,
-							function (behavior) {
-								return {
-									data: function () {
-										var timestamps = _Utils_ap(
-											A2(
-												$elm$core$List$map,
-												function (submit) {
-													return _Utils_Tuple3(submit, 'x', '');
-												},
-												behavior.submits),
-											A2(
-												$elm$core$List$map,
-												function (resist) {
-													return _Utils_Tuple3(resist, '', 'x');
-												},
-												behavior.resists));
-										return A2(
-											$BrianHicks$elm_csv$Csv$Encode$encode,
-											{
-												encoder: $BrianHicks$elm_csv$Csv$Encode$withFieldNames(
-													function (_v13) {
-														var date = _v13.a;
-														var submit = _v13.b;
-														var resist = _v13.c;
-														return _List_fromArray(
-															[
-																_Utils_Tuple2(
-																'date',
-																A2($author$project$Main$exportDateFormatter, $elm$time$Time$utc, date)),
-																_Utils_Tuple2('submit', submit),
-																_Utils_Tuple2('resist', resist)
-															]);
+				var model = app.a;
+				return A2(
+					$elm$core$Tuple$mapFirst,
+					$author$project$Main$Initialized,
+					function () {
+						switch (msg.$) {
+							case 'UrlChanged':
+								var url = msg.a;
+								var route = $author$project$Main$routeFromUrl(url);
+								switch (route.$) {
+									case 'EditBehaviorRoute':
+										var key = route.a;
+										var _v8 = A2($author$project$Main$findBehaviorById, key, model.safetyBehaviors);
+										if (_v8.$ === 'Nothing') {
+											return _Utils_Tuple2(
+												_Utils_update(
+													model,
+													{behaviorEditing: $elm$core$Maybe$Nothing, deleting: false, route: route}),
+												$elm$core$Platform$Cmd$none);
+										} else {
+											var behavior = _v8.a;
+											return _Utils_Tuple2(
+												_Utils_update(
+													model,
+													{
+														behaviorEditing: $elm$core$Maybe$Just(
+															_Utils_Tuple2(behavior, behavior)),
+														confirmDelete: $elm$core$Maybe$Nothing,
+														deleting: false,
+														route: route
 													}),
-												fieldSeparator: _Utils_chr(',')
-											},
+												$elm$core$Platform$Cmd$none);
+										}
+									case 'AddBehaviorRoute':
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{addingBehavior: false, route: route}),
+											$elm$core$Platform$Cmd$none);
+									default:
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{behaviorEditing: $elm$core$Maybe$Nothing, route: route}),
+											$elm$core$Platform$Cmd$none);
+								}
+							case 'UrlRequested':
+								var urlRequest = msg.a;
+								if (urlRequest.$ === 'Internal') {
+									var url = urlRequest.a;
+									return _Utils_Tuple2(
+										model,
+										A2(
+											$elm$browser$Browser$Navigation$pushUrl,
+											model.navKey,
+											$elm$url$Url$toString(url)));
+								} else {
+									var url = urlRequest.a;
+									return _Utils_Tuple2(
+										model,
+										$elm$browser$Browser$Navigation$load(url));
+								}
+							case 'OnDbProgress':
+								var _v10 = msg.a;
+								var dbTasks = _v10.a;
+								var cmd = _v10.b;
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{dbTasks: dbTasks}),
+									cmd);
+							case 'DbLoaded':
+								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+							case 'BehaviorNameToAddChanged':
+								var name = msg.a;
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{behaviorNameToAdd: name}),
+									$elm$core$Platform$Cmd$none);
+							case 'AddBehavior':
+								if (model.addingBehavior) {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									if ($elm$core$String$isEmpty(model.behaviorNameToAdd)) {
+										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+									} else {
+										var _v11 = $TSFoster$elm_uuid$UUID$step(model.seeds);
+										var id = _v11.a;
+										var seeds = _v11.b;
+										var _v12 = A2(
+											$author$project$Main$doDbTask,
+											$author$project$Main$BehaviorCreateResponded(id),
+											A3(
+												$author$project$IndexedDb$add,
+												model.db,
+												$author$project$Main$behaviorStore,
+												$author$project$Main$encodeBehavior(
+													{id: id, name: model.behaviorNameToAdd, resists: _List_Nil, submits: _List_Nil})));
+										var dbTasks = _v12.a;
+										var cmd = _v12.b;
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{addingBehavior: true, dbTasks: dbTasks, seeds: seeds}),
+											cmd);
+									}
+								}
+							case 'BehaviorCreateResponded':
+								var id = msg.a;
+								var response = msg.b;
+								switch (response.$) {
+									case 'Error':
+										var err = response.a;
+										var _v14 = _Debug_todo(
+											'Main',
+											{
+												start: {line: 436, column: 41},
+												end: {line: 436, column: 51}
+											})(
+											$elm$core$Debug$toString(err));
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{addingBehavior: false}),
+											$elm$core$Platform$Cmd$none);
+									case 'UnexpectedError':
+										var err = response.a;
+										var _v15 = _Debug_todo(
+											'Main',
+											{
+												start: {line: 447, column: 41},
+												end: {line: 447, column: 51}
+											})(
+											$elm$core$Debug$toString(err));
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{addingBehavior: false}),
+											$elm$core$Platform$Cmd$none);
+									default:
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{
+													behaviorNameToAdd: '',
+													safetyBehaviors: A2(
+														$elm$core$List$cons,
+														{id: id, name: model.behaviorNameToAdd, resists: _List_Nil, submits: _List_Nil},
+														model.safetyBehaviors)
+												}),
 											A2(
-												$elm$core$List$sortBy,
-												function (_v12) {
-													var t = _v12.a;
-													return $elm$time$Time$posixToMillis(t);
-												},
-												timestamps));
-									}(),
-									name: A2(
-										$elm$core$String$filter,
-										function (_char) {
-											return $elm$core$Char$isAlphaNum(_char) || (_Utils_eq(
-												_char,
-												_Utils_chr('_')) || _Utils_eq(
-												_char,
-												_Utils_chr('-')));
-										},
-										behavior.name) + '-safety-behavior-data.csv',
-									type_: 'text/csv'
-								};
-							},
-							model.safetyBehaviors)));
+												$elm$browser$Browser$Navigation$pushUrl,
+												model.navKey,
+												$author$project$Main$routeToString($author$project$Main$HomeRoute)));
+								}
+							case 'SubmittedToBehavior':
+								var key = msg.a;
+								return _Utils_Tuple2(
+									model,
+									A2(
+										$elm$core$Task$perform,
+										$author$project$Main$SubmittedToBehaviorAt(key),
+										$elm$time$Time$now));
+							case 'SubmittedToBehaviorAt':
+								var id = msg.a;
+								var time = msg.b;
+								var _v16 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
+								if (_v16.$ === 'Nothing') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									var b = _v16.a;
+									var _v17 = A2(
+										$author$project$Main$doDbTask,
+										$author$project$Main$BehaviorSaveResponded(id),
+										A3(
+											$author$project$IndexedDb$put,
+											model.db,
+											$author$project$Main$behaviorStore,
+											$author$project$Main$encodeBehavior(b)));
+									var dbTasks = _v17.a;
+									var cmd = _v17.b;
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												safetyBehaviors: A2(
+													$elm$core$List$map,
+													function (behavior) {
+														return _Utils_eq(behavior.id, id) ? _Utils_update(
+															behavior,
+															{
+																submits: A2($elm$core$List$cons, time, behavior.submits)
+															}) : behavior;
+													},
+													model.safetyBehaviors)
+											}),
+										$elm$core$Platform$Cmd$none);
+								}
+							case 'ResistedBehavior':
+								var key = msg.a;
+								return _Utils_Tuple2(
+									model,
+									A2(
+										$elm$core$Task$perform,
+										$author$project$Main$ResistedBehaviorAt(key),
+										$elm$time$Time$now));
+							case 'ResistedBehaviorAt':
+								var id = msg.a;
+								var time = msg.b;
+								var _v18 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
+								if (_v18.$ === 'Nothing') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									var b = _v18.a;
+									var _v19 = A2(
+										$author$project$Main$doDbTask,
+										$author$project$Main$BehaviorSaveResponded(id),
+										A3(
+											$author$project$IndexedDb$put,
+											model.db,
+											$author$project$Main$behaviorStore,
+											$author$project$Main$encodeBehavior(b)));
+									var dbTasks = _v19.a;
+									var cmd = _v19.b;
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												safetyBehaviors: A2(
+													$elm$core$List$map,
+													function (behavior) {
+														return _Utils_eq(behavior.id, id) ? _Utils_update(
+															behavior,
+															{
+																resists: A2($elm$core$List$cons, time, behavior.resists)
+															}) : behavior;
+													},
+													model.safetyBehaviors)
+											}),
+										$elm$core$Platform$Cmd$none);
+								}
+							case 'BehaviorNameEdited':
+								var name = msg.a;
+								var _v20 = model.behaviorEditing;
+								if (_v20.$ === 'Nothing') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									var _v21 = _v20.a;
+									var old = _v21.a;
+									var _new = _v21.b;
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												behaviorEditing: $elm$core$Maybe$Just(
+													_Utils_Tuple2(
+														old,
+														_Utils_update(
+															_new,
+															{name: name})))
+											}),
+										$elm$core$Platform$Cmd$none);
+								}
+							case 'RemoveSubmit':
+								var timestamp = msg.a;
+								var _v22 = model.behaviorEditing;
+								if (_v22.$ === 'Nothing') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									var _v23 = _v22.a;
+									var old = _v23.a;
+									var _new = _v23.b;
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												behaviorEditing: $elm$core$Maybe$Just(
+													_Utils_Tuple2(
+														old,
+														_Utils_update(
+															_new,
+															{
+																submits: A2(
+																	$elm$core$List$filter,
+																	function (submit) {
+																		return !_Utils_eq(submit, timestamp);
+																	},
+																	_new.submits)
+															})))
+											}),
+										$elm$core$Platform$Cmd$none);
+								}
+							case 'RemoveResist':
+								var timestamp = msg.a;
+								var _v24 = model.behaviorEditing;
+								if (_v24.$ === 'Nothing') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									var _v25 = _v24.a;
+									var old = _v25.a;
+									var _new = _v25.b;
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												behaviorEditing: $elm$core$Maybe$Just(
+													_Utils_Tuple2(
+														old,
+														_Utils_update(
+															_new,
+															{
+																resists: A2(
+																	$elm$core$List$filter,
+																	function (resist) {
+																		return !_Utils_eq(resist, timestamp);
+																	},
+																	_new.resists)
+															})))
+											}),
+										$elm$core$Platform$Cmd$none);
+								}
+							case 'SaveBehavior':
+								var id = msg.a;
+								var _v26 = model.behaviorEditing;
+								if (_v26.$ === 'Nothing') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									var _v27 = _v26.a;
+									var _new = _v27.b;
+									if ($elm$core$String$isEmpty(_new.name)) {
+										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+									} else {
+										var _v28 = A2(
+											$author$project$Main$doDbTask,
+											$author$project$Main$BehaviorSaveResponded(id),
+											A3(
+												$author$project$IndexedDb$put,
+												model.db,
+												$author$project$Main$behaviorStore,
+												$author$project$Main$encodeBehavior(_new)));
+										var dbTasks = _v28.a;
+										var cmd = _v28.b;
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{
+													safetyBehaviors: A2(
+														$elm$core$List$map,
+														function (behavior) {
+															return _Utils_eq(behavior.id, id) ? _new : behavior;
+														},
+														model.safetyBehaviors)
+												}),
+											A2(
+												$elm$browser$Browser$Navigation$pushUrl,
+												model.navKey,
+												$author$project$Main$routeToString($author$project$Main$HomeRoute)));
+									}
+								}
+							case 'BehaviorSaveResponded':
+								var id = msg.a;
+								var response = msg.b;
+								switch (response.$) {
+									case 'Error':
+										var err = response.a;
+										var _v30 = _Debug_todo(
+											'Main',
+											{
+												start: {line: 624, column: 41},
+												end: {line: 624, column: 51}
+											})(
+											$elm$core$Debug$toString(err));
+										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+									case 'UnexpectedError':
+										var err = response.a;
+										var _v31 = _Debug_todo(
+											'Main',
+											{
+												start: {line: 633, column: 41},
+												end: {line: 633, column: 51}
+											})(
+											$elm$core$Debug$toString(err));
+										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+									default:
+										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								}
+							case 'DeleteBehavior':
+								var id = msg.a;
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{
+											confirmDelete: $elm$core$Maybe$Just(id)
+										}),
+									$elm$core$Platform$Cmd$none);
+							case 'ConfirmDeleteBehavior':
+								var id = msg.a;
+								var _v32 = A2(
+									$author$project$Main$doDbTask,
+									$author$project$Main$BehaviorDeleteResponded(id),
+									A3(
+										$author$project$IndexedDb$delete,
+										model.db,
+										$author$project$Main$behaviorStore,
+										$author$project$Main$uuidToKey(id)));
+								var dbTasks = _v32.a;
+								var cmd = _v32.b;
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{dbTasks: dbTasks, deleting: true}),
+									cmd);
+							case 'BehaviorDeleteResponded':
+								var key = msg.a;
+								var response = msg.b;
+								switch (response.$) {
+									case 'Error':
+										var err = response.a;
+										var _v34 = _Debug_todo(
+											'Main',
+											{
+												start: {line: 666, column: 41},
+												end: {line: 666, column: 51}
+											})(
+											$elm$core$Debug$toString(err));
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{deleting: false}),
+											$elm$core$Platform$Cmd$none);
+									case 'UnexpectedError':
+										var err = response.a;
+										var _v35 = _Debug_todo(
+											'Main',
+											{
+												start: {line: 677, column: 41},
+												end: {line: 677, column: 51}
+											})(
+											$elm$core$Debug$toString(err));
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{deleting: false}),
+											$elm$core$Platform$Cmd$none);
+									default:
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{
+													confirmDelete: $elm$core$Maybe$Nothing,
+													deleting: false,
+													safetyBehaviors: A2(
+														$elm$core$List$filter,
+														function (b) {
+															return !_Utils_eq(b.id, key);
+														},
+														model.safetyBehaviors)
+												}),
+											A2(
+												$elm$browser$Browser$Navigation$pushUrl,
+												model.navKey,
+												$author$project$Main$routeToString($author$project$Main$HomeRoute)));
+								}
+							case 'CancelDeleteBehavior':
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{confirmDelete: $elm$core$Maybe$Nothing}),
+									$elm$core$Platform$Cmd$none);
+							default:
+								return _Utils_Tuple2(
+									model,
+									$author$project$Main$export(
+										A2(
+											$elm$core$List$map,
+											function (behavior) {
+												return {
+													data: function () {
+														var timestamps = _Utils_ap(
+															A2(
+																$elm$core$List$map,
+																function (submit) {
+																	return _Utils_Tuple3(submit, 'x', '');
+																},
+																behavior.submits),
+															A2(
+																$elm$core$List$map,
+																function (resist) {
+																	return _Utils_Tuple3(resist, '', 'x');
+																},
+																behavior.resists));
+														return A2(
+															$BrianHicks$elm_csv$Csv$Encode$encode,
+															{
+																encoder: $BrianHicks$elm_csv$Csv$Encode$withFieldNames(
+																	function (_v37) {
+																		var date = _v37.a;
+																		var submit = _v37.b;
+																		var resist = _v37.c;
+																		return _List_fromArray(
+																			[
+																				_Utils_Tuple2(
+																				'date',
+																				A2($author$project$Main$exportDateFormatter, $elm$time$Time$utc, date)),
+																				_Utils_Tuple2('submit', submit),
+																				_Utils_Tuple2('resist', resist)
+																			]);
+																	}),
+																fieldSeparator: _Utils_chr(',')
+															},
+															A2(
+																$elm$core$List$sortBy,
+																function (_v36) {
+																	var t = _v36.a;
+																	return $elm$time$Time$posixToMillis(t);
+																},
+																timestamps));
+													}(),
+													name: A2(
+														$elm$core$String$filter,
+														function (_char) {
+															return $elm$core$Char$isAlphaNum(_char) || (_Utils_eq(
+																_char,
+																_Utils_chr('_')) || _Utils_eq(
+																_char,
+																_Utils_chr('-')));
+														},
+														behavior.name) + '-safety-behavior-data.csv',
+													type_: 'text/csv'
+												};
+											},
+											model.safetyBehaviors)));
+						}
+					}());
 		}
 	});
+var $author$project$Css$loader = $elm$html$Html$Attributes$class('loader');
+var $author$project$Main$spinner = A2(
+	$elm$html$Html$span,
+	_List_fromArray(
+		[$author$project$Css$loader]),
+	_List_Nil);
 var $author$project$Main$AddBehavior = {$: 'AddBehavior'};
 var $author$project$Main$BehaviorNameToAddChanged = function (a) {
 	return {$: 'BehaviorNameToAddChanged', a: a};
@@ -15897,9 +18098,7 @@ var $author$project$Main$buttonPrimary = F2(
 					_List_fromArray(
 						[$author$project$Css$front]),
 					_List_fromArray(
-						[
-							$elm$html$Html$text(label)
-						]))
+						[label]))
 				]));
 	});
 var $elm$html$Html$form = _VirtualDom_node('form');
@@ -15939,6 +18138,7 @@ var $author$project$Main$linkSecondary = F2(
 						]))
 				]));
 	});
+var $author$project$Main$noHtml = $elm$html$Html$text('');
 var $elm$html$Html$Events$alwaysPreventDefault = function (msg) {
 	return _Utils_Tuple2(msg, true);
 };
@@ -16036,7 +18236,29 @@ var $author$project$Main$viewAddBehavior = function (model) {
 						_List_fromArray(
 							[
 								A2($author$project$Main$linkSecondary, 'Cancel', $author$project$Main$HomeRoute),
-								A2($author$project$Main$buttonPrimary, 'Add', $author$project$Main$AddBehavior)
+								A2(
+								$author$project$Main$buttonPrimary,
+								A2(
+									$elm$html$Html$div,
+									_List_fromArray(
+										[
+											A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+											A2($elm$html$Html$Attributes$style, 'gap', '1rem')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('Add'),
+											model.addingBehavior ? A2(
+											$elm$html$Html$div,
+											_List_fromArray(
+												[
+													A2($elm$html$Html$Attributes$style, 'width', '1rem'),
+													A2($elm$html$Html$Attributes$style, 'height', '1rem')
+												]),
+											_List_fromArray(
+												[$author$project$Main$spinner])) : $author$project$Main$noHtml
+										])),
+								$author$project$Main$AddBehavior)
 							]))
 					]))
 			]));
@@ -16177,83 +18399,82 @@ var $author$project$Main$buttonSecondary = F2(
 						]))
 				]));
 	});
-var $author$project$Main$viewBehaviorInList = F2(
-	function (index, behavior) {
-		return A2(
-			$elm$html$Html$div,
-			_List_fromArray(
-				[
-					A2($elm$html$Html$Attributes$style, 'width', 'calc(100% - 1rem)'),
-					A2($elm$html$Html$Attributes$style, 'padding', '0.5rem 1rem 1rem 1rem'),
-					A2($elm$html$Html$Attributes$style, 'margin', '0.5rem'),
-					A2($elm$html$Html$Attributes$style, 'border-radius', '0.5rem'),
-					A2($elm$html$Html$Attributes$style, 'background', 'hsl(265deg, 100%, 95%)')
-				]),
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$div,
-					_List_fromArray(
-						[
-							A2($elm$html$Html$Attributes$style, 'display', 'flex'),
-							A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between'),
-							A2($elm$html$Html$Attributes$style, 'align-items', 'center')
-						]),
-					_List_fromArray(
-						[
-							A2(
-							$elm$html$Html$span,
-							_List_Nil,
-							_List_fromArray(
-								[
-									$elm$html$Html$text(behavior.name)
-								])),
-							A2(
-							$author$project$Main$linkSecondaryIcon,
-							'✎',
-							$author$project$Main$EditBehaviorRoute(index))
-						])),
-					A2(
-					$elm$html$Html$div,
-					_List_fromArray(
-						[
-							A2($elm$html$Html$Attributes$style, 'display', 'flex'),
-							A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between'),
-							A2($elm$html$Html$Attributes$style, 'margin-top', '1rem')
-						]),
-					_List_fromArray(
-						[
-							A2(
-							$elm$html$Html$div,
-							_List_fromArray(
-								[
-									A2($elm$html$Html$Attributes$style, 'font-size', '6vw'),
-									A2($elm$html$Html$Attributes$style, 'align-self', 'center')
-								]),
-							_List_fromArray(
-								[
-									A2(
-									$author$project$Main$buttonSecondary,
-									'Submit',
-									$author$project$Main$SubmittedToBehavior(index))
-								])),
-							A2(
-							$elm$html$Html$div,
-							_List_fromArray(
-								[
-									A2($elm$html$Html$Attributes$style, 'font-size', '6vw'),
-									A2($elm$html$Html$Attributes$style, 'align-self', 'center')
-								]),
-							_List_fromArray(
-								[
-									A2(
-									$author$project$Main$buttonSecondary,
-									'Resist',
-									$author$project$Main$ResistedBehavior(index))
-								]))
-						]))
-				]));
-	});
+var $author$project$Main$viewBehaviorInList = function (behavior) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$Attributes$style, 'width', 'calc(100% - 1rem)'),
+				A2($elm$html$Html$Attributes$style, 'padding', '0.5rem 1rem 1rem 1rem'),
+				A2($elm$html$Html$Attributes$style, 'margin', '0.5rem'),
+				A2($elm$html$Html$Attributes$style, 'border-radius', '0.5rem'),
+				A2($elm$html$Html$Attributes$style, 'background', 'hsl(265deg, 100%, 95%)')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+						A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between'),
+						A2($elm$html$Html$Attributes$style, 'align-items', 'center')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$span,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text(behavior.name)
+							])),
+						A2(
+						$author$project$Main$linkSecondaryIcon,
+						'✎',
+						$author$project$Main$EditBehaviorRoute(behavior.id))
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+						A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between'),
+						A2($elm$html$Html$Attributes$style, 'margin-top', '1rem')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'font-size', '6vw'),
+								A2($elm$html$Html$Attributes$style, 'align-self', 'center')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$author$project$Main$buttonSecondary,
+								'Submit',
+								$author$project$Main$SubmittedToBehavior(behavior.id))
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'font-size', '6vw'),
+								A2($elm$html$Html$Attributes$style, 'align-self', 'center')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$author$project$Main$buttonSecondary,
+								'Resist',
+								$author$project$Main$ResistedBehavior(behavior.id))
+							]))
+					]))
+			]));
+};
 var $author$project$Main$viewBehaviorList = function (model) {
 	var _v0 = model.safetyBehaviors;
 	if (!_v0.b) {
@@ -16332,7 +18553,7 @@ var $author$project$Main$viewBehaviorList = function (model) {
 							A2($elm$html$Html$Attributes$style, 'height', '93vh'),
 							A2($elm$html$Html$Attributes$style, 'overflow', 'auto')
 						]),
-					A2($elm$core$List$indexedMap, $author$project$Main$viewBehaviorInList, safetyBehaviors))
+					A2($elm$core$List$map, $author$project$Main$viewBehaviorInList, safetyBehaviors))
 				]));
 	}
 };
@@ -16659,7 +18880,7 @@ var $author$project$Main$viewEditBehavior = F2(
 										A2($author$project$Main$linkSecondary, 'Cancel', $author$project$Main$HomeRoute),
 										A2(
 										$author$project$Main$buttonPrimary,
-										'Save',
+										$elm$html$Html$text('Save'),
 										$author$project$Main$SaveBehavior(id))
 									])),
 								function () {
@@ -16781,37 +19002,73 @@ var $author$project$Main$viewMenu = A2(
 						]))
 				]))
 		]));
-var $author$project$Main$view = function (model) {
-	var _v0 = model.route;
-	switch (_v0.$) {
-		case 'HomeRoute':
-			return $author$project$Main$viewBehaviorList(model);
-		case 'AddBehaviorRoute':
-			return $author$project$Main$viewAddBehavior(model);
-		case 'EditBehaviorRoute':
-			var id = _v0.a;
-			return A2($author$project$Main$viewEditBehavior, id, model);
+var $author$project$Main$viewApp = function (app) {
+	switch (app.$) {
+		case 'StartupFailure':
+			return A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Initialization failure. Try reloading the page')
+					]));
+		case 'Initializing':
+			return A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2($elm$html$Html$Attributes$style, 'width', '3rem'),
+						A2($elm$html$Html$Attributes$style, 'height', '3rem')
+					]),
+				_List_fromArray(
+					[$author$project$Main$spinner]));
 		default:
-			return $author$project$Main$viewMenu;
+			var model = app.a;
+			var _v1 = model.route;
+			switch (_v1.$) {
+				case 'HomeRoute':
+					return $author$project$Main$viewBehaviorList(model);
+				case 'AddBehaviorRoute':
+					return $author$project$Main$viewAddBehavior(model);
+				case 'EditBehaviorRoute':
+					var id = _v1.a;
+					return A2($author$project$Main$viewEditBehavior, id, model);
+				default:
+					return $author$project$Main$viewMenu;
+			}
 	}
 };
-var $author$project$Main$viewport = function (model) {
+var $author$project$Main$view = function (app) {
 	return {
 		body: _List_fromArray(
 			[
-				$author$project$Main$view(model)
+				$author$project$Main$viewApp(app)
 			]),
 		title: 'OCD / Anxiety App'
 	};
 };
 var $author$project$Main$main = $elm$browser$Browser$application(
-	{
-		init: $author$project$Main$init,
-		onUrlChange: $author$project$Main$UrlChanged,
-		onUrlRequest: $author$project$Main$UrlRequested,
-		subscriptions: $elm$core$Basics$always($elm$core$Platform$Sub$none),
-		update: $author$project$Main$update,
-		view: $author$project$Main$viewport
-	});
+	{init: $author$project$Main$init, onUrlChange: $author$project$Main$UrlChanged, onUrlRequest: $author$project$Main$UrlRequested, subscriptions: $author$project$Main$subscriptions, update: $author$project$Main$update, view: $author$project$Main$view});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"UrlChanged":["Url.Url"],"UrlRequested":["Browser.UrlRequest"],"AddBehavior":[],"BehaviorNameToAddChanged":["String.String"],"SubmittedToBehavior":["Basics.Int"],"SubmittedToBehaviorAt":["Basics.Int","Time.Posix"],"ResistedBehavior":["Basics.Int"],"ResistedBehaviorAt":["Basics.Int","Time.Posix"],"BehaviorNameEdited":["String.String"],"RemoveSubmit":["Time.Posix"],"RemoveResist":["Time.Posix"],"SaveBehavior":["Basics.Int"],"DeleteBehavior":["Basics.Int"],"ConfirmDeleteBehavior":["Basics.Int"],"CancelDeleteBehavior":[],"Export":[]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));
+	A2(
+		$elm$json$Json$Decode$andThen,
+		function (seed4) {
+			return A2(
+				$elm$json$Json$Decode$andThen,
+				function (seed3) {
+					return A2(
+						$elm$json$Json$Decode$andThen,
+						function (seed2) {
+							return A2(
+								$elm$json$Json$Decode$andThen,
+								function (seed1) {
+									return $elm$json$Json$Decode$succeed(
+										{seed1: seed1, seed2: seed2, seed3: seed3, seed4: seed4});
+								},
+								A2($elm$json$Json$Decode$field, 'seed1', $elm$json$Json$Decode$int));
+						},
+						A2($elm$json$Json$Decode$field, 'seed2', $elm$json$Json$Decode$int));
+				},
+				A2($elm$json$Json$Decode$field, 'seed3', $elm$json$Json$Decode$int));
+		},
+		A2($elm$json$Json$Decode$field, 'seed4', $elm$json$Json$Decode$int)))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Main.Behavior":{"args":[],"type":"{ id : UUID.UUID, name : String.String, submits : List.List Time.Posix, resists : List.List Time.Posix }"},"ConcurrentTask.Pool":{"args":["msg"],"type":"ConcurrentTask.Internal.Pool msg"},"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"},"ConcurrentTask.Internal.AttemptId":{"args":[],"type":"ConcurrentTask.Internal.Ids.Id"},"ConcurrentTask.Internal.Ids.Id":{"args":[],"type":"String.String"},"ConcurrentTask.Internal.Pool_":{"args":["msg"],"type":"{ poolId : Maybe.Maybe Basics.Int, attempts : Dict.Dict ConcurrentTask.Internal.AttemptId (ConcurrentTask.Internal.Progress msg), attemptIds : ConcurrentTask.Internal.Ids.Ids }"},"ConcurrentTask.Internal.Progress":{"args":["msg"],"type":"{ inFlight : Set.Set ConcurrentTask.Internal.TaskId, task : ( ConcurrentTask.Internal.Ids.Ids, ConcurrentTask.Internal.ConcurrentTask msg msg ), onComplete : ConcurrentTask.Internal.Response msg msg -> msg }"},"ConcurrentTask.Internal.TaskId":{"args":[],"type":"ConcurrentTask.Internal.Ids.Id"},"ConcurrentTask.Internal.Results":{"args":[],"type":"Dict.Dict ConcurrentTask.Internal.TaskId Json.Decode.Value"},"Json.Decode.Value":{"args":[],"type":"Json.Encode.Value"},"ConcurrentTask.Internal.Todo":{"args":[],"type":"{ taskId : ConcurrentTask.Internal.TaskId, function : String.String, args : Json.Encode.Value }"},"Array.Tree":{"args":["a"],"type":"Elm.JsArray.JsArray (Array.Node a)"}},"unions":{"Main.Msg":{"args":[],"tags":{"UrlChanged":["Url.Url"],"UrlRequested":["Browser.UrlRequest"],"OnDbProgress":["( ConcurrentTask.Pool Main.Msg, Platform.Cmd.Cmd Main.Msg )"],"DbLoaded":["ConcurrentTask.Response IndexedDb.Error ( IndexedDb.Db, List.List Main.Behavior )"],"AddBehavior":[],"BehaviorCreateResponded":["UUID.UUID","ConcurrentTask.Response IndexedDb.Error IndexedDb.Key"],"BehaviorNameToAddChanged":["String.String"],"SubmittedToBehavior":["UUID.UUID"],"SubmittedToBehaviorAt":["UUID.UUID","Time.Posix"],"ResistedBehavior":["UUID.UUID"],"ResistedBehaviorAt":["UUID.UUID","Time.Posix"],"BehaviorNameEdited":["String.String"],"RemoveSubmit":["Time.Posix"],"RemoveResist":["Time.Posix"],"SaveBehavior":["UUID.UUID"],"BehaviorSaveResponded":["UUID.UUID","ConcurrentTask.Response IndexedDb.Error IndexedDb.Key"],"DeleteBehavior":["UUID.UUID"],"ConfirmDeleteBehavior":["UUID.UUID"],"BehaviorDeleteResponded":["UUID.UUID","ConcurrentTask.Response IndexedDb.Error ()"],"CancelDeleteBehavior":[],"Export":[]}},"Platform.Cmd.Cmd":{"args":["msg"],"tags":{"Cmd":[]}},"IndexedDb.Db":{"args":[],"tags":{"Db":["String.String"]}},"IndexedDb.Error":{"args":[],"tags":{"AlreadyExists":[],"TransactionError":["String.String"],"QuotaExceeded":[],"DatabaseError":["String.String"]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"IndexedDb.Key":{"args":[],"tags":{"StringKey":["String.String"],"IntKey":["Basics.Int"],"FloatKey":["Basics.Float"],"CompoundKey":["List.List IndexedDb.Key"]}},"List.List":{"args":["a"],"tags":{}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"ConcurrentTask.Internal.Pool":{"args":["msg"],"tags":{"Pool":["ConcurrentTask.Internal.Pool_ msg"]}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"ConcurrentTask.Response":{"args":["x","a"],"tags":{"Success":["a"],"Error":["x"],"UnexpectedError":["ConcurrentTask.UnexpectedError"]}},"String.String":{"args":[],"tags":{"String":[]}},"UUID.UUID":{"args":[],"tags":{"UUID":["Basics.Int","Basics.Int","Basics.Int","Basics.Int"]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}},"ConcurrentTask.Internal.ConcurrentTask":{"args":["x","a"],"tags":{"Task":["ConcurrentTask.Internal.Results -> ConcurrentTask.Internal.Ids.Ids -> ( ConcurrentTask.Internal.Ids.Ids, ConcurrentTask.Internal.Task_ x a )"]}},"Dict.Dict":{"args":["k","v"],"tags":{"RBNode_elm_builtin":["Dict.NColor","k","v","Dict.Dict k v","Dict.Dict k v"],"RBEmpty_elm_builtin":[]}},"Basics.Float":{"args":[],"tags":{"Float":[]}},"ConcurrentTask.Internal.Ids.Ids":{"args":[],"tags":{"Sequence":["Basics.Int"]}},"ConcurrentTask.Internal.Response":{"args":["x","a"],"tags":{"Success":["a"],"Error":["x"],"UnexpectedError":["ConcurrentTask.Internal.UnexpectedError"]}},"Set.Set":{"args":["t"],"tags":{"Set_elm_builtin":["Dict.Dict t ()"]}},"ConcurrentTask.UnexpectedError":{"args":[],"tags":{"UnhandledJsException":["{ function : String.String, message : String.String, raw : Json.Decode.Value }"],"ResponseDecoderFailure":["{ function : String.String, error : Json.Decode.Error }"],"ErrorsDecoderFailure":["{ function : String.String, error : Json.Decode.Error }"],"MissingFunction":["String.String"],"InternalError":["String.String"]}},"Json.Decode.Error":{"args":[],"tags":{"Field":["String.String","Json.Decode.Error"],"Index":["Basics.Int","Json.Decode.Error"],"OneOf":["List.List Json.Decode.Error"],"Failure":["String.String","Json.Decode.Value"]}},"Dict.NColor":{"args":[],"tags":{"Red":[],"Black":[]}},"ConcurrentTask.Internal.Task_":{"args":["x","a"],"tags":{"Pending":["Array.Array ConcurrentTask.Internal.Todo","ConcurrentTask.Internal.ConcurrentTask x a"],"Done":["ConcurrentTask.Internal.Response x a"]}},"ConcurrentTask.Internal.UnexpectedError":{"args":[],"tags":{"UnhandledJsException":["{ function : String.String, message : String.String, raw : Json.Decode.Value }"],"ResponseDecoderFailure":["{ function : String.String, error : Json.Decode.Error }"],"ErrorsDecoderFailure":["{ function : String.String, error : Json.Decode.Error }"],"MissingFunction":["String.String"],"InternalError":["String.String"]}},"Json.Encode.Value":{"args":[],"tags":{"Value":[]}},"Array.Array":{"args":["a"],"tags":{"Array_elm_builtin":["Basics.Int","Basics.Int","Array.Tree a","Elm.JsArray.JsArray a"]}},"Elm.JsArray.JsArray":{"args":["a"],"tags":{"JsArray":["a"]}},"Array.Node":{"args":["a"],"tags":{"SubTree":["Array.Tree a"],"Leaf":["Elm.JsArray.JsArray a"]}}}}})}});}(this));

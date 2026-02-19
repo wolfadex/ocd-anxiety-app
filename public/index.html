@@ -1,32 +1,59 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
-    <title>OCD Anxiety App</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <script src="/elm.js"></script>
-    <script>
-      var app = Elm.Main.init();
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+        />
+        <title>OCD Anxiety App</title>
+        <link rel="stylesheet" href="/styles.css" />
+    </head>
+    <body>
+        <script type="importmap">
+            {
+                "imports": {
+                    "elm-concurrent-task/": "/elm-concurrent-task/mjs/",
+                    "elm-indexeddb": "/elm-indexeddb.js"
+                }
+            }
+        </script>
+        <script src="/elm.js"></script>
+        <script type="module">
+            import * as ConcurrentTask from "elm-concurrent-task/index.js";
+            import { createTasks } from "elm-indexeddb";
 
-      app.ports.export.subscribe(function (files) {
-        for (const file of files) {
-          const blob = new Blob([file.data], { type: file.type_ });
-          const url = URL.createObjectURL(blob);
-          const aEl = document.createElement("a");
-          aEl.href = url;
-          aEl.download = file.name;
-          document.body.appendChild(aEl);
-          aEl.click();
-          URL.revokeObjectURL(url);
-          document.body.removeChild(aEl);
-        }
-      });
-    </script>
-  </body>
+            const randSeeds = new Uint32Array(4);
+            var app = Elm.Main.init({
+                flags: {
+                    seed1: randSeeds[0],
+                    seed2: randSeeds[1],
+                    seed3: randSeeds[2],
+                    seed4: randSeeds[3],
+                },
+            });
+
+            ConcurrentTask.register({
+                tasks: createTasks(),
+                ports: {
+                    send: app.ports.sendToDb,
+                    receive: app.ports.receiveFromDb,
+                },
+            });
+
+            app.ports.export.subscribe(function (files) {
+                for (const file of files) {
+                    const blob = new Blob([file.data], { type: file.type_ });
+                    const url = URL.createObjectURL(blob);
+                    const aEl = document.createElement("a");
+                    aEl.href = url;
+                    aEl.download = file.name;
+                    document.body.appendChild(aEl);
+                    aEl.click();
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(aEl);
+                }
+            });
+        </script>
+    </body>
 </html>

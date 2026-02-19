@@ -1,4 +1,4 @@
-module Css exposing (pushable, shadow, edge, front, edgeDanger, frontDanger, edgeSecondary, frontSecondary, frontSmall, frontIcon)
+module Css exposing (pushable, shadow, edge, front, edgeDanger, frontDanger, edgeSecondary, frontSecondary, frontSmall, frontIcon, loader)
 
 import Html
 import Html.Attributes
@@ -52,3 +52,8 @@ frontSmall =
 frontIcon : Html.Attribute msg
 frontIcon =
     Html.Attributes.class "frontIcon"
+
+
+loader : Html.Attribute msg
+loader =
+    Html.Attributes.class "loader"
