@@ -1,8 +1,11 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import AppUrl
 import Browser
 import Browser.Navigation
+import Csv.Encode
+import Date
+import DateFormat
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events
@@ -128,6 +131,8 @@ type Msg
     | RemoveSubmit Time.Posix
     | RemoveResist Time.Posix
     | SaveBehavior Int
+      --
+    | Export
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -305,6 +310,75 @@ update msg model =
                         , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
                         )
 
+        Export ->
+            ( model
+            , model.safetyBehaviors
+                |> List.map
+                    (\behavior ->
+                        { name =
+                            String.filter
+                                (\char -> Char.isAlphaNum char || char == '_' || char == '-')
+                                behavior.name
+                                ++ "-safety-behavior-data.csv"
+                        , type_ = "text/csv"
+                        , data =
+                            let
+                                timestamps =
+                                    List.map
+                                        (\submit ->
+                                            ( submit
+                                            , "x"
+                                            , ""
+                                            )
+                                        )
+                                        behavior.submits
+                                        ++ List.map
+                                            (\resist ->
+                                                ( resist
+                                                , ""
+                                                , "x"
+                                                )
+                                            )
+                                            behavior.resists
+                            in
+                            timestamps
+                                |> List.sortBy (\( t, _, _ ) -> Time.posixToMillis t)
+                                |> Csv.Encode.encode
+                                    { encoder =
+                                        Csv.Encode.withFieldNames
+                                            (\( date, submit, resist ) ->
+                                                [ ( "date", exportDateFormatter Time.utc date )
+                                                , ( "submit", submit )
+                                                , ( "resist", resist )
+                                                ]
+                                            )
+                                    , fieldSeparator = ','
+                                    }
+                        }
+                    )
+                |> export
+            )
+
+
+port export : List { name : String, data : String, type_ : String } -> Cmd msg
+
+
+exportDateFormatter : Time.Zone -> Time.Posix -> String
+exportDateFormatter =
+    DateFormat.format
+        [ DateFormat.dayOfMonthNumber
+        , DateFormat.text "/"
+        , DateFormat.monthNumber
+        , DateFormat.text "/"
+        , DateFormat.yearNumber
+        , DateFormat.text " "
+        , DateFormat.hourNumber
+        , DateFormat.text ":"
+        , DateFormat.minuteFixed
+        , DateFormat.text " "
+        , DateFormat.amPmUppercase
+        ]
+
 
 findBehaviorById : Int -> List Behavior -> Maybe Behavior
 findBehaviorById id behaviors =
@@ -389,7 +463,7 @@ viewEditBehavior id model =
                         |> List.map
                             (\submit ->
                                 Html.li []
-                                    [ Html.text <| timePrettyPrint submit
+                                    [ Html.text <| prettyDateFormatter Time.utc submit
                                     , buttonSecondarySmall "Remove"
                                         (RemoveSubmit submit)
                                     ]
@@ -407,7 +481,7 @@ viewEditBehavior id model =
                         |> List.map
                             (\resist ->
                                 Html.li []
-                                    [ Html.text <| timePrettyPrint resist
+                                    [ Html.text <| prettyDateFormatter Time.utc resist
                                     , buttonSecondarySmall "Remove"
                                         (RemoveResist resist)
                                     ]
@@ -506,6 +580,23 @@ timePrettyPrint time =
     month ++ " " ++ day ++ ", " ++ year ++ " at " ++ hourStr ++ ":" ++ minute ++ " " ++ amPm
 
 
+prettyDateFormatter : Time.Zone -> Time.Posix -> String
+prettyDateFormatter =
+    DateFormat.format
+        [ DateFormat.monthNameAbbreviated
+        , DateFormat.text " "
+        , DateFormat.dayOfMonthSuffix
+        , DateFormat.text ", "
+        , DateFormat.yearNumber
+        , DateFormat.text " at "
+        , DateFormat.hourNumber
+        , DateFormat.text ":"
+        , DateFormat.minuteFixed
+        , DateFormat.text " "
+        , DateFormat.amPmUppercase
+        ]
+
+
 viewMenu : Model -> Html Msg
 viewMenu model =
     Html.div
@@ -534,7 +625,8 @@ viewMenu model =
             , Html.br [] []
             , Html.span [] [ Html.text "TODO: Edit behaviors (rename, remove)" ]
             , Html.br [] []
-            , Html.span [] [ Html.text "TODO: Export (csv)" ]
+            , buttonSecondary "Export (csv)"
+                Export
             , Html.br [] []
             , Html.span [] [ Html.text "TODO: Import (csv)" ]
             ]
