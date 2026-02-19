@@ -1,10 +1,10 @@
-port module Main exposing (main)
+port module Main exposing (Behavior, Flags, Model, Msg, Route, main)
 
 import AppUrl
 import Browser
 import Browser.Navigation
+import Css
 import Csv.Encode
-import Date
 import DateFormat
 import Html exposing (Html)
 import Html.Attributes as Attr
@@ -36,6 +36,7 @@ type alias Model =
     , safetyBehaviors : List Behavior
     , behaviorNameToAdd : String
     , behaviorEditing : Maybe ( Behavior, Behavior )
+    , confirmDelete : Maybe Int
     }
 
 
@@ -108,6 +109,7 @@ init () url navKey =
       , safetyBehaviors = []
       , behaviorNameToAdd = ""
       , behaviorEditing = Nothing
+      , confirmDelete = Nothing
       }
     , Cmd.none
     )
@@ -131,6 +133,9 @@ type Msg
     | RemoveSubmit Time.Posix
     | RemoveResist Time.Posix
     | SaveBehavior Int
+    | DeleteBehavior Int
+    | ConfirmDeleteBehavior Int
+    | CancelDeleteBehavior
       --
     | Export
 
@@ -158,6 +163,7 @@ update msg model =
                             ( { model
                                 | route = route
                                 , behaviorEditing = Just ( behavior, behavior )
+                                , confirmDelete = Nothing
                               }
                             , Cmd.none
                             )
@@ -310,6 +316,22 @@ update msg model =
                         , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
                         )
 
+        DeleteBehavior id ->
+            ( { model | confirmDelete = Just id }, Cmd.none )
+
+        ConfirmDeleteBehavior id ->
+            ( { model
+                | confirmDelete = Nothing
+                , safetyBehaviors =
+                    List.take id model.safetyBehaviors
+                        ++ List.drop (id + 1) model.safetyBehaviors
+              }
+            , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
+            )
+
+        CancelDeleteBehavior ->
+            ( { model | confirmDelete = Nothing }, Cmd.none )
+
         Export ->
             ( model
             , model.safetyBehaviors
@@ -413,7 +435,7 @@ view model =
             viewEditBehavior id model
 
         SettingsRoute ->
-            viewMenu model
+            viewMenu
 
 
 viewEditBehavior : Int -> Model -> Html Msg
@@ -428,156 +450,122 @@ viewEditBehavior id model =
                 ]
 
         Just ( current, edited ) ->
-            Html.form
-                [ Html.Events.onSubmit (SaveBehavior id)
-                , Attr.style "padding" "8rem 0.5rem 0 0.5rem"
-                , Attr.style "width" "calc(100vw - 1rem)"
+            Html.div
+                [ Attr.style "height" "100svh"
+                , Attr.style "width" "100dvw"
                 , Attr.style "display" "flex"
                 , Attr.style "flex-direction" "column"
-                , Attr.style "gap" "4rem"
+                , Attr.style "align-items" "center"
                 ]
-                [ Html.h1 [] [ Html.span [] [ Html.text ("Editing: " ++ current.name) ] ]
-                , Html.label
-                    [ Attr.style "display" "flex"
+                [ Html.h1 []
+                    [ Html.span [] [ Html.text "Editing: " ]
+                    , Html.span [ Attr.style "font-weight" "normal" ] [ Html.text current.name ]
+                    ]
+                , Html.form
+                    [ Html.Events.onSubmit (SaveBehavior id)
+                    , Attr.style "padding" "0 0.5rem"
+                    , Attr.style "width" "calc(100vw - 1rem)"
+                    , Attr.style "height" "100vh"
+                    , Attr.style "display" "flex"
                     , Attr.style "flex-direction" "column"
-                    , Attr.style "align-items" "start"
+                    , Attr.style "gap" "4rem"
                     ]
-                    [ Html.span
-                        [ Attr.style "font-size" "2rem"
+                    [ Html.label
+                        [ Attr.style "display" "flex"
+                        , Attr.style "flex-direction" "column"
+                        , Attr.style "align-items" "start"
                         ]
-                        [ Html.text "Name" ]
-                    , Html.input
-                        [ Attr.style "font-size" "2rem"
+                        [ Html.span
+                            [ Attr.style "font-size" "2rem"
+                            ]
+                            [ Html.text "Name" ]
+                        , Html.input
+                            [ Attr.style "font-size" "2rem"
+                            , Attr.style "width" "100%"
+                            , Attr.value edited.name
+                            , Html.Events.onInput BehaviorNameEdited
+                            ]
+                            []
+                        ]
+                    , Html.details
+                        [ Attr.style "width" "100%"
+                        , Attr.style "padding" "1rem"
+                        , Attr.style "border" "1px solid black"
+                        , Attr.style "border-radius" "1rem"
+                        ]
+                        [ Html.summary [ Attr.style "font-size" "1.5rem" ] [ Html.text "Submits" ]
+                        , edited.submits
+                            |> List.map
+                                (\submit ->
+                                    Html.li
+                                        [ Attr.style "display" "flex"
+                                        , Attr.style "justify-content" "space-between"
+                                        , Attr.style "margin-top" "0.75rem"
+                                        ]
+                                        [ Html.text <| prettyDateFormatter Time.utc submit
+                                        , buttonSecondarySmall "Remove"
+                                            (RemoveSubmit submit)
+                                        ]
+                                )
+                            |> Html.ol
+                                [ Attr.style "list-style" "none"
+                                , Attr.style "display" "flex"
+                                , Attr.style "flex-direction" "column"
+                                ]
+                        ]
+                    , Html.details
+                        [ Attr.style "width" "100%"
+                        , Attr.style "padding" "1rem"
+                        , Attr.style "border" "1px solid black"
+                        , Attr.style "border-radius" "1rem"
+                        ]
+                        [ Html.summary [ Attr.style "font-size" "1.5rem" ] [ Html.text "Resists" ]
+                        , edited.resists
+                            |> List.map
+                                (\resist ->
+                                    Html.li
+                                        [ Attr.style "display" "flex"
+                                        , Attr.style "justify-content" "space-between"
+                                        , Attr.style "margin-top" "0.75rem"
+                                        ]
+                                        [ Html.text <| prettyDateFormatter Time.utc resist
+                                        , buttonSecondarySmall "Remove"
+                                            (RemoveResist resist)
+                                        ]
+                                )
+                            |> Html.ol
+                                [ Attr.style "list-style" "none"
+                                , Attr.style "display" "flex"
+                                , Attr.style "flex-direction" "column"
+                                ]
+                        ]
+                    , Html.div
+                        [ Attr.style "display" "flex"
                         , Attr.style "width" "100%"
-                        , Attr.value edited.name
-                        , Html.Events.onInput BehaviorNameEdited
+                        , Attr.style "justify-content" "space-between"
                         ]
-                        []
-                    ]
-                , Html.details
-                    [ Attr.style "width" "100%"
-                    , Attr.style "padding" "0 1rem"
-                    ]
-                    [ Html.summary [] [ Html.text "Submits" ]
-                    , edited.submits
-                        |> List.map
-                            (\submit ->
-                                Html.li []
-                                    [ Html.text <| prettyDateFormatter Time.utc submit
-                                    , buttonSecondarySmall "Remove"
-                                        (RemoveSubmit submit)
-                                    ]
-                            )
-                        |> Html.ol
-                            [ Attr.style "list-style" "none"
-                            ]
-                    ]
-                , Html.details
-                    [ Attr.style "width" "100%"
-                    , Attr.style "padding" "0 1rem"
-                    ]
-                    [ Html.summary [] [ Html.text "Resists" ]
-                    , edited.resists
-                        |> List.map
-                            (\resist ->
-                                Html.li []
-                                    [ Html.text <| prettyDateFormatter Time.utc resist
-                                    , buttonSecondarySmall "Remove"
-                                        (RemoveResist resist)
-                                    ]
-                            )
-                        |> Html.ol
-                            [ Attr.style "list-style" "none"
-                            ]
-                    ]
-                , Html.div
-                    [ Attr.style "display" "flex"
-                    , Attr.style "width" "100%"
-                    , Attr.style "justify-content" "space-between"
-                    ]
-                    [ linkSecondary "Cancel"
-                        HomeRoute
-                    , buttonPrimary "Save" (SaveBehavior id)
+                        [ linkSecondary "Cancel"
+                            HomeRoute
+                        , buttonPrimary "Save" (SaveBehavior id)
+                        ]
+                    , case model.confirmDelete of
+                        Nothing ->
+                            buttonDanger "Delete"
+                                (DeleteBehavior id)
+
+                        Just _ ->
+                            Html.div
+                                [ Attr.style "display" "flex"
+                                , Attr.style "width" "100%"
+                                , Attr.style "justify-content" "space-between"
+                                ]
+                                [ buttonSecondary "Keep"
+                                    CancelDeleteBehavior
+                                , buttonDanger "Yes, Delete"
+                                    (ConfirmDeleteBehavior id)
+                                ]
                     ]
                 ]
-
-
-timePrettyPrint : Time.Posix -> String
-timePrettyPrint time =
-    let
-        month =
-            case Time.toMonth Time.utc time of
-                Time.Jan ->
-                    "Jan"
-
-                Time.Feb ->
-                    "Feb"
-
-                Time.Mar ->
-                    "Mar"
-
-                Time.Apr ->
-                    "Apr"
-
-                Time.May ->
-                    "May"
-
-                Time.Jun ->
-                    "Jun"
-
-                Time.Jul ->
-                    "Jul"
-
-                Time.Aug ->
-                    "Aug"
-
-                Time.Sep ->
-                    "Sep"
-
-                Time.Oct ->
-                    "Oct"
-
-                Time.Nov ->
-                    "Nov"
-
-                Time.Dec ->
-                    "Dec"
-
-        day =
-            Time.toDay Time.utc time
-                |> String.fromInt
-
-        year =
-            Time.toYear Time.utc time
-                |> String.fromInt
-
-        hour =
-            Time.toHour Time.utc time
-
-        minute =
-            Time.toMinute Time.utc time
-                |> String.fromInt
-                |> String.padLeft 2 '0'
-
-        amPm =
-            if hour > 11 then
-                "PM"
-
-            else
-                "AM"
-
-        hourStr =
-            String.fromInt <|
-                if hour == 0 then
-                    12
-
-                else if hour > 12 then
-                    hour - 12
-
-                else
-                    hour
-    in
-    month ++ " " ++ day ++ ", " ++ year ++ " at " ++ hourStr ++ ":" ++ minute ++ " " ++ amPm
 
 
 prettyDateFormatter : Time.Zone -> Time.Posix -> String
@@ -597,8 +585,8 @@ prettyDateFormatter =
         ]
 
 
-viewMenu : Model -> Html Msg
-viewMenu model =
+viewMenu : Html Msg
+viewMenu =
     Html.div
         [ Attr.style "height" "100vh"
         , Attr.style "width" "100vw"
@@ -622,8 +610,6 @@ viewMenu model =
             , Attr.style "overflow" "auto"
             ]
             [ Html.span [] [ Html.text "TODO: Stats" ]
-            , Html.br [] []
-            , Html.span [] [ Html.text "TODO: Edit behaviors (rename, remove)" ]
             , Html.br [] []
             , buttonSecondary "Export (csv)"
                 Export
@@ -671,7 +657,7 @@ viewBehaviorList model =
                     , Attr.style "justify-content" "space-between"
                     , Attr.style "padding" "0.5rem"
                     ]
-                    [ linkPrimarySmall "Add behavior"
+                    [ linkPrimarySmall "Add safety behavior"
                         AddBehaviorRoute
                     , linkSecondaryIcon "☰"
                         SettingsRoute
@@ -737,7 +723,7 @@ viewAddBehavior model =
         , Attr.style "flex-direction" "column"
         , Attr.style "align-items" "center"
         ]
-        [ Html.h1 [] [ Html.text "Add behavior" ]
+        [ Html.h1 [] [ Html.text "Safety behavior" ]
         , Html.form
             [ Html.Events.onSubmit AddBehavior
             , Attr.style "padding" "8rem 0.5rem 0 0.5rem"
@@ -776,126 +762,143 @@ viewAddBehavior model =
         ]
 
 
+
+--
+
+
 buttonPrimary : String -> Msg -> Html Msg
 buttonPrimary label action =
     Html.button
-        [ Attr.class "pushable"
+        [ Css.pushable
         , Attr.type_ "button"
         , Html.Events.onClick action
         ]
-        [ Html.span [ Attr.class "shadow" ] []
-        , Html.span [ Attr.class "edge" ] []
-        , Html.span [ Attr.class "front" ] [ Html.text label ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge ] []
+        , Html.span [ Css.front ] [ Html.text label ]
         ]
 
 
 linkPrimary : String -> Route -> Html Msg
 linkPrimary label route =
     Html.a
-        [ Attr.class "pushable"
+        [ Css.pushable
         , Attr.href (routeToString route)
         ]
-        [ Html.span [ Attr.class "shadow" ] []
-        , Html.span [ Attr.class "edge" ] []
-        , Html.span [ Attr.class "front" ] [ Html.text label ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge ] []
+        , Html.span [ Css.front ] [ Html.text label ]
         ]
 
 
 buttonPrimarySmall : String -> Msg -> Html Msg
 buttonPrimarySmall label action =
     Html.button
-        [ Attr.class "pushable"
+        [ Css.pushable
         , Attr.type_ "button"
         , Html.Events.onClick action
         ]
-        [ Html.span [ Attr.class "shadow" ] []
-        , Html.span [ Attr.class "edge" ] []
-        , Html.span [ Attr.class "front front-small" ] [ Html.text label ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge ] []
+        , Html.span [ Css.front, Css.frontSmall ] [ Html.text label ]
         ]
 
 
 linkPrimarySmall : String -> Route -> Html Msg
 linkPrimarySmall label route =
     Html.a
-        [ Attr.class "pushable"
+        [ Css.pushable
         , Attr.href (routeToString route)
         ]
-        [ Html.span [ Attr.class "shadow" ] []
-        , Html.span [ Attr.class "edge" ] []
-        , Html.span [ Attr.class "front front-small" ] [ Html.text label ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge ] []
+        , Html.span [ Css.front, Css.frontSmall ] [ Html.text label ]
+        ]
+
+
+buttonDanger : String -> Msg -> Html Msg
+buttonDanger label action =
+    Html.button
+        [ Css.pushable
+        , Attr.type_ "button"
+        , Html.Events.onClick action
+        ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge, Css.edgeDanger ] []
+        , Html.span [ Css.front, Css.frontDanger ] [ Html.text label ]
         ]
 
 
 buttonSecondary : String -> Msg -> Html Msg
 buttonSecondary label action =
     Html.button
-        [ Attr.class "pushable"
+        [ Css.pushable
         , Attr.type_ "button"
         , Html.Events.onClick action
         ]
-        [ Html.span [ Attr.class "shadow" ] []
-        , Html.span [ Attr.class "edge edge-secondary" ] []
-        , Html.span [ Attr.class "front front-secondary" ] [ Html.text label ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge, Css.edgeSecondary ] []
+        , Html.span [ Css.front, Css.frontSecondary ] [ Html.text label ]
         ]
 
 
 linkSecondary : String -> Route -> Html Msg
 linkSecondary label route =
     Html.a
-        [ Attr.class "pushable"
+        [ Css.pushable
         , Attr.href (routeToString route)
         ]
-        [ Html.span [ Attr.class "shadow" ] []
-        , Html.span [ Attr.class "edge edge-secondary" ] []
-        , Html.span [ Attr.class "front front-secondary" ] [ Html.text label ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge, Css.edgeSecondary ] []
+        , Html.span [ Css.front, Css.frontSecondary ] [ Html.text label ]
         ]
 
 
 buttonSecondarySmall : String -> Msg -> Html Msg
 buttonSecondarySmall label action =
     Html.button
-        [ Attr.class "pushable"
+        [ Css.pushable
         , Attr.type_ "button"
         , Html.Events.onClick action
         ]
-        [ Html.span [ Attr.class "shadow" ] []
-        , Html.span [ Attr.class "edge edge-secondary" ] []
-        , Html.span [ Attr.class "front front-secondary front-small" ] [ Html.text label ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge, Css.edgeSecondary ] []
+        , Html.span [ Css.front, Css.frontSecondary, Css.frontSmall ] [ Html.text label ]
         ]
 
 
 linkSecondarySmall : String -> Route -> Html Msg
 linkSecondarySmall label route =
     Html.a
-        [ Attr.class "pushable"
+        [ Css.pushable
         , Attr.href (routeToString route)
         ]
-        [ Html.span [ Attr.class "shadow" ] []
-        , Html.span [ Attr.class "edge edge-secondary" ] []
-        , Html.span [ Attr.class "front front-secondary front-small" ] [ Html.text label ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge, Css.edgeSecondary ] []
+        , Html.span [ Css.front, Css.frontSecondary, Css.frontSmall ] [ Html.text label ]
         ]
 
 
 buttonSecondaryIcon : String -> Msg -> Html Msg
 buttonSecondaryIcon label action =
     Html.button
-        [ Attr.class "pushable"
+        [ Css.pushable
         , Attr.type_ "button"
         , Html.Events.onClick action
         ]
-        [ Html.span [ Attr.class "shadow" ] []
-        , Html.span [ Attr.class "edge edge-secondary" ] []
-        , Html.span [ Attr.class "front front-secondary front-icon" ] [ Html.text label ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge, Css.edgeSecondary ] []
+        , Html.span [ Css.front, Css.frontSecondary, Css.frontIcon ] [ Html.text label ]
         ]
 
 
 linkSecondaryIcon : String -> Route -> Html Msg
 linkSecondaryIcon label route =
     Html.a
-        [ Attr.class "pushable"
+        [ Css.pushable
         , Attr.href (routeToString route)
         ]
-        [ Html.span [ Attr.class "shadow" ] []
-        , Html.span [ Attr.class "edge edge-secondary" ] []
-        , Html.span [ Attr.class "front front-secondary front-icon" ] [ Html.text label ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge, Css.edgeSecondary ] []
+        , Html.span [ Css.front, Css.frontSecondary, Css.frontIcon ] [ Html.text label ]
         ]

@@ -1,4 +1,4 @@
-module Css exposing (pushable, shadow, edge, front, edge_secondary, front_secondary, front_small, front_icon)
+module Css exposing (pushable, shadow, edge, front, edgeDanger, frontDanger, edgeSecondary, frontSecondary, frontSmall, frontIcon)
 
 import Html
 import Html.Attributes
@@ -24,21 +24,31 @@ front =
     Html.Attributes.class "front"
 
 
-edge_secondary : Html.Attribute msg
-edge_secondary =
-    Html.Attributes.class "edge-secondary"
+edgeDanger : Html.Attribute msg
+edgeDanger =
+    Html.Attributes.class "edgeDanger"
 
 
-front_secondary : Html.Attribute msg
-front_secondary =
-    Html.Attributes.class "front-secondary"
+frontDanger : Html.Attribute msg
+frontDanger =
+    Html.Attributes.class "frontDanger"
 
 
-front_small : Html.Attribute msg
-front_small =
-    Html.Attributes.class "front-small"
+edgeSecondary : Html.Attribute msg
+edgeSecondary =
+    Html.Attributes.class "edgeSecondary"
 
 
-front_icon : Html.Attribute msg
-front_icon =
-    Html.Attributes.class "front-icon"
+frontSecondary : Html.Attribute msg
+frontSecondary =
+    Html.Attributes.class "frontSecondary"
+
+
+frontSmall : Html.Attribute msg
+frontSmall =
+    Html.Attributes.class "frontSmall"
+
+
+frontIcon : Html.Attribute msg
+frontIcon =
+    Html.Attributes.class "frontIcon"

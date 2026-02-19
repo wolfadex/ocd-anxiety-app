@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1771465264293"
+    "1771467269504"
   );
   var ORIGINAL_COMPILATION_MODE = "debug";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -14521,6 +14521,7 @@ var $author$project$Main$init = F3(
 			{
 				behaviorEditing: $elm$core$Maybe$Nothing,
 				behaviorNameToAdd: '',
+				confirmDelete: $elm$core$Maybe$Nothing,
 				navKey: navKey,
 				route: $author$project$Main$routeFromUrl(url),
 				safetyBehaviors: _List_Nil
@@ -15555,6 +15556,7 @@ var $author$project$Main$update = F2(
 								{
 									behaviorEditing: $elm$core$Maybe$Just(
 										_Utils_Tuple2(behavior, behavior)),
+									confirmDelete: $elm$core$Maybe$Nothing,
 									route: route
 								}),
 							$elm$core$Platform$Cmd$none);
@@ -15765,6 +15767,36 @@ var $author$project$Main$update = F2(
 							model.navKey,
 							$author$project$Main$routeToString($author$project$Main$HomeRoute)));
 				}
+			case 'DeleteBehavior':
+				var id = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							confirmDelete: $elm$core$Maybe$Just(id)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'ConfirmDeleteBehavior':
+				var id = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							confirmDelete: $elm$core$Maybe$Nothing,
+							safetyBehaviors: _Utils_ap(
+								A2($elm$core$List$take, id, model.safetyBehaviors),
+								A2($elm$core$List$drop, id + 1, model.safetyBehaviors))
+						}),
+					A2(
+						$elm$browser$Browser$Navigation$pushUrl,
+						model.navKey,
+						$author$project$Main$routeToString($author$project$Main$HomeRoute)));
+			case 'CancelDeleteBehavior':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{confirmDelete: $elm$core$Maybe$Nothing}),
+					$elm$core$Platform$Cmd$none);
 			default:
 				return _Utils_Tuple2(
 					model,
@@ -15834,13 +15866,17 @@ var $author$project$Main$AddBehavior = {$: 'AddBehavior'};
 var $author$project$Main$BehaviorNameToAddChanged = function (a) {
 	return {$: 'BehaviorNameToAddChanged', a: a};
 };
+var $author$project$Css$edge = $elm$html$Html$Attributes$class('edge');
+var $author$project$Css$front = $elm$html$Html$Attributes$class('front');
+var $author$project$Css$pushable = $elm$html$Html$Attributes$class('pushable');
+var $author$project$Css$shadow = $elm$html$Html$Attributes$class('shadow');
 var $author$project$Main$buttonPrimary = F2(
 	function (label, action) {
 		return A2(
 			$elm$html$Html$button,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('pushable'),
+					$author$project$Css$pushable,
 					$elm$html$Html$Attributes$type_('button'),
 					$elm$html$Html$Events$onClick(action)
 				]),
@@ -15849,23 +15885,17 @@ var $author$project$Main$buttonPrimary = F2(
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('shadow')
-						]),
+						[$author$project$Css$shadow]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('edge')
-						]),
+						[$author$project$Css$edge]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('front')
-						]),
+						[$author$project$Css$front]),
 					_List_fromArray(
 						[
 							$elm$html$Html$text(label)
@@ -15875,13 +15905,15 @@ var $author$project$Main$buttonPrimary = F2(
 var $elm$html$Html$form = _VirtualDom_node('form');
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $elm$html$Html$label = _VirtualDom_node('label');
+var $author$project$Css$edgeSecondary = $elm$html$Html$Attributes$class('edgeSecondary');
+var $author$project$Css$frontSecondary = $elm$html$Html$Attributes$class('frontSecondary');
 var $author$project$Main$linkSecondary = F2(
 	function (label, route) {
 		return A2(
 			$elm$html$Html$a,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('pushable'),
+					$author$project$Css$pushable,
 					$elm$html$Html$Attributes$href(
 					$author$project$Main$routeToString(route))
 				]),
@@ -15890,23 +15922,17 @@ var $author$project$Main$linkSecondary = F2(
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('shadow')
-						]),
+						[$author$project$Css$shadow]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('edge edge-secondary')
-						]),
+						[$author$project$Css$edge, $author$project$Css$edgeSecondary]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('front front-secondary')
-						]),
+						[$author$project$Css$front, $author$project$Css$frontSecondary]),
 					_List_fromArray(
 						[
 							$elm$html$Html$text(label)
@@ -15953,7 +15979,7 @@ var $author$project$Main$viewAddBehavior = function (model) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Add behavior')
+						$elm$html$Html$text('Safety behavior')
 					])),
 				A2(
 				$elm$html$Html$form,
@@ -16021,7 +16047,7 @@ var $author$project$Main$linkPrimary = F2(
 			$elm$html$Html$a,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('pushable'),
+					$author$project$Css$pushable,
 					$elm$html$Html$Attributes$href(
 					$author$project$Main$routeToString(route))
 				]),
@@ -16030,36 +16056,31 @@ var $author$project$Main$linkPrimary = F2(
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('shadow')
-						]),
+						[$author$project$Css$shadow]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('edge')
-						]),
+						[$author$project$Css$edge]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('front')
-						]),
+						[$author$project$Css$front]),
 					_List_fromArray(
 						[
 							$elm$html$Html$text(label)
 						]))
 				]));
 	});
+var $author$project$Css$frontSmall = $elm$html$Html$Attributes$class('frontSmall');
 var $author$project$Main$linkPrimarySmall = F2(
 	function (label, route) {
 		return A2(
 			$elm$html$Html$a,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('pushable'),
+					$author$project$Css$pushable,
 					$elm$html$Html$Attributes$href(
 					$author$project$Main$routeToString(route))
 				]),
@@ -16068,36 +16089,31 @@ var $author$project$Main$linkPrimarySmall = F2(
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('shadow')
-						]),
+						[$author$project$Css$shadow]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('edge')
-						]),
+						[$author$project$Css$edge]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('front front-small')
-						]),
+						[$author$project$Css$front, $author$project$Css$frontSmall]),
 					_List_fromArray(
 						[
 							$elm$html$Html$text(label)
 						]))
 				]));
 	});
+var $author$project$Css$frontIcon = $elm$html$Html$Attributes$class('frontIcon');
 var $author$project$Main$linkSecondaryIcon = F2(
 	function (label, route) {
 		return A2(
 			$elm$html$Html$a,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('pushable'),
+					$author$project$Css$pushable,
 					$elm$html$Html$Attributes$href(
 					$author$project$Main$routeToString(route))
 				]),
@@ -16106,23 +16122,17 @@ var $author$project$Main$linkSecondaryIcon = F2(
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('shadow')
-						]),
+						[$author$project$Css$shadow]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('edge edge-secondary')
-						]),
+						[$author$project$Css$edge, $author$project$Css$edgeSecondary]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('front front-secondary front-icon')
-						]),
+						[$author$project$Css$front, $author$project$Css$frontSecondary, $author$project$Css$frontIcon]),
 					_List_fromArray(
 						[
 							$elm$html$Html$text(label)
@@ -16141,7 +16151,7 @@ var $author$project$Main$buttonSecondary = F2(
 			$elm$html$Html$button,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('pushable'),
+					$author$project$Css$pushable,
 					$elm$html$Html$Attributes$type_('button'),
 					$elm$html$Html$Events$onClick(action)
 				]),
@@ -16150,23 +16160,17 @@ var $author$project$Main$buttonSecondary = F2(
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('shadow')
-						]),
+						[$author$project$Css$shadow]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('edge edge-secondary')
-						]),
+						[$author$project$Css$edge, $author$project$Css$edgeSecondary]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('front front-secondary')
-						]),
+						[$author$project$Css$front, $author$project$Css$frontSecondary]),
 					_List_fromArray(
 						[
 							$elm$html$Html$text(label)
@@ -16318,7 +16322,7 @@ var $author$project$Main$viewBehaviorList = function (model) {
 						]),
 					_List_fromArray(
 						[
-							A2($author$project$Main$linkPrimarySmall, 'Add behavior', $author$project$Main$AddBehaviorRoute),
+							A2($author$project$Main$linkPrimarySmall, 'Add safety behavior', $author$project$Main$AddBehaviorRoute),
 							A2($author$project$Main$linkSecondaryIcon, '☰', $author$project$Main$SettingsRoute)
 						])),
 					A2(
@@ -16335,6 +16339,13 @@ var $author$project$Main$viewBehaviorList = function (model) {
 var $author$project$Main$BehaviorNameEdited = function (a) {
 	return {$: 'BehaviorNameEdited', a: a};
 };
+var $author$project$Main$CancelDeleteBehavior = {$: 'CancelDeleteBehavior'};
+var $author$project$Main$ConfirmDeleteBehavior = function (a) {
+	return {$: 'ConfirmDeleteBehavior', a: a};
+};
+var $author$project$Main$DeleteBehavior = function (a) {
+	return {$: 'DeleteBehavior', a: a};
+};
 var $author$project$Main$RemoveResist = function (a) {
 	return {$: 'RemoveResist', a: a};
 };
@@ -16344,13 +16355,15 @@ var $author$project$Main$RemoveSubmit = function (a) {
 var $author$project$Main$SaveBehavior = function (a) {
 	return {$: 'SaveBehavior', a: a};
 };
-var $author$project$Main$buttonSecondarySmall = F2(
+var $author$project$Css$edgeDanger = $elm$html$Html$Attributes$class('edgeDanger');
+var $author$project$Css$frontDanger = $elm$html$Html$Attributes$class('frontDanger');
+var $author$project$Main$buttonDanger = F2(
 	function (label, action) {
 		return A2(
 			$elm$html$Html$button,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('pushable'),
+					$author$project$Css$pushable,
 					$elm$html$Html$Attributes$type_('button'),
 					$elm$html$Html$Events$onClick(action)
 				]),
@@ -16359,23 +16372,49 @@ var $author$project$Main$buttonSecondarySmall = F2(
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('shadow')
-						]),
+						[$author$project$Css$shadow]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('edge edge-secondary')
-						]),
+						[$author$project$Css$edge, $author$project$Css$edgeDanger]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
+						[$author$project$Css$front, $author$project$Css$frontDanger]),
+					_List_fromArray(
 						[
-							$elm$html$Html$Attributes$class('front front-secondary front-small')
-						]),
+							$elm$html$Html$text(label)
+						]))
+				]));
+	});
+var $author$project$Main$buttonSecondarySmall = F2(
+	function (label, action) {
+		return A2(
+			$elm$html$Html$button,
+			_List_fromArray(
+				[
+					$author$project$Css$pushable,
+					$elm$html$Html$Attributes$type_('button'),
+					$elm$html$Html$Events$onClick(action)
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$shadow]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$edge, $author$project$Css$edgeSecondary]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$front, $author$project$Css$frontSecondary, $author$project$Css$frontSmall]),
 					_List_fromArray(
 						[
 							$elm$html$Html$text(label)
@@ -16423,16 +16462,14 @@ var $author$project$Main$viewEditBehavior = F2(
 			var current = _v1.a;
 			var edited = _v1.b;
 			return A2(
-				$elm$html$Html$form,
+				$elm$html$Html$div,
 				_List_fromArray(
 					[
-						$elm$html$Html$Events$onSubmit(
-						$author$project$Main$SaveBehavior(id)),
-						A2($elm$html$Html$Attributes$style, 'padding', '8rem 0.5rem 0 0.5rem'),
-						A2($elm$html$Html$Attributes$style, 'width', 'calc(100vw - 1rem)'),
+						A2($elm$html$Html$Attributes$style, 'height', '100svh'),
+						A2($elm$html$Html$Attributes$style, 'width', '100dvw'),
 						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
 						A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
-						A2($elm$html$Html$Attributes$style, 'gap', '4rem')
+						A2($elm$html$Html$Attributes$style, 'align-items', 'center')
 					]),
 				_List_fromArray(
 					[
@@ -16446,135 +16483,211 @@ var $author$project$Main$viewEditBehavior = F2(
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Editing: ' + current.name)
-									]))
-							])),
-						A2(
-						$elm$html$Html$label,
-						_List_fromArray(
-							[
-								A2($elm$html$Html$Attributes$style, 'display', 'flex'),
-								A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
-								A2($elm$html$Html$Attributes$style, 'align-items', 'start')
-							]),
-						_List_fromArray(
-							[
+										$elm$html$Html$text('Editing: ')
+									])),
 								A2(
 								$elm$html$Html$span,
 								_List_fromArray(
 									[
-										A2($elm$html$Html$Attributes$style, 'font-size', '2rem')
+										A2($elm$html$Html$Attributes$style, 'font-weight', 'normal')
 									]),
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Name')
-									])),
-								A2(
-								$elm$html$Html$input,
-								_List_fromArray(
-									[
-										A2($elm$html$Html$Attributes$style, 'font-size', '2rem'),
-										A2($elm$html$Html$Attributes$style, 'width', '100%'),
-										$elm$html$Html$Attributes$value(edited.name),
-										$elm$html$Html$Events$onInput($author$project$Main$BehaviorNameEdited)
-									]),
-								_List_Nil)
+										$elm$html$Html$text(current.name)
+									]))
 							])),
 						A2(
-						$elm$html$Html$details,
+						$elm$html$Html$form,
 						_List_fromArray(
 							[
-								A2($elm$html$Html$Attributes$style, 'width', '100%'),
-								A2($elm$html$Html$Attributes$style, 'padding', '0 1rem')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$summary,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Submits')
-									])),
-								A2(
-								$elm$html$Html$ol,
-								_List_fromArray(
-									[
-										A2($elm$html$Html$Attributes$style, 'list-style', 'none')
-									]),
-								A2(
-									$elm$core$List$map,
-									function (submit) {
-										return A2(
-											$elm$html$Html$li,
-											_List_Nil,
-											_List_fromArray(
-												[
-													$elm$html$Html$text(
-													A2($author$project$Main$prettyDateFormatter, $elm$time$Time$utc, submit)),
-													A2(
-													$author$project$Main$buttonSecondarySmall,
-													'Remove',
-													$author$project$Main$RemoveSubmit(submit))
-												]));
-									},
-									edited.submits))
-							])),
-						A2(
-						$elm$html$Html$details,
-						_List_fromArray(
-							[
-								A2($elm$html$Html$Attributes$style, 'width', '100%'),
-								A2($elm$html$Html$Attributes$style, 'padding', '0 1rem')
-							]),
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$summary,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Resists')
-									])),
-								A2(
-								$elm$html$Html$ol,
-								_List_fromArray(
-									[
-										A2($elm$html$Html$Attributes$style, 'list-style', 'none')
-									]),
-								A2(
-									$elm$core$List$map,
-									function (resist) {
-										return A2(
-											$elm$html$Html$li,
-											_List_Nil,
-											_List_fromArray(
-												[
-													$elm$html$Html$text(
-													A2($author$project$Main$prettyDateFormatter, $elm$time$Time$utc, resist)),
-													A2(
-													$author$project$Main$buttonSecondarySmall,
-													'Remove',
-													$author$project$Main$RemoveResist(resist))
-												]));
-									},
-									edited.resists))
-							])),
-						A2(
-						$elm$html$Html$div,
-						_List_fromArray(
-							[
+								$elm$html$Html$Events$onSubmit(
+								$author$project$Main$SaveBehavior(id)),
+								A2($elm$html$Html$Attributes$style, 'padding', '0 0.5rem'),
+								A2($elm$html$Html$Attributes$style, 'width', 'calc(100vw - 1rem)'),
+								A2($elm$html$Html$Attributes$style, 'height', '100vh'),
 								A2($elm$html$Html$Attributes$style, 'display', 'flex'),
-								A2($elm$html$Html$Attributes$style, 'width', '100%'),
-								A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between')
+								A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+								A2($elm$html$Html$Attributes$style, 'gap', '4rem')
 							]),
 						_List_fromArray(
 							[
-								A2($author$project$Main$linkSecondary, 'Cancel', $author$project$Main$HomeRoute),
 								A2(
-								$author$project$Main$buttonPrimary,
-								'Save',
-								$author$project$Main$SaveBehavior(id))
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+										A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+										A2($elm$html$Html$Attributes$style, 'align-items', 'start')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$span,
+										_List_fromArray(
+											[
+												A2($elm$html$Html$Attributes$style, 'font-size', '2rem')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Name')
+											])),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												A2($elm$html$Html$Attributes$style, 'font-size', '2rem'),
+												A2($elm$html$Html$Attributes$style, 'width', '100%'),
+												$elm$html$Html$Attributes$value(edited.name),
+												$elm$html$Html$Events$onInput($author$project$Main$BehaviorNameEdited)
+											]),
+										_List_Nil)
+									])),
+								A2(
+								$elm$html$Html$details,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'width', '100%'),
+										A2($elm$html$Html$Attributes$style, 'padding', '1rem'),
+										A2($elm$html$Html$Attributes$style, 'border', '1px solid black'),
+										A2($elm$html$Html$Attributes$style, 'border-radius', '1rem')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$summary,
+										_List_fromArray(
+											[
+												A2($elm$html$Html$Attributes$style, 'font-size', '1.5rem')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Submits')
+											])),
+										A2(
+										$elm$html$Html$ol,
+										_List_fromArray(
+											[
+												A2($elm$html$Html$Attributes$style, 'list-style', 'none'),
+												A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+												A2($elm$html$Html$Attributes$style, 'flex-direction', 'column')
+											]),
+										A2(
+											$elm$core$List$map,
+											function (submit) {
+												return A2(
+													$elm$html$Html$li,
+													_List_fromArray(
+														[
+															A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+															A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between'),
+															A2($elm$html$Html$Attributes$style, 'margin-top', '0.75rem')
+														]),
+													_List_fromArray(
+														[
+															$elm$html$Html$text(
+															A2($author$project$Main$prettyDateFormatter, $elm$time$Time$utc, submit)),
+															A2(
+															$author$project$Main$buttonSecondarySmall,
+															'Remove',
+															$author$project$Main$RemoveSubmit(submit))
+														]));
+											},
+											edited.submits))
+									])),
+								A2(
+								$elm$html$Html$details,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'width', '100%'),
+										A2($elm$html$Html$Attributes$style, 'padding', '1rem'),
+										A2($elm$html$Html$Attributes$style, 'border', '1px solid black'),
+										A2($elm$html$Html$Attributes$style, 'border-radius', '1rem')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$summary,
+										_List_fromArray(
+											[
+												A2($elm$html$Html$Attributes$style, 'font-size', '1.5rem')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Resists')
+											])),
+										A2(
+										$elm$html$Html$ol,
+										_List_fromArray(
+											[
+												A2($elm$html$Html$Attributes$style, 'list-style', 'none'),
+												A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+												A2($elm$html$Html$Attributes$style, 'flex-direction', 'column')
+											]),
+										A2(
+											$elm$core$List$map,
+											function (resist) {
+												return A2(
+													$elm$html$Html$li,
+													_List_fromArray(
+														[
+															A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+															A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between'),
+															A2($elm$html$Html$Attributes$style, 'margin-top', '0.75rem')
+														]),
+													_List_fromArray(
+														[
+															$elm$html$Html$text(
+															A2($author$project$Main$prettyDateFormatter, $elm$time$Time$utc, resist)),
+															A2(
+															$author$project$Main$buttonSecondarySmall,
+															'Remove',
+															$author$project$Main$RemoveResist(resist))
+														]));
+											},
+											edited.resists))
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+										A2($elm$html$Html$Attributes$style, 'width', '100%'),
+										A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between')
+									]),
+								_List_fromArray(
+									[
+										A2($author$project$Main$linkSecondary, 'Cancel', $author$project$Main$HomeRoute),
+										A2(
+										$author$project$Main$buttonPrimary,
+										'Save',
+										$author$project$Main$SaveBehavior(id))
+									])),
+								function () {
+								var _v2 = model.confirmDelete;
+								if (_v2.$ === 'Nothing') {
+									return A2(
+										$author$project$Main$buttonDanger,
+										'Delete',
+										$author$project$Main$DeleteBehavior(id));
+								} else {
+									return A2(
+										$elm$html$Html$div,
+										_List_fromArray(
+											[
+												A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+												A2($elm$html$Html$Attributes$style, 'width', '100%'),
+												A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between')
+											]),
+										_List_fromArray(
+											[
+												A2($author$project$Main$buttonSecondary, 'Keep', $author$project$Main$CancelDeleteBehavior),
+												A2(
+												$author$project$Main$buttonDanger,
+												'Yes, Delete',
+												$author$project$Main$ConfirmDeleteBehavior(id))
+											]));
+								}
+							}()
 							]))
 					]));
 		}
@@ -16587,7 +16700,7 @@ var $author$project$Main$linkSecondarySmall = F2(
 			$elm$html$Html$a,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('pushable'),
+					$author$project$Css$pushable,
 					$elm$html$Html$Attributes$href(
 					$author$project$Main$routeToString(route))
 				]),
@@ -16596,94 +16709,78 @@ var $author$project$Main$linkSecondarySmall = F2(
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('shadow')
-						]),
+						[$author$project$Css$shadow]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('edge edge-secondary')
-						]),
+						[$author$project$Css$edge, $author$project$Css$edgeSecondary]),
 					_List_Nil),
 					A2(
 					$elm$html$Html$span,
 					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('front front-secondary front-small')
-						]),
+						[$author$project$Css$front, $author$project$Css$frontSecondary, $author$project$Css$frontSmall]),
 					_List_fromArray(
 						[
 							$elm$html$Html$text(label)
 						]))
 				]));
 	});
-var $author$project$Main$viewMenu = function (model) {
-	return A2(
-		$elm$html$Html$div,
-		_List_fromArray(
-			[
-				A2($elm$html$Html$Attributes$style, 'height', '100vh'),
-				A2($elm$html$Html$Attributes$style, 'width', '100vw'),
-				A2($elm$html$Html$Attributes$style, 'display', 'flex'),
-				A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
-				A2($elm$html$Html$Attributes$style, 'gap', '0.125rem'),
-				A2($elm$html$Html$Attributes$style, 'font-size', '7vw')
-			]),
-		_List_fromArray(
-			[
-				A2(
-				$elm$html$Html$div,
-				_List_fromArray(
-					[
-						A2($elm$html$Html$Attributes$style, 'height', '7vh'),
-						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
-						A2($elm$html$Html$Attributes$style, 'align-items', 'center'),
-						A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between'),
-						A2($elm$html$Html$Attributes$style, 'padding', '0.5rem')
-					]),
-				_List_fromArray(
-					[
-						A2($author$project$Main$linkSecondarySmall, 'Back', $author$project$Main$HomeRoute)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_fromArray(
-					[
-						A2($elm$html$Html$Attributes$style, 'height', '93vh'),
-						A2($elm$html$Html$Attributes$style, 'overflow', 'auto')
-					]),
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$span,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text('TODO: Stats')
-							])),
-						A2($elm$html$Html$br, _List_Nil, _List_Nil),
-						A2(
-						$elm$html$Html$span,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text('TODO: Edit behaviors (rename, remove)')
-							])),
-						A2($elm$html$Html$br, _List_Nil, _List_Nil),
-						A2($author$project$Main$buttonSecondary, 'Export (csv)', $author$project$Main$Export),
-						A2($elm$html$Html$br, _List_Nil, _List_Nil),
-						A2(
-						$elm$html$Html$span,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text('TODO: Import (csv)')
-							]))
-					]))
-			]));
-};
+var $author$project$Main$viewMenu = A2(
+	$elm$html$Html$div,
+	_List_fromArray(
+		[
+			A2($elm$html$Html$Attributes$style, 'height', '100vh'),
+			A2($elm$html$Html$Attributes$style, 'width', '100vw'),
+			A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+			A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+			A2($elm$html$Html$Attributes$style, 'gap', '0.125rem'),
+			A2($elm$html$Html$Attributes$style, 'font-size', '7vw')
+		]),
+	_List_fromArray(
+		[
+			A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					A2($elm$html$Html$Attributes$style, 'height', '7vh'),
+					A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+					A2($elm$html$Html$Attributes$style, 'align-items', 'center'),
+					A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between'),
+					A2($elm$html$Html$Attributes$style, 'padding', '0.5rem')
+				]),
+			_List_fromArray(
+				[
+					A2($author$project$Main$linkSecondarySmall, 'Back', $author$project$Main$HomeRoute)
+				])),
+			A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					A2($elm$html$Html$Attributes$style, 'height', '93vh'),
+					A2($elm$html$Html$Attributes$style, 'overflow', 'auto')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$span,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('TODO: Stats')
+						])),
+					A2($elm$html$Html$br, _List_Nil, _List_Nil),
+					A2($author$project$Main$buttonSecondary, 'Export (csv)', $author$project$Main$Export),
+					A2($elm$html$Html$br, _List_Nil, _List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('TODO: Import (csv)')
+						]))
+				]))
+		]));
 var $author$project$Main$view = function (model) {
 	var _v0 = model.route;
 	switch (_v0.$) {
@@ -16695,7 +16792,7 @@ var $author$project$Main$view = function (model) {
 			var id = _v0.a;
 			return A2($author$project$Main$viewEditBehavior, id, model);
 		default:
-			return $author$project$Main$viewMenu(model);
+			return $author$project$Main$viewMenu;
 	}
 };
 var $author$project$Main$viewport = function (model) {
@@ -16717,4 +16814,4 @@ var $author$project$Main$main = $elm$browser$Browser$application(
 		view: $author$project$Main$viewport
 	});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"UrlChanged":["Url.Url"],"UrlRequested":["Browser.UrlRequest"],"AddBehavior":[],"BehaviorNameToAddChanged":["String.String"],"SubmittedToBehavior":["Basics.Int"],"SubmittedToBehaviorAt":["Basics.Int","Time.Posix"],"ResistedBehavior":["Basics.Int"],"ResistedBehaviorAt":["Basics.Int","Time.Posix"],"BehaviorNameEdited":["String.String"],"RemoveSubmit":["Time.Posix"],"RemoveResist":["Time.Posix"],"SaveBehavior":["Basics.Int"],"Export":[]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));
+	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"Url.Url":{"args":[],"type":"{ protocol : Url.Protocol, host : String.String, port_ : Maybe.Maybe Basics.Int, path : String.String, query : Maybe.Maybe String.String, fragment : Maybe.Maybe String.String }"}},"unions":{"Main.Msg":{"args":[],"tags":{"UrlChanged":["Url.Url"],"UrlRequested":["Browser.UrlRequest"],"AddBehavior":[],"BehaviorNameToAddChanged":["String.String"],"SubmittedToBehavior":["Basics.Int"],"SubmittedToBehaviorAt":["Basics.Int","Time.Posix"],"ResistedBehavior":["Basics.Int"],"ResistedBehaviorAt":["Basics.Int","Time.Posix"],"BehaviorNameEdited":["String.String"],"RemoveSubmit":["Time.Posix"],"RemoveResist":["Time.Posix"],"SaveBehavior":["Basics.Int"],"DeleteBehavior":["Basics.Int"],"ConfirmDeleteBehavior":["Basics.Int"],"CancelDeleteBehavior":[],"Export":[]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"Maybe.Maybe":{"args":["a"],"tags":{"Just":["a"],"Nothing":[]}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"Url.Protocol":{"args":[],"tags":{"Http":[],"Https":[]}},"String.String":{"args":[],"tags":{"String":[]}},"Browser.UrlRequest":{"args":[],"tags":{"Internal":["Url.Url"],"External":["String.String"]}}}}})}});}(this));
