@@ -1,4 +1,4 @@
-port module Main exposing (Behavior, Flags, Model, Msg, Route, main)
+port module Main exposing (Application, Behavior, Flags, Model, Msg, Route, main)
 
 import AppUrl
 import Browser
@@ -300,10 +300,18 @@ update msg app =
                 DbLoaded response ->
                     case response of
                         ConcurrentTask.Error err ->
-                            Debug.todo (Debug.toString err)
+                            let
+                                _ =
+                                    Debug.todo (Debug.toString err)
+                            in
+                            ( StartupFailure, Cmd.none )
 
                         ConcurrentTask.UnexpectedError err ->
-                            Debug.todo (Debug.toString err)
+                            let
+                                _ =
+                                    Debug.todo (Debug.toString err)
+                            in
+                            ( StartupFailure, Cmd.none )
 
                         ConcurrentTask.Success ( db, behaviors ) ->
                             ( Initialized
@@ -485,7 +493,8 @@ update msg app =
                                             )
                                 in
                                 ( { model
-                                    | safetyBehaviors =
+                                    | dbTasks = dbTasks
+                                    , safetyBehaviors =
                                         List.map
                                             (\behavior ->
                                                 if behavior.id == id then
@@ -496,7 +505,7 @@ update msg app =
                                             )
                                             model.safetyBehaviors
                                   }
-                                , Cmd.none
+                                , cmd
                                 )
 
                     ResistedBehavior key ->
@@ -518,7 +527,8 @@ update msg app =
                                             )
                                 in
                                 ( { model
-                                    | safetyBehaviors =
+                                    | dbTasks = dbTasks
+                                    , safetyBehaviors =
                                         List.map
                                             (\behavior ->
                                                 if behavior.id == id then
@@ -529,7 +539,7 @@ update msg app =
                                             )
                                             model.safetyBehaviors
                                   }
-                                , Cmd.none
+                                , cmd
                                 )
 
                     BehaviorNameEdited name ->
@@ -602,7 +612,8 @@ update msg app =
                                                 )
                                     in
                                     ( { model
-                                        | safetyBehaviors =
+                                        | dbTasks = dbTasks
+                                        , safetyBehaviors =
                                             List.map
                                                 (\behavior ->
                                                     if behavior.id == id then
@@ -613,7 +624,7 @@ update msg app =
                                                 )
                                                 model.safetyBehaviors
                                       }
-                                    , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
+                                    , Cmd.batch [ Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute), cmd ]
                                     )
 
                     BehaviorSaveResponded id response ->

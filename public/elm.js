@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1771555902647"
+    "1771556315677"
   );
   var ORIGINAL_COMPILATION_MODE = "debug";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -15826,6 +15826,7 @@ var $author$project$Main$ResistedBehaviorAt = F2(
 	function (a, b) {
 		return {$: 'ResistedBehaviorAt', a: a, b: b};
 	});
+var $author$project$Main$StartupFailure = {$: 'StartupFailure'};
 var $author$project$Main$SubmittedToBehaviorAt = F2(
 	function (a, b) {
 		return {$: 'SubmittedToBehaviorAt', a: a, b: b};
@@ -17479,26 +17480,28 @@ var $author$project$Main$update = F2(
 						switch (response.$) {
 							case 'Error':
 								var err = response.a;
-								return _Debug_todo(
+								var _v5 = _Debug_todo(
 									'Main',
 									{
-										start: {line: 303, column: 29},
-										end: {line: 303, column: 39}
+										start: {line: 305, column: 37},
+										end: {line: 305, column: 47}
 									})(
 									$elm$core$Debug$toString(err));
+								return _Utils_Tuple2($author$project$Main$StartupFailure, $elm$core$Platform$Cmd$none);
 							case 'UnexpectedError':
 								var err = response.a;
-								return _Debug_todo(
+								var _v6 = _Debug_todo(
 									'Main',
 									{
-										start: {line: 306, column: 29},
-										end: {line: 306, column: 39}
+										start: {line: 312, column: 37},
+										end: {line: 312, column: 47}
 									})(
 									$elm$core$Debug$toString(err));
+								return _Utils_Tuple2($author$project$Main$StartupFailure, $elm$core$Platform$Cmd$none);
 							default:
-								var _v5 = response.a;
-								var db = _v5.a;
-								var behaviors = _v5.b;
+								var _v7 = response.a;
+								var db = _v7.a;
+								var behaviors = _v7.b;
 								return _Utils_Tuple2(
 									$author$project$Main$Initialized(
 										{
@@ -17532,15 +17535,15 @@ var $author$project$Main$update = F2(
 								switch (route.$) {
 									case 'EditBehaviorRoute':
 										var key = route.a;
-										var _v8 = A2($author$project$Main$findBehaviorById, key, model.safetyBehaviors);
-										if (_v8.$ === 'Nothing') {
+										var _v10 = A2($author$project$Main$findBehaviorById, key, model.safetyBehaviors);
+										if (_v10.$ === 'Nothing') {
 											return _Utils_Tuple2(
 												_Utils_update(
 													model,
 													{behaviorEditing: $elm$core$Maybe$Nothing, deleting: false, route: route}),
 												$elm$core$Platform$Cmd$none);
 										} else {
-											var behavior = _v8.a;
+											var behavior = _v10.a;
 											return _Utils_Tuple2(
 												_Utils_update(
 													model,
@@ -17583,9 +17586,9 @@ var $author$project$Main$update = F2(
 										$elm$browser$Browser$Navigation$load(url));
 								}
 							case 'OnDbProgress':
-								var _v10 = msg.a;
-								var dbTasks = _v10.a;
-								var cmd = _v10.b;
+								var _v12 = msg.a;
+								var dbTasks = _v12.a;
+								var cmd = _v12.b;
 								return _Utils_Tuple2(
 									_Utils_update(
 										model,
@@ -17607,10 +17610,10 @@ var $author$project$Main$update = F2(
 									if ($elm$core$String$isEmpty(model.behaviorNameToAdd)) {
 										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 									} else {
-										var _v11 = $TSFoster$elm_uuid$UUID$step(model.seeds);
-										var id = _v11.a;
-										var seeds = _v11.b;
-										var _v12 = A2(
+										var _v13 = $TSFoster$elm_uuid$UUID$step(model.seeds);
+										var id = _v13.a;
+										var seeds = _v13.b;
+										var _v14 = A2(
 											$author$project$Main$doDbTask,
 											$author$project$Main$BehaviorCreateResponded(id),
 											A3(
@@ -17619,8 +17622,8 @@ var $author$project$Main$update = F2(
 												$author$project$Main$behaviorStore,
 												$author$project$Main$encodeBehavior(
 													{id: id, name: model.behaviorNameToAdd, resists: _List_Nil, submits: _List_Nil})));
-										var dbTasks = _v12.a;
-										var cmd = _v12.b;
+										var dbTasks = _v14.a;
+										var cmd = _v14.b;
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
@@ -17634,11 +17637,11 @@ var $author$project$Main$update = F2(
 								switch (response.$) {
 									case 'Error':
 										var err = response.a;
-										var _v14 = _Debug_todo(
+										var _v16 = _Debug_todo(
 											'Main',
 											{
-												start: {line: 436, column: 41},
-												end: {line: 436, column: 51}
+												start: {line: 444, column: 41},
+												end: {line: 444, column: 51}
 											})(
 											$elm$core$Debug$toString(err));
 										return _Utils_Tuple2(
@@ -17648,11 +17651,11 @@ var $author$project$Main$update = F2(
 											$elm$core$Platform$Cmd$none);
 									case 'UnexpectedError':
 										var err = response.a;
-										var _v15 = _Debug_todo(
+										var _v17 = _Debug_todo(
 											'Main',
 											{
-												start: {line: 447, column: 41},
-												end: {line: 447, column: 51}
+												start: {line: 455, column: 41},
+												end: {line: 455, column: 51}
 											})(
 											$elm$core$Debug$toString(err));
 										return _Utils_Tuple2(
@@ -17687,49 +17690,6 @@ var $author$project$Main$update = F2(
 							case 'SubmittedToBehaviorAt':
 								var id = msg.a;
 								var time = msg.b;
-								var _v16 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
-								if (_v16.$ === 'Nothing') {
-									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-								} else {
-									var b = _v16.a;
-									var _v17 = A2(
-										$author$project$Main$doDbTask,
-										$author$project$Main$BehaviorSaveResponded(id),
-										A3(
-											$author$project$IndexedDb$put,
-											model.db,
-											$author$project$Main$behaviorStore,
-											$author$project$Main$encodeBehavior(b)));
-									var dbTasks = _v17.a;
-									var cmd = _v17.b;
-									return _Utils_Tuple2(
-										_Utils_update(
-											model,
-											{
-												safetyBehaviors: A2(
-													$elm$core$List$map,
-													function (behavior) {
-														return _Utils_eq(behavior.id, id) ? _Utils_update(
-															behavior,
-															{
-																submits: A2($elm$core$List$cons, time, behavior.submits)
-															}) : behavior;
-													},
-													model.safetyBehaviors)
-											}),
-										$elm$core$Platform$Cmd$none);
-								}
-							case 'ResistedBehavior':
-								var key = msg.a;
-								return _Utils_Tuple2(
-									model,
-									A2(
-										$elm$core$Task$perform,
-										$author$project$Main$ResistedBehaviorAt(key),
-										$elm$time$Time$now));
-							case 'ResistedBehaviorAt':
-								var id = msg.a;
-								var time = msg.b;
 								var _v18 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
 								if (_v18.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
@@ -17749,6 +17709,51 @@ var $author$project$Main$update = F2(
 										_Utils_update(
 											model,
 											{
+												dbTasks: dbTasks,
+												safetyBehaviors: A2(
+													$elm$core$List$map,
+													function (behavior) {
+														return _Utils_eq(behavior.id, id) ? _Utils_update(
+															behavior,
+															{
+																submits: A2($elm$core$List$cons, time, behavior.submits)
+															}) : behavior;
+													},
+													model.safetyBehaviors)
+											}),
+										cmd);
+								}
+							case 'ResistedBehavior':
+								var key = msg.a;
+								return _Utils_Tuple2(
+									model,
+									A2(
+										$elm$core$Task$perform,
+										$author$project$Main$ResistedBehaviorAt(key),
+										$elm$time$Time$now));
+							case 'ResistedBehaviorAt':
+								var id = msg.a;
+								var time = msg.b;
+								var _v20 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
+								if (_v20.$ === 'Nothing') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									var b = _v20.a;
+									var _v21 = A2(
+										$author$project$Main$doDbTask,
+										$author$project$Main$BehaviorSaveResponded(id),
+										A3(
+											$author$project$IndexedDb$put,
+											model.db,
+											$author$project$Main$behaviorStore,
+											$author$project$Main$encodeBehavior(b)));
+									var dbTasks = _v21.a;
+									var cmd = _v21.b;
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												dbTasks: dbTasks,
 												safetyBehaviors: A2(
 													$elm$core$List$map,
 													function (behavior) {
@@ -17760,17 +17765,17 @@ var $author$project$Main$update = F2(
 													},
 													model.safetyBehaviors)
 											}),
-										$elm$core$Platform$Cmd$none);
+										cmd);
 								}
 							case 'BehaviorNameEdited':
 								var name = msg.a;
-								var _v20 = model.behaviorEditing;
-								if (_v20.$ === 'Nothing') {
+								var _v22 = model.behaviorEditing;
+								if (_v22.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var _v21 = _v20.a;
-									var old = _v21.a;
-									var _new = _v21.b;
+									var _v23 = _v22.a;
+									var old = _v23.a;
+									var _new = _v23.b;
 									return _Utils_Tuple2(
 										_Utils_update(
 											model,
@@ -17786,13 +17791,13 @@ var $author$project$Main$update = F2(
 								}
 							case 'RemoveSubmit':
 								var timestamp = msg.a;
-								var _v22 = model.behaviorEditing;
-								if (_v22.$ === 'Nothing') {
+								var _v24 = model.behaviorEditing;
+								if (_v24.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var _v23 = _v22.a;
-									var old = _v23.a;
-									var _new = _v23.b;
+									var _v25 = _v24.a;
+									var old = _v25.a;
+									var _new = _v25.b;
 									return _Utils_Tuple2(
 										_Utils_update(
 											model,
@@ -17815,13 +17820,13 @@ var $author$project$Main$update = F2(
 								}
 							case 'RemoveResist':
 								var timestamp = msg.a;
-								var _v24 = model.behaviorEditing;
-								if (_v24.$ === 'Nothing') {
+								var _v26 = model.behaviorEditing;
+								if (_v26.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var _v25 = _v24.a;
-									var old = _v25.a;
-									var _new = _v25.b;
+									var _v27 = _v26.a;
+									var old = _v27.a;
+									var _new = _v27.b;
 									return _Utils_Tuple2(
 										_Utils_update(
 											model,
@@ -17844,16 +17849,16 @@ var $author$project$Main$update = F2(
 								}
 							case 'SaveBehavior':
 								var id = msg.a;
-								var _v26 = model.behaviorEditing;
-								if (_v26.$ === 'Nothing') {
+								var _v28 = model.behaviorEditing;
+								if (_v28.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var _v27 = _v26.a;
-									var _new = _v27.b;
+									var _v29 = _v28.a;
+									var _new = _v29.b;
 									if ($elm$core$String$isEmpty(_new.name)) {
 										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 									} else {
-										var _v28 = A2(
+										var _v30 = A2(
 											$author$project$Main$doDbTask,
 											$author$project$Main$BehaviorSaveResponded(id),
 											A3(
@@ -17861,12 +17866,13 @@ var $author$project$Main$update = F2(
 												model.db,
 												$author$project$Main$behaviorStore,
 												$author$project$Main$encodeBehavior(_new)));
-										var dbTasks = _v28.a;
-										var cmd = _v28.b;
+										var dbTasks = _v30.a;
+										var cmd = _v30.b;
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
 												{
+													dbTasks: dbTasks,
 													safetyBehaviors: A2(
 														$elm$core$List$map,
 														function (behavior) {
@@ -17874,10 +17880,15 @@ var $author$project$Main$update = F2(
 														},
 														model.safetyBehaviors)
 												}),
-											A2(
-												$elm$browser$Browser$Navigation$pushUrl,
-												model.navKey,
-												$author$project$Main$routeToString($author$project$Main$HomeRoute)));
+											$elm$core$Platform$Cmd$batch(
+												_List_fromArray(
+													[
+														A2(
+														$elm$browser$Browser$Navigation$pushUrl,
+														model.navKey,
+														$author$project$Main$routeToString($author$project$Main$HomeRoute)),
+														cmd
+													])));
 									}
 								}
 							case 'BehaviorSaveResponded':
@@ -17886,21 +17897,21 @@ var $author$project$Main$update = F2(
 								switch (response.$) {
 									case 'Error':
 										var err = response.a;
-										var _v30 = _Debug_todo(
+										var _v32 = _Debug_todo(
 											'Main',
 											{
-												start: {line: 624, column: 41},
-												end: {line: 624, column: 51}
+												start: {line: 635, column: 41},
+												end: {line: 635, column: 51}
 											})(
 											$elm$core$Debug$toString(err));
 										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 									case 'UnexpectedError':
 										var err = response.a;
-										var _v31 = _Debug_todo(
+										var _v33 = _Debug_todo(
 											'Main',
 											{
-												start: {line: 633, column: 41},
-												end: {line: 633, column: 51}
+												start: {line: 644, column: 41},
+												end: {line: 644, column: 51}
 											})(
 											$elm$core$Debug$toString(err));
 										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
@@ -17918,7 +17929,7 @@ var $author$project$Main$update = F2(
 									$elm$core$Platform$Cmd$none);
 							case 'ConfirmDeleteBehavior':
 								var id = msg.a;
-								var _v32 = A2(
+								var _v34 = A2(
 									$author$project$Main$doDbTask,
 									$author$project$Main$BehaviorDeleteResponded(id),
 									A3(
@@ -17926,8 +17937,8 @@ var $author$project$Main$update = F2(
 										model.db,
 										$author$project$Main$behaviorStore,
 										$author$project$Main$uuidToKey(id)));
-								var dbTasks = _v32.a;
-								var cmd = _v32.b;
+								var dbTasks = _v34.a;
+								var cmd = _v34.b;
 								return _Utils_Tuple2(
 									_Utils_update(
 										model,
@@ -17939,11 +17950,11 @@ var $author$project$Main$update = F2(
 								switch (response.$) {
 									case 'Error':
 										var err = response.a;
-										var _v34 = _Debug_todo(
+										var _v36 = _Debug_todo(
 											'Main',
 											{
-												start: {line: 666, column: 41},
-												end: {line: 666, column: 51}
+												start: {line: 677, column: 41},
+												end: {line: 677, column: 51}
 											})(
 											$elm$core$Debug$toString(err));
 										return _Utils_Tuple2(
@@ -17953,11 +17964,11 @@ var $author$project$Main$update = F2(
 											$elm$core$Platform$Cmd$none);
 									case 'UnexpectedError':
 										var err = response.a;
-										var _v35 = _Debug_todo(
+										var _v37 = _Debug_todo(
 											'Main',
 											{
-												start: {line: 677, column: 41},
-												end: {line: 677, column: 51}
+												start: {line: 688, column: 41},
+												end: {line: 688, column: 51}
 											})(
 											$elm$core$Debug$toString(err));
 										return _Utils_Tuple2(
@@ -18016,10 +18027,10 @@ var $author$project$Main$update = F2(
 															$BrianHicks$elm_csv$Csv$Encode$encode,
 															{
 																encoder: $BrianHicks$elm_csv$Csv$Encode$withFieldNames(
-																	function (_v37) {
-																		var date = _v37.a;
-																		var submit = _v37.b;
-																		var resist = _v37.c;
+																	function (_v39) {
+																		var date = _v39.a;
+																		var submit = _v39.b;
+																		var resist = _v39.c;
 																		return _List_fromArray(
 																			[
 																				_Utils_Tuple2(
@@ -18033,8 +18044,8 @@ var $author$project$Main$update = F2(
 															},
 															A2(
 																$elm$core$List$sortBy,
-																function (_v36) {
-																	var t = _v36.a;
+																function (_v38) {
+																	var t = _v38.a;
 																	return $elm$time$Time$posixToMillis(t);
 																},
 																timestamps));
