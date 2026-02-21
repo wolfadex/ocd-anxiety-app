@@ -328,19 +328,46 @@ update msg app =
                             ( StartupFailure, Cmd.none )
 
                         ConcurrentTask.Success ( db, behaviors ) ->
-                            ( Initialized
-                                { navKey = model.navKey
-                                , dbTasks = model.dbTasks
-                                , db = db
-                                , seeds = model.seeds
-                                , route = routeFromUrl model.url
-                                , safetyBehaviors = behaviors
-                                , behaviorNameToAdd = ""
-                                , addingBehavior = False
-                                , behaviorEditing = Nothing
-                                , confirmDelete = Nothing
-                                , deleting = False
-                                }
+                            let
+                                route =
+                                    routeFromUrl model.url
+                            in
+                            ( { navKey = model.navKey
+                              , dbTasks = model.dbTasks
+                              , db = db
+                              , seeds = model.seeds
+                              , route = route
+                              , safetyBehaviors = behaviors
+                              , behaviorNameToAdd = ""
+                              , addingBehavior = False
+                              , behaviorEditing = Nothing
+                              , confirmDelete = Nothing
+                              , deleting = False
+                              }
+                                |> (\m ->
+                                        case route of
+                                            EditBehaviorRoute key ->
+                                                case findBehaviorById key m.safetyBehaviors of
+                                                    Nothing ->
+                                                        m
+
+                                                    Just behavior ->
+                                                        { m
+                                                            | behaviorEditing =
+                                                                Just
+                                                                    { old = behavior
+                                                                    , new = behavior
+                                                                    , submitToInsert = ""
+                                                                    , resistToInsert = ""
+                                                                    }
+                                                            , confirmDelete = Nothing
+                                                            , deleting = False
+                                                        }
+
+                                            _ ->
+                                                m
+                                   )
+                                |> Initialized
                             , Cmd.none
                             )
 
