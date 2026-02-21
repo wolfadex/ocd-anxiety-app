@@ -14,8 +14,10 @@ import IndexedDb
 import Json.Decode
 import Json.Encode
 import Random
+import Rfc3339
 import Task
 import Time
+import Time.Extra
 import UUID exposing (UUID)
 import Url exposing (Url)
 
@@ -63,9 +65,17 @@ type alias Model =
     , safetyBehaviors : List Behavior
     , behaviorNameToAdd : String
     , addingBehavior : Bool
-    , behaviorEditing : Maybe ( Behavior, Behavior )
+    , behaviorEditing : Maybe BehaviorEditing
     , confirmDelete : Maybe UUID
     , deleting : Bool
+    }
+
+
+type alias BehaviorEditing =
+    { old : Behavior
+    , new : Behavior
+    , submitToInsert : String
+    , resistToInsert : String
     }
 
 
@@ -254,7 +264,11 @@ type Msg
     | ResistedBehaviorAt UUID Time.Posix
     | BehaviorNameEdited String
     | RemoveSubmit Time.Posix
+    | SubmitToInsertChanged String
+    | InsertSubmit
     | RemoveResist Time.Posix
+    | ResistToInsertChanged String
+    | InsertResist
     | SaveBehavior UUID
     | BehaviorSaveResponded UUID (ConcurrentTask.Response IndexedDb.Error IndexedDb.Key)
     | DeleteBehavior UUID
@@ -356,7 +370,13 @@ update msg app =
                                     Just behavior ->
                                         ( { model
                                             | route = route
-                                            , behaviorEditing = Just ( behavior, behavior )
+                                            , behaviorEditing =
+                                                Just
+                                                    { old = behavior
+                                                    , new = behavior
+                                                    , submitToInsert = ""
+                                                    , resistToInsert = ""
+                                                    }
                                             , confirmDelete = Nothing
                                             , deleting = False
                                           }
@@ -547,57 +567,139 @@ update msg app =
                             Nothing ->
                                 ( model, Cmd.none )
 
-                            Just ( old, new ) ->
-                                ( { model | behaviorEditing = Just ( old, { new | name = name } ) }, Cmd.none )
+                            Just ({ new } as behaviorEditing) ->
+                                ( { model | behaviorEditing = Just { behaviorEditing | new = { new | name = name } } }, Cmd.none )
 
                     RemoveSubmit timestamp ->
                         case model.behaviorEditing of
                             Nothing ->
                                 ( model, Cmd.none )
 
-                            Just ( old, new ) ->
+                            Just ({ new } as behaviorEditing) ->
                                 ( { model
                                     | behaviorEditing =
                                         Just
-                                            ( old
-                                            , { new
-                                                | submits =
-                                                    List.filter
-                                                        (\submit -> submit /= timestamp)
-                                                        new.submits
-                                              }
-                                            )
+                                            { behaviorEditing
+                                                | new =
+                                                    { new
+                                                        | submits =
+                                                            List.filter
+                                                                (\submit -> submit /= timestamp)
+                                                                new.submits
+                                                    }
+                                            }
                                   }
                                 , Cmd.none
                                 )
+
+                    SubmitToInsertChanged submitToInsert ->
+                        case model.behaviorEditing of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just behaviorEditing ->
+                                ( { model | behaviorEditing = Just { behaviorEditing | submitToInsert = submitToInsert } }, Cmd.none )
+
+                    InsertSubmit ->
+                        case model.behaviorEditing of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just ({ new } as behaviorEditing) ->
+                                case Rfc3339.parse (behaviorEditing.submitToInsert ++ ":00") of
+                                    Ok (Rfc3339.DateTimeLocal parts) ->
+                                        ( { model
+                                            | behaviorEditing =
+                                                let
+                                                    submits =
+                                                        new.submits
+                                                in
+                                                Just
+                                                    { behaviorEditing
+                                                        | submitToInsert = ""
+                                                        , new =
+                                                            { new
+                                                                | submits =
+                                                                    (Time.Extra.partsToPosix Time.utc parts :: submits)
+                                                                        |> List.sortBy Time.posixToMillis
+                                                                        |> List.reverse
+                                                            }
+                                                    }
+                                          }
+                                        , Cmd.none
+                                        )
+
+                                    _ ->
+                                        ( model, Cmd.none )
 
                     RemoveResist timestamp ->
                         case model.behaviorEditing of
                             Nothing ->
                                 ( model, Cmd.none )
 
-                            Just ( old, new ) ->
+                            Just ({ new } as behaviorEditing) ->
                                 ( { model
                                     | behaviorEditing =
                                         Just
-                                            ( old
-                                            , { new
-                                                | resists =
-                                                    List.filter
-                                                        (\resist -> resist /= timestamp)
-                                                        new.resists
-                                              }
-                                            )
+                                            { behaviorEditing
+                                                | new =
+                                                    { new
+                                                        | resists =
+                                                            List.filter
+                                                                (\resist -> resist /= timestamp)
+                                                                new.resists
+                                                    }
+                                            }
                                   }
                                 , Cmd.none
                                 )
+
+                    ResistToInsertChanged resistToInsert ->
+                        case model.behaviorEditing of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just behaviorEditing ->
+                                ( { model | behaviorEditing = Just { behaviorEditing | resistToInsert = resistToInsert } }, Cmd.none )
+
+                    InsertResist ->
+                        case model.behaviorEditing of
+                            Nothing ->
+                                ( model, Cmd.none )
+
+                            Just ({ new } as behaviorEditing) ->
+                                case Rfc3339.parse (behaviorEditing.resistToInsert ++ ":00") of
+                                    Ok (Rfc3339.DateTimeLocal parts) ->
+                                        ( { model
+                                            | behaviorEditing =
+                                                let
+                                                    resists =
+                                                        new.resists
+                                                in
+                                                Just
+                                                    { behaviorEditing
+                                                        | resistToInsert = ""
+                                                        , new =
+                                                            { new
+                                                                | resists =
+                                                                    (Time.Extra.partsToPosix Time.utc parts :: resists)
+                                                                        |> List.sortBy Time.posixToMillis
+                                                                        |> List.reverse
+                                                            }
+                                                    }
+                                          }
+                                        , Cmd.none
+                                        )
+
+                                    _ ->
+                                        ( model, Cmd.none )
 
                     SaveBehavior id ->
                         case model.behaviorEditing of
                             Nothing ->
                                 ( model, Cmd.none )
 
-                            Just ( _, new ) ->
+                            Just { new } ->
                                 if String.isEmpty new.name then
                                     ( model, Cmd.none )
 
@@ -857,7 +959,7 @@ viewEditBehavior id model =
                     HomeRoute
                 ]
 
-        Just ( current, edited ) ->
+        Just behaviorEditing ->
             Html.div
                 [ Attr.style "height" "100svh"
                 , Attr.style "width" "100dvw"
@@ -867,7 +969,7 @@ viewEditBehavior id model =
                 ]
                 [ Html.h1 []
                     [ Html.span [] [ Html.text "Editing: " ]
-                    , Html.span [ Attr.style "font-weight" "normal" ] [ Html.text current.name ]
+                    , Html.span [ Attr.style "font-weight" "normal" ] [ Html.text behaviorEditing.old.name ]
                     ]
                 , Html.form
                     [ Html.Events.onSubmit (SaveBehavior id)
@@ -890,7 +992,7 @@ viewEditBehavior id model =
                         , Html.input
                             [ Attr.style "font-size" "2rem"
                             , Attr.style "width" "100%"
-                            , Attr.value edited.name
+                            , Attr.value behaviorEditing.new.name
                             , Html.Events.onInput BehaviorNameEdited
                             ]
                             []
@@ -902,7 +1004,7 @@ viewEditBehavior id model =
                         , Attr.style "border-radius" "1rem"
                         ]
                         [ Html.summary [ Attr.style "font-size" "1.5rem" ] [ Html.text "Submits" ]
-                        , edited.submits
+                        , behaviorEditing.new.submits
                             |> List.map
                                 (\submit ->
                                     Html.li
@@ -914,6 +1016,22 @@ viewEditBehavior id model =
                                         , buttonSecondarySmall "Remove"
                                             (RemoveSubmit submit)
                                         ]
+                                )
+                            |> (::)
+                                (Html.li
+                                    [ Attr.style "display" "flex"
+                                    , Attr.style "justify-content" "space-between"
+                                    , Attr.style "margin-top" "0.75rem"
+                                    ]
+                                    [ Html.input
+                                        [ Attr.type_ "datetime-local"
+                                        , Attr.value behaviorEditing.submitToInsert
+                                        , Html.Events.onInput SubmitToInsertChanged
+                                        ]
+                                        []
+                                    , buttonPrimarySmall "Insert"
+                                        InsertSubmit
+                                    ]
                                 )
                             |> Html.ol
                                 [ Attr.style "list-style" "none"
@@ -928,7 +1046,7 @@ viewEditBehavior id model =
                         , Attr.style "border-radius" "1rem"
                         ]
                         [ Html.summary [ Attr.style "font-size" "1.5rem" ] [ Html.text "Resists" ]
-                        , edited.resists
+                        , behaviorEditing.new.resists
                             |> List.map
                                 (\resist ->
                                     Html.li
@@ -940,6 +1058,22 @@ viewEditBehavior id model =
                                         , buttonSecondarySmall "Remove"
                                             (RemoveResist resist)
                                         ]
+                                )
+                            |> (::)
+                                (Html.li
+                                    [ Attr.style "display" "flex"
+                                    , Attr.style "justify-content" "space-between"
+                                    , Attr.style "margin-top" "0.75rem"
+                                    ]
+                                    [ Html.input
+                                        [ Attr.type_ "datetime-local"
+                                        , Attr.value behaviorEditing.resistToInsert
+                                        , Html.Events.onInput ResistToInsertChanged
+                                        ]
+                                        []
+                                    , buttonPrimarySmall "Insert"
+                                        InsertResist
+                                    ]
                                 )
                             |> Html.ol
                                 [ Attr.style "list-style" "none"

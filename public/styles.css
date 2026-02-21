@@ -16,6 +16,9 @@ body {
   background: hsl(162deg, 100%, 95%);
 }
 
+a.pushable {
+    text-decoration: none;
+}
 
 /* BEGIN Button - from Josh W Comeau */
 .pushable {
