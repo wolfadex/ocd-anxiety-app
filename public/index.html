@@ -23,7 +23,23 @@
             import * as ConcurrentTask from "elm-concurrent-task/index.js";
             import { createTasks } from "elm-indexeddb";
 
+            Object.defineProperty(
+                HTMLInputElement.prototype,
+                "___setCustomValidity",
+                {
+                    set(message) {
+                        if (message == null) {
+                            this.setCustomValidity("");
+                        } else {
+                            this.setCustomValidity(message);
+                            this.reportValidity();
+                        }
+                    },
+                },
+            );
+
             const randSeeds = new Uint32Array(4);
+            crypto.getRandomValues(randSeeds);
             var app = Elm.Main.init({
                 flags: {
                     seed1: randSeeds[0],

@@ -3,7 +3,7 @@ port module Main exposing (Application, Behavior, Flags, Model, Msg, Route, main
 import AppUrl
 import Browser
 import Browser.Navigation
-import ConcurrentTask exposing (ConcurrentTask)
+import ConcurrentTask exposing (ConcurrentTask, UnexpectedError)
 import Css
 import Csv.Encode
 import DateFormat
@@ -42,6 +42,12 @@ type alias Flags =
     }
 
 
+type Saving
+    = Fresh
+    | Saving
+    | FailedToSave String
+
+
 type Application
     = Initializing InitModel
     | StartupFailure
@@ -64,8 +70,9 @@ type alias Model =
     , route : Route
     , safetyBehaviors : List Behavior
     , behaviorNameToAdd : String
-    , addingBehavior : Bool
+    , addingBehavior : Saving
     , behaviorEditing : Maybe BehaviorEditing
+    , editingBehavior : Saving
     , confirmDelete : Maybe UUID
     , deleting : Bool
     }
@@ -339,8 +346,9 @@ update msg app =
                               , route = route
                               , safetyBehaviors = behaviors
                               , behaviorNameToAdd = ""
-                              , addingBehavior = False
+                              , addingBehavior = Fresh
                               , behaviorEditing = Nothing
+                              , editingBehavior = Fresh
                               , confirmDelete = Nothing
                               , deleting = False
                               }
@@ -404,6 +412,7 @@ update msg app =
                                                     , submitToInsert = ""
                                                     , resistToInsert = ""
                                                     }
+                                            , editingBehavior = Fresh
                                             , confirmDelete = Nothing
                                             , deleting = False
                                           }
@@ -413,7 +422,7 @@ update msg app =
                             AddBehaviorRoute ->
                                 ( { model
                                     | route = route
-                                    , addingBehavior = False
+                                    , addingBehavior = Fresh
                                   }
                                 , Cmd.none
                                 )
@@ -450,59 +459,66 @@ update msg app =
                         ( { model | behaviorNameToAdd = name }, Cmd.none )
 
                     AddBehavior ->
-                        if model.addingBehavior then
-                            ( model, Cmd.none )
+                        case model.addingBehavior of
+                            Saving ->
+                                ( model, Cmd.none )
 
-                        else if String.isEmpty model.behaviorNameToAdd then
-                            ( model, Cmd.none )
+                            _ ->
+                                if String.isEmpty model.behaviorNameToAdd then
+                                    ( model, Cmd.none )
 
-                        else
-                            let
-                                ( id, seeds ) =
-                                    UUID.step model.seeds
+                                else
+                                    let
+                                        ( id, seeds ) =
+                                            UUID.step model.seeds
 
-                                ( dbTasks, cmd ) =
-                                    doDbTask
-                                        (BehaviorCreateResponded id)
-                                        (IndexedDb.add model.db
-                                            behaviorStore
-                                            (encodeBehavior
-                                                { id = id
-                                                , name = model.behaviorNameToAdd
-                                                , submits = []
-                                                , resists = []
-                                                }
-                                            )
-                                        )
-                            in
-                            ( { model
-                                | addingBehavior = True
-                                , dbTasks = dbTasks
-                                , seeds = seeds
-                              }
-                            , cmd
-                            )
+                                        ( dbTasks, cmd ) =
+                                            doDbTask
+                                                (BehaviorCreateResponded id)
+                                                (IndexedDb.add model.db
+                                                    behaviorStore
+                                                    (encodeBehavior
+                                                        { id = id
+                                                        , name = model.behaviorNameToAdd
+                                                        , submits = []
+                                                        , resists = []
+                                                        }
+                                                    )
+                                                )
+                                    in
+                                    ( { model
+                                        | addingBehavior = Saving
+                                        , dbTasks = dbTasks
+                                        , seeds = seeds
+                                      }
+                                    , cmd
+                                    )
 
                     BehaviorCreateResponded id response ->
                         case response of
                             ConcurrentTask.Error err ->
-                                let
-                                    _ =
-                                        Debug.todo (Debug.toString err)
-                                in
                                 ( { model
-                                    | addingBehavior = False
+                                    | addingBehavior =
+                                        FailedToSave <|
+                                            case err of
+                                                IndexedDb.AlreadyExists ->
+                                                    "Already exists"
+
+                                                IndexedDb.TransactionError e ->
+                                                    e
+
+                                                IndexedDb.QuotaExceeded ->
+                                                    "Quota exceeded"
+
+                                                IndexedDb.DatabaseError e ->
+                                                    e
                                   }
                                 , Cmd.none
                                 )
 
-                            ConcurrentTask.UnexpectedError err ->
-                                let
-                                    _ =
-                                        Debug.todo (Debug.toString err)
-                                in
+                            ConcurrentTask.UnexpectedError _ ->
                                 ( { model
-                                    | addingBehavior = False
+                                    | addingBehavior = FailedToSave "Unexpected error"
                                   }
                                 , Cmd.none
                                 )
@@ -759,20 +775,29 @@ update msg app =
                     BehaviorSaveResponded id response ->
                         case response of
                             ConcurrentTask.Error err ->
-                                let
-                                    _ =
-                                        Debug.todo (Debug.toString err)
-                                in
-                                ( model
+                                ( { model
+                                    | editingBehavior =
+                                        FailedToSave <|
+                                            case err of
+                                                IndexedDb.AlreadyExists ->
+                                                    "Already exists"
+
+                                                IndexedDb.TransactionError e ->
+                                                    e
+
+                                                IndexedDb.QuotaExceeded ->
+                                                    "Quota exceeded"
+
+                                                IndexedDb.DatabaseError e ->
+                                                    e
+                                  }
                                 , Cmd.none
                                 )
 
-                            ConcurrentTask.UnexpectedError err ->
-                                let
-                                    _ =
-                                        Debug.todo (Debug.toString err)
-                                in
-                                ( model
+                            ConcurrentTask.UnexpectedError _ ->
+                                ( { model
+                                    | editingBehavior = FailedToSave "Unexpected error"
+                                  }
                                 , Cmd.none
                                 )
 
@@ -801,23 +826,28 @@ update msg app =
                     BehaviorDeleteResponded key response ->
                         case response of
                             ConcurrentTask.Error err ->
-                                let
-                                    _ =
-                                        Debug.todo (Debug.toString err)
-                                in
                                 ( { model
-                                    | deleting = False
+                                    | editingBehavior =
+                                        FailedToSave <|
+                                            case err of
+                                                IndexedDb.AlreadyExists ->
+                                                    "Already exists"
+
+                                                IndexedDb.TransactionError e ->
+                                                    e
+
+                                                IndexedDb.QuotaExceeded ->
+                                                    "Quota exceeded"
+
+                                                IndexedDb.DatabaseError e ->
+                                                    e
                                   }
                                 , Cmd.none
                                 )
 
-                            ConcurrentTask.UnexpectedError err ->
-                                let
-                                    _ =
-                                        Debug.todo (Debug.toString err)
-                                in
+                            ConcurrentTask.UnexpectedError _ ->
                                 ( { model
-                                    | deleting = False
+                                    | editingBehavior = FailedToSave "Unexpected error"
                                   }
                                 , Cmd.none
                                 )
@@ -1019,6 +1049,14 @@ viewEditBehavior id model =
                         , Html.input
                             [ Attr.style "font-size" "2rem"
                             , Attr.style "width" "100%"
+                            , Attr.required True
+                            , setInvalid <|
+                                case model.editingBehavior of
+                                    FailedToSave err ->
+                                        Just err
+
+                                    _ ->
+                                        Nothing
                             , Attr.value behaviorEditing.new.name
                             , Html.Events.onInput BehaviorNameEdited
                             ]
@@ -1313,6 +1351,14 @@ viewAddBehavior model =
                 , Html.input
                     [ Attr.style "font-size" "2rem"
                     , Attr.style "width" "100%"
+                    , Attr.required True
+                    , setInvalid <|
+                        case model.addingBehavior of
+                            FailedToSave err ->
+                                Just err
+
+                            _ ->
+                                Nothing
                     , Attr.value model.behaviorNameToAdd
                     , Html.Events.onInput BehaviorNameToAddChanged
                     ]
@@ -1325,24 +1371,24 @@ viewAddBehavior model =
                 ]
                 [ linkSecondary "Cancel"
                     HomeRoute
-                , buttonPrimary
+                , buttonSubmit
                     (Html.div
                         [ Attr.style "display" "flex"
                         , Attr.style "gap" "1rem"
                         ]
                         [ Html.text "Add"
-                        , if model.addingBehavior then
-                            Html.div
-                                [ Attr.style "width" "1rem"
-                                , Attr.style "height" "1rem"
-                                ]
-                                [ spinner ]
+                        , case model.addingBehavior of
+                            Saving ->
+                                Html.div
+                                    [ Attr.style "width" "1rem"
+                                    , Attr.style "height" "1rem"
+                                    ]
+                                    [ spinner ]
 
-                          else
-                            noHtml
+                            _ ->
+                                noHtml
                         ]
                     )
-                    AddBehavior
                 ]
             ]
         ]
@@ -1350,6 +1396,17 @@ viewAddBehavior model =
 
 
 --
+
+
+setInvalid : Maybe String -> Html.Attribute msg
+setInvalid error =
+    Attr.property "___setCustomValidity" <|
+        case error of
+            Nothing ->
+                Json.Encode.null
+
+            Just err ->
+                Json.Encode.string err
 
 
 spinner : Html msg
@@ -1368,6 +1425,18 @@ buttonPrimary label action =
         [ Css.pushable
         , Attr.type_ "button"
         , Html.Events.onClick action
+        ]
+        [ Html.span [ Css.shadow ] []
+        , Html.span [ Css.edge ] []
+        , Html.span [ Css.front ] [ label ]
+        ]
+
+
+buttonSubmit : Html msg -> Html msg
+buttonSubmit label =
+    Html.button
+        [ Css.pushable
+        , Attr.type_ "submit"
         ]
         [ Html.span [ Css.shadow ] []
         , Html.span [ Css.edge ] []

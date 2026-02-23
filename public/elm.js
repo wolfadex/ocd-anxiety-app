@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1771695853553"
+    "1772030234784"
   );
   var ORIGINAL_COMPILATION_MODE = "debug";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -15948,6 +15948,10 @@ var $author$project$Main$BehaviorSaveResponded = F2(
 	function (a, b) {
 		return {$: 'BehaviorSaveResponded', a: a, b: b};
 	});
+var $author$project$Main$FailedToSave = function (a) {
+	return {$: 'FailedToSave', a: a};
+};
+var $author$project$Main$Fresh = {$: 'Fresh'};
 var $author$project$Main$HomeRoute = {$: 'HomeRoute'};
 var $author$project$Main$Initialized = function (a) {
 	return {$: 'Initialized', a: a};
@@ -15956,6 +15960,7 @@ var $author$project$Main$ResistedBehaviorAt = F2(
 	function (a, b) {
 		return {$: 'ResistedBehaviorAt', a: a, b: b};
 	});
+var $author$project$Main$Saving = {$: 'Saving'};
 var $author$project$Main$StartupFailure = {$: 'StartupFailure'};
 var $author$project$Main$SubmittedToBehaviorAt = F2(
 	function (a, b) {
@@ -18680,8 +18685,8 @@ var $author$project$Main$update = F2(
 								var _v5 = _Debug_todo(
 									'Main',
 									{
-										start: {line: 319, column: 37},
-										end: {line: 319, column: 47}
+										start: {line: 326, column: 37},
+										end: {line: 326, column: 47}
 									})(
 									$elm$core$Debug$toString(err));
 								return _Utils_Tuple2($author$project$Main$StartupFailure, $elm$core$Platform$Cmd$none);
@@ -18690,8 +18695,8 @@ var $author$project$Main$update = F2(
 								var _v6 = _Debug_todo(
 									'Main',
 									{
-										start: {line: 326, column: 37},
-										end: {line: 326, column: 47}
+										start: {line: 333, column: 37},
+										end: {line: 333, column: 47}
 									})(
 									$elm$core$Debug$toString(err));
 								return _Utils_Tuple2($author$project$Main$StartupFailure, $elm$core$Platform$Cmd$none);
@@ -18723,7 +18728,7 @@ var $author$project$Main$update = F2(
 												return m;
 											}
 										}(
-											{addingBehavior: false, behaviorEditing: $elm$core$Maybe$Nothing, behaviorNameToAdd: '', confirmDelete: $elm$core$Maybe$Nothing, db: db, dbTasks: model.dbTasks, deleting: false, navKey: model.navKey, route: route, safetyBehaviors: behaviors, seeds: model.seeds})),
+											{addingBehavior: $author$project$Main$Fresh, behaviorEditing: $elm$core$Maybe$Nothing, behaviorNameToAdd: '', confirmDelete: $elm$core$Maybe$Nothing, db: db, dbTasks: model.dbTasks, deleting: false, editingBehavior: $author$project$Main$Fresh, navKey: model.navKey, route: route, safetyBehaviors: behaviors, seeds: model.seeds})),
 									$elm$core$Platform$Cmd$none);
 						}
 					default:
@@ -18759,6 +18764,7 @@ var $author$project$Main$update = F2(
 															{_new: behavior, old: behavior, resistToInsert: '', submitToInsert: ''}),
 														confirmDelete: $elm$core$Maybe$Nothing,
 														deleting: false,
+														editingBehavior: $author$project$Main$Fresh,
 														route: route
 													}),
 												$elm$core$Platform$Cmd$none);
@@ -18767,7 +18773,7 @@ var $author$project$Main$update = F2(
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
-												{addingBehavior: false, route: route}),
+												{addingBehavior: $author$project$Main$Fresh, route: route}),
 											$elm$core$Platform$Cmd$none);
 									default:
 										return _Utils_Tuple2(
@@ -18811,16 +18817,17 @@ var $author$project$Main$update = F2(
 										{behaviorNameToAdd: name}),
 									$elm$core$Platform$Cmd$none);
 							case 'AddBehavior':
-								if (model.addingBehavior) {
+								var _v15 = model.addingBehavior;
+								if (_v15.$ === 'Saving') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
 									if ($elm$core$String$isEmpty(model.behaviorNameToAdd)) {
 										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 									} else {
-										var _v15 = $TSFoster$elm_uuid$UUID$step(model.seeds);
-										var id = _v15.a;
-										var seeds = _v15.b;
-										var _v16 = A2(
+										var _v16 = $TSFoster$elm_uuid$UUID$step(model.seeds);
+										var id = _v16.a;
+										var seeds = _v16.b;
+										var _v17 = A2(
 											$author$project$Main$doDbTask,
 											$author$project$Main$BehaviorCreateResponded(id),
 											A3(
@@ -18829,12 +18836,12 @@ var $author$project$Main$update = F2(
 												$author$project$Main$behaviorStore,
 												$author$project$Main$encodeBehavior(
 													{id: id, name: model.behaviorNameToAdd, resists: _List_Nil, submits: _List_Nil})));
-										var dbTasks = _v16.a;
-										var cmd = _v16.b;
+										var dbTasks = _v17.a;
+										var cmd = _v17.b;
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
-												{addingBehavior: true, dbTasks: dbTasks, seeds: seeds}),
+												{addingBehavior: $author$project$Main$Saving, dbTasks: dbTasks, seeds: seeds}),
 											cmd);
 									}
 								}
@@ -18844,31 +18851,34 @@ var $author$project$Main$update = F2(
 								switch (response.$) {
 									case 'Error':
 										var err = response.a;
-										var _v18 = _Debug_todo(
-											'Main',
-											{
-												start: {line: 491, column: 41},
-												end: {line: 491, column: 51}
-											})(
-											$elm$core$Debug$toString(err));
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
-												{addingBehavior: false}),
+												{
+													addingBehavior: $author$project$Main$FailedToSave(
+														function () {
+															switch (err.$) {
+																case 'AlreadyExists':
+																	return 'Already exists';
+																case 'TransactionError':
+																	var e = err.a;
+																	return e;
+																case 'QuotaExceeded':
+																	return 'Quota exceeded';
+																default:
+																	var e = err.a;
+																	return e;
+															}
+														}())
+												}),
 											$elm$core$Platform$Cmd$none);
 									case 'UnexpectedError':
-										var err = response.a;
-										var _v19 = _Debug_todo(
-											'Main',
-											{
-												start: {line: 502, column: 41},
-												end: {line: 502, column: 51}
-											})(
-											$elm$core$Debug$toString(err));
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
-												{addingBehavior: false}),
+												{
+													addingBehavior: $author$project$Main$FailedToSave('Unexpected error')
+												}),
 											$elm$core$Platform$Cmd$none);
 									default:
 										return _Utils_Tuple2(
@@ -19224,24 +19234,35 @@ var $author$project$Main$update = F2(
 								switch (response.$) {
 									case 'Error':
 										var err = response.a;
-										var _v36 = _Debug_todo(
-											'Main',
-											{
-												start: {line: 764, column: 41},
-												end: {line: 764, column: 51}
-											})(
-											$elm$core$Debug$toString(err));
-										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{
+													editingBehavior: $author$project$Main$FailedToSave(
+														function () {
+															switch (err.$) {
+																case 'AlreadyExists':
+																	return 'Already exists';
+																case 'TransactionError':
+																	var e = err.a;
+																	return e;
+																case 'QuotaExceeded':
+																	return 'Quota exceeded';
+																default:
+																	var e = err.a;
+																	return e;
+															}
+														}())
+												}),
+											$elm$core$Platform$Cmd$none);
 									case 'UnexpectedError':
-										var err = response.a;
-										var _v37 = _Debug_todo(
-											'Main',
-											{
-												start: {line: 773, column: 41},
-												end: {line: 773, column: 51}
-											})(
-											$elm$core$Debug$toString(err));
-										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{
+													editingBehavior: $author$project$Main$FailedToSave('Unexpected error')
+												}),
+											$elm$core$Platform$Cmd$none);
 									default:
 										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								}
@@ -19256,7 +19277,7 @@ var $author$project$Main$update = F2(
 									$elm$core$Platform$Cmd$none);
 							case 'ConfirmDeleteBehavior':
 								var id = msg.a;
-								var _v38 = A2(
+								var _v37 = A2(
 									$author$project$Main$doDbTask,
 									$author$project$Main$BehaviorDeleteResponded(id),
 									A3(
@@ -19264,8 +19285,8 @@ var $author$project$Main$update = F2(
 										model.db,
 										$author$project$Main$behaviorStore,
 										$author$project$Main$uuidToKey(id)));
-								var dbTasks = _v38.a;
-								var cmd = _v38.b;
+								var dbTasks = _v37.a;
+								var cmd = _v37.b;
 								return _Utils_Tuple2(
 									_Utils_update(
 										model,
@@ -19277,31 +19298,34 @@ var $author$project$Main$update = F2(
 								switch (response.$) {
 									case 'Error':
 										var err = response.a;
-										var _v40 = _Debug_todo(
-											'Main',
-											{
-												start: {line: 806, column: 41},
-												end: {line: 806, column: 51}
-											})(
-											$elm$core$Debug$toString(err));
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
-												{deleting: false}),
+												{
+													editingBehavior: $author$project$Main$FailedToSave(
+														function () {
+															switch (err.$) {
+																case 'AlreadyExists':
+																	return 'Already exists';
+																case 'TransactionError':
+																	var e = err.a;
+																	return e;
+																case 'QuotaExceeded':
+																	return 'Quota exceeded';
+																default:
+																	var e = err.a;
+																	return e;
+															}
+														}())
+												}),
 											$elm$core$Platform$Cmd$none);
 									case 'UnexpectedError':
-										var err = response.a;
-										var _v41 = _Debug_todo(
-											'Main',
-											{
-												start: {line: 817, column: 41},
-												end: {line: 817, column: 51}
-											})(
-											$elm$core$Debug$toString(err));
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
-												{deleting: false}),
+												{
+													editingBehavior: $author$project$Main$FailedToSave('Unexpected error')
+												}),
 											$elm$core$Platform$Cmd$none);
 									default:
 										return _Utils_Tuple2(
@@ -19354,10 +19378,10 @@ var $author$project$Main$update = F2(
 															$BrianHicks$elm_csv$Csv$Encode$encode,
 															{
 																encoder: $BrianHicks$elm_csv$Csv$Encode$withFieldNames(
-																	function (_v43) {
-																		var date = _v43.a;
-																		var submit = _v43.b;
-																		var resist = _v43.c;
+																	function (_v41) {
+																		var date = _v41.a;
+																		var submit = _v41.b;
+																		var resist = _v41.c;
 																		return _List_fromArray(
 																			[
 																				_Utils_Tuple2(
@@ -19371,8 +19395,8 @@ var $author$project$Main$update = F2(
 															},
 															A2(
 																$elm$core$List$sortBy,
-																function (_v42) {
-																	var t = _v42.a;
+																function (_v40) {
+																	var t = _v40.a;
 																	return $elm$time$Time$posixToMillis(t);
 																},
 																timestamps));
@@ -19409,36 +19433,34 @@ var $author$project$Css$edge = $elm$html$Html$Attributes$class('edge');
 var $author$project$Css$front = $elm$html$Html$Attributes$class('front');
 var $author$project$Css$pushable = $elm$html$Html$Attributes$class('pushable');
 var $author$project$Css$shadow = $elm$html$Html$Attributes$class('shadow');
-var $author$project$Main$buttonPrimary = F2(
-	function (label, action) {
-		return A2(
-			$elm$html$Html$button,
-			_List_fromArray(
-				[
-					$author$project$Css$pushable,
-					$elm$html$Html$Attributes$type_('button'),
-					$elm$html$Html$Events$onClick(action)
-				]),
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[$author$project$Css$shadow]),
-					_List_Nil),
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[$author$project$Css$edge]),
-					_List_Nil),
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[$author$project$Css$front]),
-					_List_fromArray(
-						[label]))
-				]));
-	});
+var $author$project$Main$buttonSubmit = function (label) {
+	return A2(
+		$elm$html$Html$button,
+		_List_fromArray(
+			[
+				$author$project$Css$pushable,
+				$elm$html$Html$Attributes$type_('submit')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$span,
+				_List_fromArray(
+					[$author$project$Css$shadow]),
+				_List_Nil),
+				A2(
+				$elm$html$Html$span,
+				_List_fromArray(
+					[$author$project$Css$edge]),
+				_List_Nil),
+				A2(
+				$elm$html$Html$span,
+				_List_fromArray(
+					[$author$project$Css$front]),
+				_List_fromArray(
+					[label]))
+			]));
+};
 var $elm$html$Html$form = _VirtualDom_node('form');
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $elm$html$Html$label = _VirtualDom_node('label');
@@ -19499,6 +19521,35 @@ var $elm$html$Html$Events$onSubmit = function (msg) {
 			$elm$html$Html$Events$alwaysPreventDefault,
 			$elm$json$Json$Decode$succeed(msg)));
 };
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$required = $elm$html$Html$Attributes$boolProperty('required');
+var $elm$virtual_dom$VirtualDom$property = F2(
+	function (key, value) {
+		return A2(
+			_VirtualDom_property,
+			_VirtualDom_noInnerHtmlOrFormAction(key),
+			_VirtualDom_noJavaScriptOrHtmlJson(value));
+	});
+var $elm$html$Html$Attributes$property = $elm$virtual_dom$VirtualDom$property;
+var $author$project$Main$setInvalid = function (error) {
+	return A2(
+		$elm$html$Html$Attributes$property,
+		'___setCustomValidity',
+		function () {
+			if (error.$ === 'Nothing') {
+				return $elm$json$Json$Encode$null;
+			} else {
+				var err = error.a;
+				return $elm$json$Json$Encode$string(err);
+			}
+		}());
+};
 var $author$project$Main$viewAddBehavior = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -19558,6 +19609,17 @@ var $author$project$Main$viewAddBehavior = function (model) {
 									[
 										A2($elm$html$Html$Attributes$style, 'font-size', '2rem'),
 										A2($elm$html$Html$Attributes$style, 'width', '100%'),
+										$elm$html$Html$Attributes$required(true),
+										$author$project$Main$setInvalid(
+										function () {
+											var _v0 = model.addingBehavior;
+											if (_v0.$ === 'FailedToSave') {
+												var err = _v0.a;
+												return $elm$core$Maybe$Just(err);
+											} else {
+												return $elm$core$Maybe$Nothing;
+											}
+										}()),
 										$elm$html$Html$Attributes$value(model.behaviorNameToAdd),
 										$elm$html$Html$Events$onInput($author$project$Main$BehaviorNameToAddChanged)
 									]),
@@ -19574,8 +19636,7 @@ var $author$project$Main$viewAddBehavior = function (model) {
 						_List_fromArray(
 							[
 								A2($author$project$Main$linkSecondary, 'Cancel', $author$project$Main$HomeRoute),
-								A2(
-								$author$project$Main$buttonPrimary,
+								$author$project$Main$buttonSubmit(
 								A2(
 									$elm$html$Html$div,
 									_List_fromArray(
@@ -19586,17 +19647,23 @@ var $author$project$Main$viewAddBehavior = function (model) {
 									_List_fromArray(
 										[
 											$elm$html$Html$text('Add'),
-											model.addingBehavior ? A2(
-											$elm$html$Html$div,
-											_List_fromArray(
-												[
-													A2($elm$html$Html$Attributes$style, 'width', '1rem'),
-													A2($elm$html$Html$Attributes$style, 'height', '1rem')
-												]),
-											_List_fromArray(
-												[$author$project$Main$spinner])) : $author$project$Main$noHtml
-										])),
-								$author$project$Main$AddBehavior)
+											function () {
+											var _v1 = model.addingBehavior;
+											if (_v1.$ === 'Saving') {
+												return A2(
+													$elm$html$Html$div,
+													_List_fromArray(
+														[
+															A2($elm$html$Html$Attributes$style, 'width', '1rem'),
+															A2($elm$html$Html$Attributes$style, 'height', '1rem')
+														]),
+													_List_fromArray(
+														[$author$project$Main$spinner]));
+											} else {
+												return $author$project$Main$noHtml;
+											}
+										}()
+										])))
 							]))
 					]))
 			]));
@@ -19956,6 +20023,36 @@ var $author$project$Main$buttonDanger = F2(
 						]))
 				]));
 	});
+var $author$project$Main$buttonPrimary = F2(
+	function (label, action) {
+		return A2(
+			$elm$html$Html$button,
+			_List_fromArray(
+				[
+					$author$project$Css$pushable,
+					$elm$html$Html$Attributes$type_('button'),
+					$elm$html$Html$Events$onClick(action)
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$shadow]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$edge]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$front]),
+					_List_fromArray(
+						[label]))
+				]));
+	});
 var $author$project$Main$buttonPrimarySmall = F2(
 	function (label, action) {
 		return A2(
@@ -20134,6 +20231,17 @@ var $author$project$Main$viewEditBehavior = F2(
 											[
 												A2($elm$html$Html$Attributes$style, 'font-size', '2rem'),
 												A2($elm$html$Html$Attributes$style, 'width', '100%'),
+												$elm$html$Html$Attributes$required(true),
+												$author$project$Main$setInvalid(
+												function () {
+													var _v1 = model.editingBehavior;
+													if (_v1.$ === 'FailedToSave') {
+														var err = _v1.a;
+														return $elm$core$Maybe$Just(err);
+													} else {
+														return $elm$core$Maybe$Nothing;
+													}
+												}()),
 												$elm$html$Html$Attributes$value(behaviorEditing._new.name),
 												$elm$html$Html$Events$onInput($author$project$Main$BehaviorNameEdited)
 											]),
@@ -20306,8 +20414,8 @@ var $author$project$Main$viewEditBehavior = F2(
 										$author$project$Main$SaveBehavior(id))
 									])),
 								function () {
-								var _v1 = model.confirmDelete;
-								if (_v1.$ === 'Nothing') {
+								var _v2 = model.confirmDelete;
+								if (_v2.$ === 'Nothing') {
 									return A2(
 										$author$project$Main$buttonDanger,
 										'Delete',
