@@ -320,18 +320,10 @@ update msg app =
 
                 DbLoaded response ->
                     case response of
-                        ConcurrentTask.Error err ->
-                            let
-                                _ =
-                                    Debug.todo (Debug.toString err)
-                            in
+                        ConcurrentTask.Error _ ->
                             ( StartupFailure, Cmd.none )
 
-                        ConcurrentTask.UnexpectedError err ->
-                            let
-                                _ =
-                                    Debug.todo (Debug.toString err)
-                            in
+                        ConcurrentTask.UnexpectedError _ ->
                             ( StartupFailure, Cmd.none )
 
                         ConcurrentTask.Success ( db, behaviors ) ->
@@ -980,15 +972,56 @@ viewApp : Application -> Html Msg
 viewApp app =
     case app of
         StartupFailure ->
-            Html.div []
-                [ Html.text "Initialization failure. Try reloading the page" ]
+            Html.div
+                [ Attr.style "height" "100svh"
+                , Attr.style "width" "100dvw"
+                , Attr.style "display" "flex"
+                , Attr.style "flex-direction" "column"
+                , Attr.style "align-items" "center"
+                , Attr.style "justify-content" "center"
+                ]
+                [ Html.div
+                    [ Attr.style "background-color" "hsl(265deg 88.5% 60%)"
+                    , Attr.style "padding" "1rem 2rem"
+                    , Attr.style "border-radius" "1rem"
+                    , Attr.style "display" "flex"
+                    , Attr.style "flex-direction" "column"
+                    , Attr.style "align-items" "center"
+                    , Attr.style "justify-content" "center"
+                    , Attr.style "gap" "1rem"
+                    ]
+                    [ Html.h2 [ Attr.style "color" "white" ] [ Html.text "Initialization failure," ]
+                    , Html.h3 [ Attr.style "color" "white" ] [ Html.text "try reloading the page" ]
+                    ]
+                ]
 
         Initializing _ ->
             Html.div
-                [ Attr.style "width" "3rem"
-                , Attr.style "height" "3rem"
+                [ Attr.style "height" "100svh"
+                , Attr.style "width" "100dvw"
+                , Attr.style "display" "flex"
+                , Attr.style "flex-direction" "column"
+                , Attr.style "align-items" "center"
+                , Attr.style "justify-content" "center"
                 ]
-                [ spinner ]
+                [ Html.div
+                    [ Attr.style "background-color" "hsl(265deg 88.5% 60%)"
+                    , Attr.style "padding" "2rem 4rem"
+                    , Attr.style "border-radius" "1rem"
+                    , Attr.style "display" "flex"
+                    , Attr.style "flex-direction" "column"
+                    , Attr.style "align-items" "center"
+                    , Attr.style "justify-content" "center"
+                    , Attr.style "gap" "3rem"
+                    ]
+                    [ Html.h2 [ Attr.style "color" "white" ] [ Html.text "Booting up" ]
+                    , Html.div
+                        [ Attr.style "width" "3rem"
+                        , Attr.style "height" "3rem"
+                        ]
+                        [ spinner ]
+                    ]
+                ]
 
         Initialized model ->
             case model.route of
