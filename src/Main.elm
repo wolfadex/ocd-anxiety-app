@@ -1043,7 +1043,9 @@ viewEditBehavior id model =
     case model.behaviorEditing of
         Nothing ->
             Html.div
-                [ Attr.style "padding" "1rem"
+                [ Attr.style "display" "flex"
+                , Attr.style "justify-content" "center"
+                , Attr.style "padding" "5rem 1rem 0 1rem"
                 ]
                 [ linkSecondary "Sorry, looks like we made a mistake"
                     HomeRoute
@@ -1179,15 +1181,20 @@ viewEditBehavior id model =
                                 , Attr.style "flex-direction" "column"
                                 ]
                         ]
-                    , Html.div
-                        [ Attr.style "display" "flex"
-                        , Attr.style "width" "100%"
-                        , Attr.style "justify-content" "space-between"
-                        ]
-                        [ linkSecondary "Cancel"
-                            HomeRoute
-                        , buttonPrimary (Html.text "Save") (SaveBehavior id)
-                        ]
+                    , case model.confirmDelete of
+                        Nothing ->
+                            Html.div
+                                [ Attr.style "display" "flex"
+                                , Attr.style "width" "100%"
+                                , Attr.style "justify-content" "space-between"
+                                ]
+                                [ linkSecondary "Cancel"
+                                    HomeRoute
+                                , buttonPrimary (Html.text "Save") (SaveBehavior id)
+                                ]
+
+                        Just _ ->
+                            noHtml
                     , case model.confirmDelete of
                         Nothing ->
                             buttonDanger "Delete"
@@ -1274,7 +1281,7 @@ viewBehaviorList model =
                 ]
                 [ Html.h1 [] [ Html.span [] [ Html.text "Welcome!" ] ]
                 , Html.div
-                    [ Attr.style "font-size" "3rem"
+                    [ Attr.style "display" "flex"
                     ]
                     [ linkPrimary "Start tracking"
                         AddBehaviorRoute

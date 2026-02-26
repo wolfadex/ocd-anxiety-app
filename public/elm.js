@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1772065279339"
+    "1772065952748"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -15326,7 +15326,7 @@ var $author$project$Main$viewBehaviorList = function (model) {
 					$elm$html$Html$div,
 					_List_fromArray(
 						[
-							A2($elm$html$Html$Attributes$style, 'font-size', '3rem')
+							A2($elm$html$Html$Attributes$style, 'display', 'flex')
 						]),
 					_List_fromArray(
 						[
@@ -15560,7 +15560,9 @@ var $author$project$Main$viewEditBehavior = F2(
 				$elm$html$Html$div,
 				_List_fromArray(
 					[
-						A2($elm$html$Html$Attributes$style, 'padding', '1rem')
+						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+						A2($elm$html$Html$Attributes$style, 'justify-content', 'center'),
+						A2($elm$html$Html$Attributes$style, 'padding', '5rem 1rem 0 1rem')
 					]),
 				_List_fromArray(
 					[
@@ -15810,25 +15812,32 @@ var $author$project$Main$viewEditBehavior = F2(
 												},
 												behaviorEditing._new.resists)))
 									])),
-								A2(
-								$elm$html$Html$div,
-								_List_fromArray(
-									[
-										A2($elm$html$Html$Attributes$style, 'display', 'flex'),
-										A2($elm$html$Html$Attributes$style, 'width', '100%'),
-										A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between')
-									]),
-								_List_fromArray(
-									[
-										A2($author$project$Main$linkSecondary, 'Cancel', $author$project$Main$HomeRoute),
-										A2(
-										$author$project$Main$buttonPrimary,
-										$elm$html$Html$text('Save'),
-										$author$project$Main$SaveBehavior(id))
-									])),
 								function () {
 								var _v2 = model.confirmDelete;
 								if (_v2.$ === 'Nothing') {
+									return A2(
+										$elm$html$Html$div,
+										_List_fromArray(
+											[
+												A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+												A2($elm$html$Html$Attributes$style, 'width', '100%'),
+												A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between')
+											]),
+										_List_fromArray(
+											[
+												A2($author$project$Main$linkSecondary, 'Cancel', $author$project$Main$HomeRoute),
+												A2(
+												$author$project$Main$buttonPrimary,
+												$elm$html$Html$text('Save'),
+												$author$project$Main$SaveBehavior(id))
+											]));
+								} else {
+									return $author$project$Main$noHtml;
+								}
+							}(),
+								function () {
+								var _v3 = model.confirmDelete;
+								if (_v3.$ === 'Nothing') {
 									return A2(
 										$author$project$Main$buttonDanger,
 										'Delete',
