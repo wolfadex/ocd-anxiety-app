@@ -961,7 +961,7 @@ findBehaviorById id behaviors =
 
 view : Application -> Browser.Document Msg
 view app =
-    { title = "OCD / Anxiety App"
+    { title = "Safety Behavior Tracker"
     , body =
         [ viewApp app
         ]

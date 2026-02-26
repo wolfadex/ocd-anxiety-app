@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1772065952748"
+    "1772066213116"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -16079,7 +16079,7 @@ var $author$project$Main$view = function (app) {
 			[
 				$author$project$Main$viewApp(app)
 			]),
-		title: 'OCD / Anxiety App'
+		title: 'Safety Behavior Tracker'
 	};
 };
 var $author$project$Main$main = $elm$browser$Browser$application(
