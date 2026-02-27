@@ -10,11 +10,6 @@ dev-css:
 dev-review:
     elm-review --watch --fix
 
-build:
-    build-review
-    build-css
-    build-elm
-
 build-review:
     elm-review
 
@@ -22,4 +17,7 @@ build-css:
     css-in-elm build public/styles.css src/Css.elm
 
 build-elm:
-    elm-watch --optimize
+    elm-watch make --optimize
+
+build: build-review build-css build-elm
+    echo "Built"

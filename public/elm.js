@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1772066213116"
+    "1772240579227"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -8106,43 +8106,6 @@ function _Browser_load(url)
 
 
 
-var _Bitwise_and = F2(function(a, b)
-{
-	return a & b;
-});
-
-var _Bitwise_or = F2(function(a, b)
-{
-	return a | b;
-});
-
-var _Bitwise_xor = F2(function(a, b)
-{
-	return a ^ b;
-});
-
-function _Bitwise_complement(a)
-{
-	return ~a;
-};
-
-var _Bitwise_shiftLeftBy = F2(function(offset, a)
-{
-	return a << offset;
-});
-
-var _Bitwise_shiftRightBy = F2(function(offset, a)
-{
-	return a >> offset;
-});
-
-var _Bitwise_shiftRightZfBy = F2(function(offset, a)
-{
-	return a >>> offset;
-});
-
-
-
 function _Time_now(millisToPosix)
 {
 	return _Scheduler_binding(function(callback)
@@ -8186,6 +8149,221 @@ function _Time_getZoneName()
 		callback(_Scheduler_succeed(name));
 	});
 }
+
+
+
+var _Bitwise_and = F2(function(a, b)
+{
+	return a & b;
+});
+
+var _Bitwise_or = F2(function(a, b)
+{
+	return a | b;
+});
+
+var _Bitwise_xor = F2(function(a, b)
+{
+	return a ^ b;
+});
+
+function _Bitwise_complement(a)
+{
+	return ~a;
+};
+
+var _Bitwise_shiftLeftBy = F2(function(offset, a)
+{
+	return a << offset;
+});
+
+var _Bitwise_shiftRightBy = F2(function(offset, a)
+{
+	return a >> offset;
+});
+
+var _Bitwise_shiftRightZfBy = F2(function(offset, a)
+{
+	return a >>> offset;
+});
+
+
+
+// DECODER
+
+var _File_decoder = _Json_decodePrim(function(value) {
+	// NOTE: checks if `File` exists in case this is run on node
+	return (typeof File !== 'undefined' && value instanceof File)
+		? $elm$core$Result$Ok(value)
+		: _Json_expecting('a FILE', value);
+});
+
+
+// METADATA
+
+function _File_name(file) { return file.name; }
+function _File_mime(file) { return file.type; }
+function _File_size(file) { return file.size; }
+
+function _File_lastModified(file)
+{
+	return $elm$time$Time$millisToPosix(file.lastModified);
+}
+
+
+// DOWNLOAD
+
+var _File_downloadNode;
+
+function _File_getDownloadNode()
+{
+	return _File_downloadNode || (_File_downloadNode = document.createElement('a'));
+}
+
+var _File_download = F3(function(name, mime, content)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var blob = new Blob([content], {type: mime});
+
+		// for IE10+
+		if (navigator.msSaveOrOpenBlob)
+		{
+			navigator.msSaveOrOpenBlob(blob, name);
+			return;
+		}
+
+		// for HTML5
+		var node = _File_getDownloadNode();
+		var objectUrl = URL.createObjectURL(blob);
+		node.href = objectUrl;
+		node.download = name;
+		_File_click(node);
+		URL.revokeObjectURL(objectUrl);
+	});
+});
+
+function _File_downloadUrl(href)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var node = _File_getDownloadNode();
+		node.href = href;
+		node.download = '';
+		node.origin === location.origin || (node.target = '_blank');
+		_File_click(node);
+	});
+}
+
+
+// IE COMPATIBILITY
+
+function _File_makeBytesSafeForInternetExplorer(bytes)
+{
+	// only needed by IE10 and IE11 to fix https://github.com/elm/file/issues/10
+	// all other browsers can just run `new Blob([bytes])` directly with no problem
+	//
+	return new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+}
+
+function _File_click(node)
+{
+	// only needed by IE10 and IE11 to fix https://github.com/elm/file/issues/11
+	// all other browsers have MouseEvent and do not need this conditional stuff
+	//
+	if (typeof MouseEvent === 'function')
+	{
+		node.dispatchEvent(new MouseEvent('click'));
+	}
+	else
+	{
+		var event = document.createEvent('MouseEvents');
+		event.initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+		document.body.appendChild(node);
+		node.dispatchEvent(event);
+		document.body.removeChild(node);
+	}
+}
+
+
+// UPLOAD
+
+var _File_node;
+
+function _File_uploadOne(mimes)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		_File_node = document.createElement('input');
+		_File_node.type = 'file';
+		_File_node.accept = A2($elm$core$String$join, ',', mimes);
+		_File_node.addEventListener('change', function(event)
+		{
+			callback(_Scheduler_succeed(event.target.files[0]));
+		});
+		_File_click(_File_node);
+	});
+}
+
+function _File_uploadOneOrMore(mimes)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		_File_node = document.createElement('input');
+		_File_node.type = 'file';
+		_File_node.multiple = true;
+		_File_node.accept = A2($elm$core$String$join, ',', mimes);
+		_File_node.addEventListener('change', function(event)
+		{
+			var elmFiles = _List_fromArray(event.target.files);
+			callback(_Scheduler_succeed(_Utils_Tuple2(elmFiles.a, elmFiles.b)));
+		});
+		_File_click(_File_node);
+	});
+}
+
+
+// CONTENT
+
+function _File_toString(blob)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var reader = new FileReader();
+		reader.addEventListener('loadend', function() {
+			callback(_Scheduler_succeed(reader.result));
+		});
+		reader.readAsText(blob);
+		return function() { reader.abort(); };
+	});
+}
+
+function _File_toBytes(blob)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var reader = new FileReader();
+		reader.addEventListener('loadend', function() {
+			callback(_Scheduler_succeed(new DataView(reader.result)));
+		});
+		reader.readAsArrayBuffer(blob);
+		return function() { reader.abort(); };
+	});
+}
+
+function _File_toUrl(blob)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var reader = new FileReader();
+		reader.addEventListener('loadend', function() {
+			callback(_Scheduler_succeed(reader.result));
+		});
+		reader.readAsDataURL(blob);
+		return function() { reader.abort(); };
+	});
+}
+
 
 
 
@@ -9136,6 +9314,9 @@ var $author$project$Main$DbLoaded = function (a) {
 var $author$project$Main$Initializing = function (a) {
 	return {$: 'Initializing', a: a};
 };
+var $author$project$Main$TimeZoneFound = function (a) {
+	return {$: 'TimeZoneFound', a: a};
+};
 var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Error = function (a) {
 	return {$: 'Error', a: a};
 };
@@ -9703,6 +9884,19 @@ var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$attempt = F2(
 		var cmd = _v0.c;
 		return _Utils_Tuple2(p, cmd);
 	});
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $elm$time$Time$Name = function (a) {
+	return {$: 'Name', a: a};
+};
+var $elm$time$Time$Offset = function (a) {
+	return {$: 'Offset', a: a};
+};
+var $elm$time$Time$Zone = F2(
+	function (a, b) {
+		return {$: 'Zone', a: a, b: b};
+	});
+var $elm$time$Time$customZone = $elm$time$Time$Zone;
+var $elm$time$Time$here = _Time_here(_Utils_Tuple0);
 var $elm$random$Random$Seed = F2(
 	function (a, b) {
 		return {$: 'Seed', a: a, b: b};
@@ -10569,6 +10763,7 @@ var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$pool = $andrewM
 	{attemptIds: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$Ids$init, attempts: $elm$core$Dict$empty, poolId: $elm$core$Maybe$Nothing});
 var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$pool = $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$pool;
 var $author$project$Main$sendToDb = _Platform_outgoingPort('sendToDb', $elm$core$Basics$identity);
+var $elm$time$Time$utc = A2($elm$time$Time$Zone, 0, _List_Nil);
 var $author$project$Main$init = F3(
 	function (flags, url, navKey) {
 		var _v0 = A2(
@@ -10588,9 +10783,15 @@ var $author$project$Main$init = F3(
 						seed3: $elm$random$Random$initialSeed(flags.seed3),
 						seed4: $elm$random$Random$initialSeed(flags.seed4)
 					},
-					url: url
+					url: url,
+					zone: $elm$time$Time$utc
 				}),
-			cmd);
+			$elm$core$Platform$Cmd$batch(
+				_List_fromArray(
+					[
+						cmd,
+						A2($elm$core$Task$perform, $author$project$Main$TimeZoneFound, $elm$time$Time$here)
+					])));
 	});
 var $author$project$Main$OnDbProgress = function (a) {
 	return {$: 'OnDbProgress', a: a};
@@ -10602,7 +10803,6 @@ var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$findAttempt = F
 		var p = _v0.a;
 		return A2($elm$core$Dict$get, attemptId, p.attempts);
 	});
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $andrewMacmurray$elm_concurrent_task$ConcurrentTask$Internal$RawResult = F3(
 	function (attemptId, taskId, result) {
@@ -11244,13 +11444,23 @@ var $author$project$Main$BehaviorDeleteResponded = F2(
 	function (a, b) {
 		return {$: 'BehaviorDeleteResponded', a: a, b: b};
 	});
-var $author$project$Main$BehaviorSaveResponded = F2(
+var $author$project$Main$BehaviorImportResponded = F2(
 	function (a, b) {
-		return {$: 'BehaviorSaveResponded', a: a, b: b};
+		return {$: 'BehaviorImportResponded', a: a, b: b};
 	});
+var $author$project$Main$BehaviorImported = function (a) {
+	return {$: 'BehaviorImported', a: a};
+};
+var $author$project$Main$BehaviorSaveResponded = function (a) {
+	return {$: 'BehaviorSaveResponded', a: a};
+};
 var $author$project$Main$FailedToSave = function (a) {
 	return {$: 'FailedToSave', a: a};
 };
+var $author$project$Main$FilesImported = F2(
+	function (a, b) {
+		return {$: 'FilesImported', a: a, b: b};
+	});
 var $author$project$Main$Fresh = {$: 'Fresh'};
 var $author$project$Main$HomeRoute = {$: 'HomeRoute'};
 var $author$project$Main$Initialized = function (a) {
@@ -11352,6 +11562,1483 @@ var $author$project$IndexedDb$add = F3(
 				_function: 'indexeddb:add'
 			});
 	});
+var $elm$core$Basics$composeL = F3(
+	function (g, f, x) {
+		return g(
+			f(x));
+	});
+var $elm$core$Task$onError = _Scheduler_onError;
+var $elm$core$Task$attempt = F2(
+	function (resultToMessage, task) {
+		return $elm$core$Task$command(
+			$elm$core$Task$Perform(
+				A2(
+					$elm$core$Task$onError,
+					A2(
+						$elm$core$Basics$composeL,
+						A2($elm$core$Basics$composeL, $elm$core$Task$succeed, resultToMessage),
+						$elm$core$Result$Err),
+					A2(
+						$elm$core$Task$andThen,
+						A2(
+							$elm$core$Basics$composeL,
+							A2($elm$core$Basics$composeL, $elm$core$Task$succeed, resultToMessage),
+							$elm$core$Result$Ok),
+						task))));
+	});
+var $BrianHicks$elm_csv$Csv$Decode$FieldNamesFromFirstRow = {$: 'FieldNamesFromFirstRow'};
+var $BrianHicks$elm_csv$Csv$Decode$Decoder = function (a) {
+	return {$: 'Decoder', a: a};
+};
+var $elm$core$Result$andThen = F2(
+	function (callback, result) {
+		if (result.$ === 'Ok') {
+			var value = result.a;
+			return callback(value);
+		} else {
+			var msg = result.a;
+			return $elm$core$Result$Err(msg);
+		}
+	});
+var $BrianHicks$elm_csv$Csv$Decode$andThen = F2(
+	function (next, _v0) {
+		var first = _v0.a;
+		return $BrianHicks$elm_csv$Csv$Decode$Decoder(
+			F4(
+				function (location, fieldNames, rowNum, row) {
+					return A2(
+						$elm$core$Result$andThen,
+						function (nextValue) {
+							var _v1 = next(nextValue);
+							var _final = _v1.a;
+							return A4(_final, location, fieldNames, rowNum, row);
+						},
+						A4(first, location, fieldNames, rowNum, row));
+				}));
+	});
+var $BrianHicks$elm_csv$Csv$Decode$Column_ = function (a) {
+	return {$: 'Column_', a: a};
+};
+var $BrianHicks$elm_csv$Csv$Decode$column = F2(
+	function (col, _v0) {
+		var decoder = _v0.a;
+		return $BrianHicks$elm_csv$Csv$Decode$Decoder(
+			F3(
+				function (_v1, fieldNames, row) {
+					return A3(
+						decoder,
+						$BrianHicks$elm_csv$Csv$Decode$Column_(col),
+						fieldNames,
+						row);
+				}));
+	});
+var $BrianHicks$elm_csv$Csv$Decode$ParsingError = function (a) {
+	return {$: 'ParsingError', a: a};
+};
+var $BrianHicks$elm_csv$Csv$Decode$DecodingErrors = function (a) {
+	return {$: 'DecodingErrors', a: a};
+};
+var $BrianHicks$elm_csv$Csv$Decode$OnlyColumn_ = {$: 'OnlyColumn_'};
+var $elm$core$List$append = F2(
+	function (xs, ys) {
+		if (!ys.b) {
+			return xs;
+		} else {
+			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
+		}
+	});
+var $elm$core$List$concat = function (lists) {
+	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
+};
+var $BrianHicks$elm_csv$Csv$Decode$NoFieldNamesOnFirstRow = {$: 'NoFieldNamesOnFirstRow'};
+var $elm$core$String$trim = _String_trim;
+var $BrianHicks$elm_csv$Csv$Decode$getFieldNames = F2(
+	function (headers, rows) {
+		var fromList = function (names) {
+			return A3(
+				$elm$core$List$foldl,
+				F2(
+					function (name, _v2) {
+						var soFar = _v2.a;
+						var i = _v2.b;
+						return _Utils_Tuple2(
+							A3($elm$core$Dict$insert, name, i, soFar),
+							i + 1);
+					}),
+				_Utils_Tuple2($elm$core$Dict$empty, 0),
+				names).a;
+		};
+		switch (headers.$) {
+			case 'NoFieldNames':
+				return $elm$core$Result$Ok(
+					_Utils_Tuple3(
+						{available: false, names: $elm$core$Dict$empty},
+						0,
+						rows));
+			case 'CustomFieldNames':
+				var names = headers.a;
+				return $elm$core$Result$Ok(
+					_Utils_Tuple3(
+						{
+							available: true,
+							names: fromList(names)
+						},
+						0,
+						rows));
+			default:
+				if (!rows.b) {
+					return $elm$core$Result$Err($BrianHicks$elm_csv$Csv$Decode$NoFieldNamesOnFirstRow);
+				} else {
+					var first = rows.a;
+					var rest = rows.b;
+					return $elm$core$Result$Ok(
+						_Utils_Tuple3(
+							{
+								available: true,
+								names: fromList(
+									A2($elm$core$List$map, $elm$core$String$trim, first))
+							},
+							1,
+							rest));
+				}
+		}
+	});
+var $elm$core$Result$mapError = F2(
+	function (f, result) {
+		if (result.$ === 'Ok') {
+			var v = result.a;
+			return $elm$core$Result$Ok(v);
+		} else {
+			var e = result.a;
+			return $elm$core$Result$Err(
+				f(e));
+		}
+	});
+var $BrianHicks$elm_csv$Csv$Decode$applyDecoder = F3(
+	function (fieldNames, _v0, allRows) {
+		var decode = _v0.a;
+		var defaultLocation = $BrianHicks$elm_csv$Csv$Decode$OnlyColumn_;
+		return A2(
+			$elm$core$Result$andThen,
+			function (_v1) {
+				var resolvedNames = _v1.a;
+				var firstRowNumber = _v1.b;
+				var rows = _v1.c;
+				return A2(
+					$elm$core$Result$mapError,
+					A2(
+						$elm$core$Basics$composeL,
+						A2($elm$core$Basics$composeL, $BrianHicks$elm_csv$Csv$Decode$DecodingErrors, $elm$core$List$concat),
+						$elm$core$List$reverse),
+					A2(
+						$elm$core$Result$map,
+						$elm$core$List$reverse,
+						A3(
+							$elm$core$List$foldl,
+							F2(
+								function (row, _v2) {
+									var soFar = _v2.a;
+									var rowNum = _v2.b;
+									return _Utils_Tuple2(
+										function () {
+											var _v3 = A4(decode, defaultLocation, resolvedNames, rowNum, row);
+											if (_v3.$ === 'Ok') {
+												var val = _v3.a;
+												if (soFar.$ === 'Ok') {
+													var values = soFar.a;
+													return $elm$core$Result$Ok(
+														A2($elm$core$List$cons, val, values));
+												} else {
+													var errs = soFar.a;
+													return $elm$core$Result$Err(errs);
+												}
+											} else {
+												var err = _v3.a;
+												if (soFar.$ === 'Ok') {
+													return $elm$core$Result$Err(
+														_List_fromArray(
+															[err]));
+												} else {
+													var errs = soFar.a;
+													return $elm$core$Result$Err(
+														A2($elm$core$List$cons, err, errs));
+												}
+											}
+										}(),
+										rowNum + 1);
+								}),
+							_Utils_Tuple2(
+								$elm$core$Result$Ok(_List_Nil),
+								firstRowNumber),
+							rows).a));
+			},
+			A2($BrianHicks$elm_csv$Csv$Decode$getFieldNames, fieldNames, allRows));
+	});
+var $BrianHicks$elm_csv$Csv$Parser$AdditionalCharactersAfterClosingQuote = function (a) {
+	return {$: 'AdditionalCharactersAfterClosingQuote', a: a};
+};
+var $BrianHicks$elm_csv$Csv$Parser$SourceEndedWithoutClosingQuote = function (a) {
+	return {$: 'SourceEndedWithoutClosingQuote', a: a};
+};
+var $elm$core$String$cons = _String_cons;
+var $elm$core$String$fromChar = function (_char) {
+	return A2($elm$core$String$cons, _char, '');
+};
+var $elm$core$Basics$ge = _Utils_ge;
+var $BrianHicks$elm_csv$Csv$Parser$parse = F2(
+	function (config, source) {
+		var finalLength = $elm$core$String$length(source);
+		var parseQuotedField = F4(
+			function (isFieldSeparator, soFar, startOffset, endOffset) {
+				parseQuotedField:
+				while (true) {
+					if ((endOffset - finalLength) >= 0) {
+						return $elm$core$Result$Err($BrianHicks$elm_csv$Csv$Parser$SourceEndedWithoutClosingQuote);
+					} else {
+						if (A3($elm$core$String$slice, endOffset, endOffset + 1, source) === '\"') {
+							var segment = A3($elm$core$String$slice, startOffset, endOffset, source);
+							if (((endOffset + 1) - finalLength) >= 0) {
+								return $elm$core$Result$Ok(
+									_Utils_Tuple3(
+										_Utils_ap(soFar, segment),
+										endOffset + 1,
+										false));
+							} else {
+								var next = A3($elm$core$String$slice, endOffset + 1, endOffset + 2, source);
+								if (next === '\"') {
+									var newPos = endOffset + 2;
+									var $temp$isFieldSeparator = isFieldSeparator,
+										$temp$soFar = soFar + (segment + '\"'),
+										$temp$startOffset = newPos,
+										$temp$endOffset = newPos;
+									isFieldSeparator = $temp$isFieldSeparator;
+									soFar = $temp$soFar;
+									startOffset = $temp$startOffset;
+									endOffset = $temp$endOffset;
+									continue parseQuotedField;
+								} else {
+									if (isFieldSeparator(next)) {
+										return $elm$core$Result$Ok(
+											_Utils_Tuple3(
+												_Utils_ap(soFar, segment),
+												endOffset + 2,
+												false));
+									} else {
+										if (next === '\n') {
+											return $elm$core$Result$Ok(
+												_Utils_Tuple3(
+													_Utils_ap(soFar, segment),
+													endOffset + 2,
+													true));
+										} else {
+											if ((next === '\u000D') && (A3($elm$core$String$slice, endOffset + 2, endOffset + 3, source) === '\n')) {
+												return $elm$core$Result$Ok(
+													_Utils_Tuple3(
+														_Utils_ap(soFar, segment),
+														endOffset + 3,
+														true));
+											} else {
+												return $elm$core$Result$Err($BrianHicks$elm_csv$Csv$Parser$AdditionalCharactersAfterClosingQuote);
+											}
+										}
+									}
+								}
+							}
+						} else {
+							var $temp$isFieldSeparator = isFieldSeparator,
+								$temp$soFar = soFar,
+								$temp$startOffset = startOffset,
+								$temp$endOffset = endOffset + 1;
+							isFieldSeparator = $temp$isFieldSeparator;
+							soFar = $temp$soFar;
+							startOffset = $temp$startOffset;
+							endOffset = $temp$endOffset;
+							continue parseQuotedField;
+						}
+					}
+				}
+			});
+		var parseComma = F4(
+			function (row, rows, startOffset, endOffset) {
+				parseComma:
+				while (true) {
+					if ((endOffset - finalLength) >= 0) {
+						var finalField = A3($elm$core$String$slice, startOffset, endOffset, source);
+						return ((finalField === '') && _Utils_eq(row, _List_Nil)) ? $elm$core$Result$Ok(
+							$elm$core$List$reverse(rows)) : $elm$core$Result$Ok(
+							$elm$core$List$reverse(
+								A2(
+									$elm$core$List$cons,
+									$elm$core$List$reverse(
+										A2($elm$core$List$cons, finalField, row)),
+									rows)));
+					} else {
+						var first = A3($elm$core$String$slice, endOffset, endOffset + 1, source);
+						if (first === ',') {
+							var newPos = endOffset + 1;
+							var $temp$row = A2(
+								$elm$core$List$cons,
+								A3($elm$core$String$slice, startOffset, endOffset, source),
+								row),
+								$temp$rows = rows,
+								$temp$startOffset = newPos,
+								$temp$endOffset = newPos;
+							row = $temp$row;
+							rows = $temp$rows;
+							startOffset = $temp$startOffset;
+							endOffset = $temp$endOffset;
+							continue parseComma;
+						} else {
+							if (first === '\n') {
+								var newPos = endOffset + 1;
+								var $temp$row = _List_Nil,
+									$temp$rows = A2(
+									$elm$core$List$cons,
+									$elm$core$List$reverse(
+										A2(
+											$elm$core$List$cons,
+											A3($elm$core$String$slice, startOffset, endOffset, source),
+											row)),
+									rows),
+									$temp$startOffset = newPos,
+									$temp$endOffset = newPos;
+								row = $temp$row;
+								rows = $temp$rows;
+								startOffset = $temp$startOffset;
+								endOffset = $temp$endOffset;
+								continue parseComma;
+							} else {
+								if ((first === '\u000D') && (A3($elm$core$String$slice, endOffset + 1, endOffset + 2, source) === '\n')) {
+									var newPos = endOffset + 2;
+									var $temp$row = _List_Nil,
+										$temp$rows = A2(
+										$elm$core$List$cons,
+										$elm$core$List$reverse(
+											A2(
+												$elm$core$List$cons,
+												A3($elm$core$String$slice, startOffset, endOffset, source),
+												row)),
+										rows),
+										$temp$startOffset = newPos,
+										$temp$endOffset = newPos;
+									row = $temp$row;
+									rows = $temp$rows;
+									startOffset = $temp$startOffset;
+									endOffset = $temp$endOffset;
+									continue parseComma;
+								} else {
+									if (first === '\"') {
+										var newPos = endOffset + 1;
+										var _v0 = A4(
+											parseQuotedField,
+											function (c) {
+												return c === ',';
+											},
+											'',
+											newPos,
+											newPos);
+										if (_v0.$ === 'Ok') {
+											var _v1 = _v0.a;
+											var value = _v1.a;
+											var afterQuotedField = _v1.b;
+											var rowEnded = _v1.c;
+											if (_Utils_cmp(afterQuotedField, finalLength) > -1) {
+												return $elm$core$Result$Ok(
+													$elm$core$List$reverse(
+														A2(
+															$elm$core$List$cons,
+															$elm$core$List$reverse(
+																A2($elm$core$List$cons, value, row)),
+															rows)));
+											} else {
+												if (rowEnded) {
+													var $temp$row = _List_Nil,
+														$temp$rows = A2(
+														$elm$core$List$cons,
+														$elm$core$List$reverse(
+															A2($elm$core$List$cons, value, row)),
+														rows),
+														$temp$startOffset = afterQuotedField,
+														$temp$endOffset = afterQuotedField;
+													row = $temp$row;
+													rows = $temp$rows;
+													startOffset = $temp$startOffset;
+													endOffset = $temp$endOffset;
+													continue parseComma;
+												} else {
+													var $temp$row = A2($elm$core$List$cons, value, row),
+														$temp$rows = rows,
+														$temp$startOffset = afterQuotedField,
+														$temp$endOffset = afterQuotedField;
+													row = $temp$row;
+													rows = $temp$rows;
+													startOffset = $temp$startOffset;
+													endOffset = $temp$endOffset;
+													continue parseComma;
+												}
+											}
+										} else {
+											var problem = _v0.a;
+											return $elm$core$Result$Err(
+												problem(
+													$elm$core$List$length(rows) + 1));
+										}
+									} else {
+										var $temp$row = row,
+											$temp$rows = rows,
+											$temp$startOffset = startOffset,
+											$temp$endOffset = endOffset + 1;
+										row = $temp$row;
+										rows = $temp$rows;
+										startOffset = $temp$startOffset;
+										endOffset = $temp$endOffset;
+										continue parseComma;
+									}
+								}
+							}
+						}
+					}
+				}
+			});
+		var parseHelp = F5(
+			function (isFieldSeparator, row, rows, startOffset, endOffset) {
+				parseHelp:
+				while (true) {
+					if ((endOffset - finalLength) >= 0) {
+						var finalField = A3($elm$core$String$slice, startOffset, endOffset, source);
+						return ((finalField === '') && _Utils_eq(row, _List_Nil)) ? $elm$core$Result$Ok(
+							$elm$core$List$reverse(rows)) : $elm$core$Result$Ok(
+							$elm$core$List$reverse(
+								A2(
+									$elm$core$List$cons,
+									$elm$core$List$reverse(
+										A2($elm$core$List$cons, finalField, row)),
+									rows)));
+					} else {
+						var first = A3($elm$core$String$slice, endOffset, endOffset + 1, source);
+						if (isFieldSeparator(first)) {
+							var newPos = endOffset + 1;
+							var $temp$isFieldSeparator = isFieldSeparator,
+								$temp$row = A2(
+								$elm$core$List$cons,
+								A3($elm$core$String$slice, startOffset, endOffset, source),
+								row),
+								$temp$rows = rows,
+								$temp$startOffset = newPos,
+								$temp$endOffset = newPos;
+							isFieldSeparator = $temp$isFieldSeparator;
+							row = $temp$row;
+							rows = $temp$rows;
+							startOffset = $temp$startOffset;
+							endOffset = $temp$endOffset;
+							continue parseHelp;
+						} else {
+							if (first === '\n') {
+								var newPos = endOffset + 1;
+								var $temp$isFieldSeparator = isFieldSeparator,
+									$temp$row = _List_Nil,
+									$temp$rows = A2(
+									$elm$core$List$cons,
+									$elm$core$List$reverse(
+										A2(
+											$elm$core$List$cons,
+											A3($elm$core$String$slice, startOffset, endOffset, source),
+											row)),
+									rows),
+									$temp$startOffset = newPos,
+									$temp$endOffset = newPos;
+								isFieldSeparator = $temp$isFieldSeparator;
+								row = $temp$row;
+								rows = $temp$rows;
+								startOffset = $temp$startOffset;
+								endOffset = $temp$endOffset;
+								continue parseHelp;
+							} else {
+								if ((first === '\u000D') && (A3($elm$core$String$slice, endOffset + 1, endOffset + 2, source) === '\n')) {
+									var newPos = endOffset + 2;
+									var $temp$isFieldSeparator = isFieldSeparator,
+										$temp$row = _List_Nil,
+										$temp$rows = A2(
+										$elm$core$List$cons,
+										$elm$core$List$reverse(
+											A2(
+												$elm$core$List$cons,
+												A3($elm$core$String$slice, startOffset, endOffset, source),
+												row)),
+										rows),
+										$temp$startOffset = newPos,
+										$temp$endOffset = newPos;
+									isFieldSeparator = $temp$isFieldSeparator;
+									row = $temp$row;
+									rows = $temp$rows;
+									startOffset = $temp$startOffset;
+									endOffset = $temp$endOffset;
+									continue parseHelp;
+								} else {
+									if (first === '\"') {
+										var newPos = endOffset + 1;
+										var _v2 = A4(parseQuotedField, isFieldSeparator, '', newPos, newPos);
+										if (_v2.$ === 'Ok') {
+											var _v3 = _v2.a;
+											var value = _v3.a;
+											var afterQuotedField = _v3.b;
+											var rowEnded = _v3.c;
+											if (_Utils_cmp(afterQuotedField, finalLength) > -1) {
+												return $elm$core$Result$Ok(
+													$elm$core$List$reverse(
+														A2(
+															$elm$core$List$cons,
+															$elm$core$List$reverse(
+																A2($elm$core$List$cons, value, row)),
+															rows)));
+											} else {
+												if (rowEnded) {
+													var $temp$isFieldSeparator = isFieldSeparator,
+														$temp$row = _List_Nil,
+														$temp$rows = A2(
+														$elm$core$List$cons,
+														$elm$core$List$reverse(
+															A2($elm$core$List$cons, value, row)),
+														rows),
+														$temp$startOffset = afterQuotedField,
+														$temp$endOffset = afterQuotedField;
+													isFieldSeparator = $temp$isFieldSeparator;
+													row = $temp$row;
+													rows = $temp$rows;
+													startOffset = $temp$startOffset;
+													endOffset = $temp$endOffset;
+													continue parseHelp;
+												} else {
+													var $temp$isFieldSeparator = isFieldSeparator,
+														$temp$row = A2($elm$core$List$cons, value, row),
+														$temp$rows = rows,
+														$temp$startOffset = afterQuotedField,
+														$temp$endOffset = afterQuotedField;
+													isFieldSeparator = $temp$isFieldSeparator;
+													row = $temp$row;
+													rows = $temp$rows;
+													startOffset = $temp$startOffset;
+													endOffset = $temp$endOffset;
+													continue parseHelp;
+												}
+											}
+										} else {
+											var problem = _v2.a;
+											return $elm$core$Result$Err(
+												problem(
+													$elm$core$List$length(rows) + 1));
+										}
+									} else {
+										var $temp$isFieldSeparator = isFieldSeparator,
+											$temp$row = row,
+											$temp$rows = rows,
+											$temp$startOffset = startOffset,
+											$temp$endOffset = endOffset + 1;
+										isFieldSeparator = $temp$isFieldSeparator;
+										row = $temp$row;
+										rows = $temp$rows;
+										startOffset = $temp$startOffset;
+										endOffset = $temp$endOffset;
+										continue parseHelp;
+									}
+								}
+							}
+						}
+					}
+				}
+			});
+		var parseSemicolon = F4(
+			function (row, rows, startOffset, endOffset) {
+				parseSemicolon:
+				while (true) {
+					if ((endOffset - finalLength) >= 0) {
+						var finalField = A3($elm$core$String$slice, startOffset, endOffset, source);
+						return ((finalField === '') && _Utils_eq(row, _List_Nil)) ? $elm$core$Result$Ok(
+							$elm$core$List$reverse(rows)) : $elm$core$Result$Ok(
+							$elm$core$List$reverse(
+								A2(
+									$elm$core$List$cons,
+									$elm$core$List$reverse(
+										A2($elm$core$List$cons, finalField, row)),
+									rows)));
+					} else {
+						var first = A3($elm$core$String$slice, endOffset, endOffset + 1, source);
+						if (first === ';') {
+							var newPos = endOffset + 1;
+							var $temp$row = A2(
+								$elm$core$List$cons,
+								A3($elm$core$String$slice, startOffset, endOffset, source),
+								row),
+								$temp$rows = rows,
+								$temp$startOffset = newPos,
+								$temp$endOffset = newPos;
+							row = $temp$row;
+							rows = $temp$rows;
+							startOffset = $temp$startOffset;
+							endOffset = $temp$endOffset;
+							continue parseSemicolon;
+						} else {
+							if (first === '\n') {
+								var newPos = endOffset + 1;
+								var $temp$row = _List_Nil,
+									$temp$rows = A2(
+									$elm$core$List$cons,
+									$elm$core$List$reverse(
+										A2(
+											$elm$core$List$cons,
+											A3($elm$core$String$slice, startOffset, endOffset, source),
+											row)),
+									rows),
+									$temp$startOffset = newPos,
+									$temp$endOffset = newPos;
+								row = $temp$row;
+								rows = $temp$rows;
+								startOffset = $temp$startOffset;
+								endOffset = $temp$endOffset;
+								continue parseSemicolon;
+							} else {
+								if ((first === '\u000D') && (A3($elm$core$String$slice, endOffset + 1, endOffset + 2, source) === '\n')) {
+									var newPos = endOffset + 2;
+									var $temp$row = _List_Nil,
+										$temp$rows = A2(
+										$elm$core$List$cons,
+										$elm$core$List$reverse(
+											A2(
+												$elm$core$List$cons,
+												A3($elm$core$String$slice, startOffset, endOffset, source),
+												row)),
+										rows),
+										$temp$startOffset = newPos,
+										$temp$endOffset = newPos;
+									row = $temp$row;
+									rows = $temp$rows;
+									startOffset = $temp$startOffset;
+									endOffset = $temp$endOffset;
+									continue parseSemicolon;
+								} else {
+									if (first === '\"') {
+										var newPos = endOffset + 1;
+										var _v4 = A4(
+											parseQuotedField,
+											function (c) {
+												return c === ';';
+											},
+											'',
+											newPos,
+											newPos);
+										if (_v4.$ === 'Ok') {
+											var _v5 = _v4.a;
+											var value = _v5.a;
+											var afterQuotedField = _v5.b;
+											var rowEnded = _v5.c;
+											if (_Utils_cmp(afterQuotedField, finalLength) > -1) {
+												return $elm$core$Result$Ok(
+													$elm$core$List$reverse(
+														A2(
+															$elm$core$List$cons,
+															$elm$core$List$reverse(
+																A2($elm$core$List$cons, value, row)),
+															rows)));
+											} else {
+												if (rowEnded) {
+													var $temp$row = _List_Nil,
+														$temp$rows = A2(
+														$elm$core$List$cons,
+														$elm$core$List$reverse(
+															A2($elm$core$List$cons, value, row)),
+														rows),
+														$temp$startOffset = afterQuotedField,
+														$temp$endOffset = afterQuotedField;
+													row = $temp$row;
+													rows = $temp$rows;
+													startOffset = $temp$startOffset;
+													endOffset = $temp$endOffset;
+													continue parseSemicolon;
+												} else {
+													var $temp$row = A2($elm$core$List$cons, value, row),
+														$temp$rows = rows,
+														$temp$startOffset = afterQuotedField,
+														$temp$endOffset = afterQuotedField;
+													row = $temp$row;
+													rows = $temp$rows;
+													startOffset = $temp$startOffset;
+													endOffset = $temp$endOffset;
+													continue parseSemicolon;
+												}
+											}
+										} else {
+											var problem = _v4.a;
+											return $elm$core$Result$Err(
+												problem(
+													$elm$core$List$length(rows) + 1));
+										}
+									} else {
+										var $temp$row = row,
+											$temp$rows = rows,
+											$temp$startOffset = startOffset,
+											$temp$endOffset = endOffset + 1;
+										row = $temp$row;
+										rows = $temp$rows;
+										startOffset = $temp$startOffset;
+										endOffset = $temp$endOffset;
+										continue parseSemicolon;
+									}
+								}
+							}
+						}
+					}
+				}
+			});
+		var fieldSeparator = $elm$core$String$fromChar(config.fieldSeparator);
+		return $elm$core$String$isEmpty(source) ? $elm$core$Result$Ok(_List_Nil) : (_Utils_eq(
+			config.fieldSeparator,
+			_Utils_chr(',')) ? A4(parseComma, _List_Nil, _List_Nil, 0, 0) : (_Utils_eq(
+			config.fieldSeparator,
+			_Utils_chr(';')) ? A4(parseSemicolon, _List_Nil, _List_Nil, 0, 0) : A5(
+			parseHelp,
+			function (s) {
+				return _Utils_eq(s, fieldSeparator);
+			},
+			_List_Nil,
+			_List_Nil,
+			0,
+			0)));
+	});
+var $BrianHicks$elm_csv$Csv$Decode$decodeCustom = F4(
+	function (config, fieldNames, decoder, source) {
+		return A2(
+			$elm$core$Result$andThen,
+			A2($BrianHicks$elm_csv$Csv$Decode$applyDecoder, fieldNames, decoder),
+			A2(
+				$elm$core$Result$mapError,
+				$BrianHicks$elm_csv$Csv$Decode$ParsingError,
+				A2($BrianHicks$elm_csv$Csv$Parser$parse, config, source)));
+	});
+var $BrianHicks$elm_csv$Csv$Decode$decodeCsv = $BrianHicks$elm_csv$Csv$Decode$decodeCustom(
+	{
+		fieldSeparator: _Utils_chr(',')
+	});
+var $BrianHicks$elm_csv$Csv$Decode$Failure = function (a) {
+	return {$: 'Failure', a: a};
+};
+var $BrianHicks$elm_csv$Csv$Decode$FieldDecodingError = function (a) {
+	return {$: 'FieldDecodingError', a: a};
+};
+var $BrianHicks$elm_csv$Csv$Decode$Column = function (a) {
+	return {$: 'Column', a: a};
+};
+var $BrianHicks$elm_csv$Csv$Decode$Field = F2(
+	function (a, b) {
+		return {$: 'Field', a: a, b: b};
+	});
+var $BrianHicks$elm_csv$Csv$Decode$OnlyColumn = {$: 'OnlyColumn'};
+var $BrianHicks$elm_csv$Csv$Decode$locationToColumn = F2(
+	function (fieldNames, location) {
+		switch (location.$) {
+			case 'Column_':
+				var i = location.a;
+				return $BrianHicks$elm_csv$Csv$Decode$Column(i);
+			case 'Field_':
+				var name = location.a;
+				return A2(
+					$BrianHicks$elm_csv$Csv$Decode$Field,
+					name,
+					A2($elm$core$Dict$get, name, fieldNames));
+			default:
+				return $BrianHicks$elm_csv$Csv$Decode$OnlyColumn;
+		}
+	});
+var $BrianHicks$elm_csv$Csv$Decode$fail = function (message) {
+	return $BrianHicks$elm_csv$Csv$Decode$Decoder(
+		F4(
+			function (location, _v0, rowNum, _v1) {
+				var names = _v0.names;
+				return $elm$core$Result$Err(
+					_List_fromArray(
+						[
+							$BrianHicks$elm_csv$Csv$Decode$FieldDecodingError(
+							{
+								column: A2($BrianHicks$elm_csv$Csv$Decode$locationToColumn, names, location),
+								problem: $BrianHicks$elm_csv$Csv$Decode$Failure(message),
+								row: rowNum
+							})
+						]));
+			}));
+};
+var $BrianHicks$elm_csv$Csv$Decode$succeed = function (value) {
+	return $BrianHicks$elm_csv$Csv$Decode$Decoder(
+		F4(
+			function (_v0, _v1, _v2, _v3) {
+				return $elm$core$Result$Ok(value);
+			}));
+};
+var $BrianHicks$elm_csv$Csv$Decode$fromMaybe = F2(
+	function (problem, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $BrianHicks$elm_csv$Csv$Decode$succeed(value);
+		} else {
+			return $BrianHicks$elm_csv$Csv$Decode$fail(problem);
+		}
+	});
+var $elm$time$Time$Apr = {$: 'Apr'};
+var $elm$time$Time$Aug = {$: 'Aug'};
+var $elm$time$Time$Dec = {$: 'Dec'};
+var $elm$time$Time$Feb = {$: 'Feb'};
+var $elm$time$Time$Jan = {$: 'Jan'};
+var $elm$time$Time$Jul = {$: 'Jul'};
+var $elm$time$Time$Jun = {$: 'Jun'};
+var $elm$time$Time$Mar = {$: 'Mar'};
+var $elm$time$Time$May = {$: 'May'};
+var $elm$time$Time$Nov = {$: 'Nov'};
+var $elm$time$Time$Oct = {$: 'Oct'};
+var $elm$time$Time$Sep = {$: 'Sep'};
+var $author$project$Main$monthFromIntStr = function (str) {
+	switch (str) {
+		case '1':
+			return $elm$core$Maybe$Just($elm$time$Time$Jan);
+		case '2':
+			return $elm$core$Maybe$Just($elm$time$Time$Feb);
+		case '3':
+			return $elm$core$Maybe$Just($elm$time$Time$Mar);
+		case '4':
+			return $elm$core$Maybe$Just($elm$time$Time$Apr);
+		case '5':
+			return $elm$core$Maybe$Just($elm$time$Time$May);
+		case '6':
+			return $elm$core$Maybe$Just($elm$time$Time$Jun);
+		case '7':
+			return $elm$core$Maybe$Just($elm$time$Time$Jul);
+		case '8':
+			return $elm$core$Maybe$Just($elm$time$Time$Aug);
+		case '9':
+			return $elm$core$Maybe$Just($elm$time$Time$Sep);
+		case '10':
+			return $elm$core$Maybe$Just($elm$time$Time$Oct);
+		case '11':
+			return $elm$core$Maybe$Just($elm$time$Time$Nov);
+		case '12':
+			return $elm$core$Maybe$Just($elm$time$Time$Dec);
+		default:
+			return $elm$core$Maybe$Nothing;
+	}
+};
+var $elm$core$Basics$clamp = F3(
+	function (low, high, number) {
+		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
+	});
+var $justinmimbs$date$Date$RD = function (a) {
+	return {$: 'RD', a: a};
+};
+var $elm$core$Basics$modBy = _Basics_modBy;
+var $justinmimbs$date$Date$isLeapYear = function (y) {
+	return ((!A2($elm$core$Basics$modBy, 4, y)) && (!(!A2($elm$core$Basics$modBy, 100, y)))) || (!A2($elm$core$Basics$modBy, 400, y));
+};
+var $justinmimbs$date$Date$daysBeforeMonth = F2(
+	function (y, m) {
+		var leapDays = $justinmimbs$date$Date$isLeapYear(y) ? 1 : 0;
+		switch (m.$) {
+			case 'Jan':
+				return 0;
+			case 'Feb':
+				return 31;
+			case 'Mar':
+				return 59 + leapDays;
+			case 'Apr':
+				return 90 + leapDays;
+			case 'May':
+				return 120 + leapDays;
+			case 'Jun':
+				return 151 + leapDays;
+			case 'Jul':
+				return 181 + leapDays;
+			case 'Aug':
+				return 212 + leapDays;
+			case 'Sep':
+				return 243 + leapDays;
+			case 'Oct':
+				return 273 + leapDays;
+			case 'Nov':
+				return 304 + leapDays;
+			default:
+				return 334 + leapDays;
+		}
+	});
+var $justinmimbs$date$Date$floorDiv = F2(
+	function (a, b) {
+		return $elm$core$Basics$floor(a / b);
+	});
+var $justinmimbs$date$Date$daysBeforeYear = function (y1) {
+	var y = y1 - 1;
+	var leapYears = (A2($justinmimbs$date$Date$floorDiv, y, 4) - A2($justinmimbs$date$Date$floorDiv, y, 100)) + A2($justinmimbs$date$Date$floorDiv, y, 400);
+	return (365 * y) + leapYears;
+};
+var $justinmimbs$date$Date$daysInMonth = F2(
+	function (y, m) {
+		switch (m.$) {
+			case 'Jan':
+				return 31;
+			case 'Feb':
+				return $justinmimbs$date$Date$isLeapYear(y) ? 29 : 28;
+			case 'Mar':
+				return 31;
+			case 'Apr':
+				return 30;
+			case 'May':
+				return 31;
+			case 'Jun':
+				return 30;
+			case 'Jul':
+				return 31;
+			case 'Aug':
+				return 31;
+			case 'Sep':
+				return 30;
+			case 'Oct':
+				return 31;
+			case 'Nov':
+				return 30;
+			default:
+				return 31;
+		}
+	});
+var $justinmimbs$date$Date$fromCalendarDate = F3(
+	function (y, m, d) {
+		return $justinmimbs$date$Date$RD(
+			($justinmimbs$date$Date$daysBeforeYear(y) + A2($justinmimbs$date$Date$daysBeforeMonth, y, m)) + A3(
+				$elm$core$Basics$clamp,
+				1,
+				A2($justinmimbs$date$Date$daysInMonth, y, m),
+				d));
+	});
+var $justinmimbs$date$Date$toRataDie = function (_v0) {
+	var rd = _v0.a;
+	return rd;
+};
+var $justinmimbs$time_extra$Time$Extra$dateToMillis = function (date) {
+	var daysSinceEpoch = $justinmimbs$date$Date$toRataDie(date) - 719163;
+	return daysSinceEpoch * 86400000;
+};
+var $elm$time$Time$flooredDiv = F2(
+	function (numerator, denominator) {
+		return $elm$core$Basics$floor(numerator / denominator);
+	});
+var $elm$time$Time$posixToMillis = function (_v0) {
+	var millis = _v0.a;
+	return millis;
+};
+var $elm$time$Time$toAdjustedMinutesHelp = F3(
+	function (defaultOffset, posixMinutes, eras) {
+		toAdjustedMinutesHelp:
+		while (true) {
+			if (!eras.b) {
+				return posixMinutes + defaultOffset;
+			} else {
+				var era = eras.a;
+				var olderEras = eras.b;
+				if (_Utils_cmp(era.start, posixMinutes) < 0) {
+					return posixMinutes + era.offset;
+				} else {
+					var $temp$defaultOffset = defaultOffset,
+						$temp$posixMinutes = posixMinutes,
+						$temp$eras = olderEras;
+					defaultOffset = $temp$defaultOffset;
+					posixMinutes = $temp$posixMinutes;
+					eras = $temp$eras;
+					continue toAdjustedMinutesHelp;
+				}
+			}
+		}
+	});
+var $elm$time$Time$toAdjustedMinutes = F2(
+	function (_v0, time) {
+		var defaultOffset = _v0.a;
+		var eras = _v0.b;
+		return A3(
+			$elm$time$Time$toAdjustedMinutesHelp,
+			defaultOffset,
+			A2(
+				$elm$time$Time$flooredDiv,
+				$elm$time$Time$posixToMillis(time),
+				60000),
+			eras);
+	});
+var $elm$time$Time$toCivil = function (minutes) {
+	var rawDay = A2($elm$time$Time$flooredDiv, minutes, 60 * 24) + 719468;
+	var era = (((rawDay >= 0) ? rawDay : (rawDay - 146096)) / 146097) | 0;
+	var dayOfEra = rawDay - (era * 146097);
+	var yearOfEra = ((((dayOfEra - ((dayOfEra / 1460) | 0)) + ((dayOfEra / 36524) | 0)) - ((dayOfEra / 146096) | 0)) / 365) | 0;
+	var dayOfYear = dayOfEra - (((365 * yearOfEra) + ((yearOfEra / 4) | 0)) - ((yearOfEra / 100) | 0));
+	var mp = (((5 * dayOfYear) + 2) / 153) | 0;
+	var month = mp + ((mp < 10) ? 3 : (-9));
+	var year = yearOfEra + (era * 400);
+	return {
+		day: (dayOfYear - ((((153 * mp) + 2) / 5) | 0)) + 1,
+		month: month,
+		year: year + ((month <= 2) ? 1 : 0)
+	};
+};
+var $elm$time$Time$toDay = F2(
+	function (zone, time) {
+		return $elm$time$Time$toCivil(
+			A2($elm$time$Time$toAdjustedMinutes, zone, time)).day;
+	});
+var $elm$time$Time$toMonth = F2(
+	function (zone, time) {
+		var _v0 = $elm$time$Time$toCivil(
+			A2($elm$time$Time$toAdjustedMinutes, zone, time)).month;
+		switch (_v0) {
+			case 1:
+				return $elm$time$Time$Jan;
+			case 2:
+				return $elm$time$Time$Feb;
+			case 3:
+				return $elm$time$Time$Mar;
+			case 4:
+				return $elm$time$Time$Apr;
+			case 5:
+				return $elm$time$Time$May;
+			case 6:
+				return $elm$time$Time$Jun;
+			case 7:
+				return $elm$time$Time$Jul;
+			case 8:
+				return $elm$time$Time$Aug;
+			case 9:
+				return $elm$time$Time$Sep;
+			case 10:
+				return $elm$time$Time$Oct;
+			case 11:
+				return $elm$time$Time$Nov;
+			default:
+				return $elm$time$Time$Dec;
+		}
+	});
+var $elm$time$Time$toYear = F2(
+	function (zone, time) {
+		return $elm$time$Time$toCivil(
+			A2($elm$time$Time$toAdjustedMinutes, zone, time)).year;
+	});
+var $justinmimbs$date$Date$fromPosix = F2(
+	function (zone, posix) {
+		return A3(
+			$justinmimbs$date$Date$fromCalendarDate,
+			A2($elm$time$Time$toYear, zone, posix),
+			A2($elm$time$Time$toMonth, zone, posix),
+			A2($elm$time$Time$toDay, zone, posix));
+	});
+var $justinmimbs$time_extra$Time$Extra$timeFromClock = F4(
+	function (hour, minute, second, millisecond) {
+		return (((hour * 3600000) + (minute * 60000)) + (second * 1000)) + millisecond;
+	});
+var $elm$time$Time$toHour = F2(
+	function (zone, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			24,
+			A2(
+				$elm$time$Time$flooredDiv,
+				A2($elm$time$Time$toAdjustedMinutes, zone, time),
+				60));
+	});
+var $elm$time$Time$toMillis = F2(
+	function (_v0, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			1000,
+			$elm$time$Time$posixToMillis(time));
+	});
+var $elm$time$Time$toMinute = F2(
+	function (zone, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			60,
+			A2($elm$time$Time$toAdjustedMinutes, zone, time));
+	});
+var $elm$time$Time$toSecond = F2(
+	function (_v0, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			60,
+			A2(
+				$elm$time$Time$flooredDiv,
+				$elm$time$Time$posixToMillis(time),
+				1000));
+	});
+var $justinmimbs$time_extra$Time$Extra$timeFromPosix = F2(
+	function (zone, posix) {
+		return A4(
+			$justinmimbs$time_extra$Time$Extra$timeFromClock,
+			A2($elm$time$Time$toHour, zone, posix),
+			A2($elm$time$Time$toMinute, zone, posix),
+			A2($elm$time$Time$toSecond, zone, posix),
+			A2($elm$time$Time$toMillis, zone, posix));
+	});
+var $justinmimbs$time_extra$Time$Extra$toOffset = F2(
+	function (zone, posix) {
+		var millis = $elm$time$Time$posixToMillis(posix);
+		var localMillis = $justinmimbs$time_extra$Time$Extra$dateToMillis(
+			A2($justinmimbs$date$Date$fromPosix, zone, posix)) + A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix);
+		return ((localMillis - millis) / 60000) | 0;
+	});
+var $justinmimbs$time_extra$Time$Extra$posixFromDateTime = F3(
+	function (zone, date, time) {
+		var millis = $justinmimbs$time_extra$Time$Extra$dateToMillis(date) + time;
+		var offset0 = A2(
+			$justinmimbs$time_extra$Time$Extra$toOffset,
+			zone,
+			$elm$time$Time$millisToPosix(millis));
+		var posix1 = $elm$time$Time$millisToPosix(millis - (offset0 * 60000));
+		var offset1 = A2($justinmimbs$time_extra$Time$Extra$toOffset, zone, posix1);
+		if (_Utils_eq(offset0, offset1)) {
+			return posix1;
+		} else {
+			var posix2 = $elm$time$Time$millisToPosix(millis - (offset1 * 60000));
+			var offset2 = A2($justinmimbs$time_extra$Time$Extra$toOffset, zone, posix2);
+			return _Utils_eq(offset1, offset2) ? posix2 : posix1;
+		}
+	});
+var $justinmimbs$time_extra$Time$Extra$partsToPosix = F2(
+	function (zone, _v0) {
+		var year = _v0.year;
+		var month = _v0.month;
+		var day = _v0.day;
+		var hour = _v0.hour;
+		var minute = _v0.minute;
+		var second = _v0.second;
+		var millisecond = _v0.millisecond;
+		return A3(
+			$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+			zone,
+			A3($justinmimbs$date$Date$fromCalendarDate, year, month, day),
+			A4(
+				$justinmimbs$time_extra$Time$Extra$timeFromClock,
+				A3($elm$core$Basics$clamp, 0, 23, hour),
+				A3($elm$core$Basics$clamp, 0, 59, minute),
+				A3($elm$core$Basics$clamp, 0, 59, second),
+				A3($elm$core$Basics$clamp, 0, 999, millisecond)));
+	});
+var $elm$core$String$toUpper = _String_toUpper;
+var $author$project$Main$importDateOParser = F2(
+	function (zone, timestamp) {
+		var _v0 = A2(
+			$elm$core$String$split,
+			' ',
+			$elm$core$String$trim(timestamp));
+		if (((_v0.b && _v0.b.b) && _v0.b.b.b) && (!_v0.b.b.b.b)) {
+			var date = _v0.a;
+			var _v1 = _v0.b;
+			var time = _v1.a;
+			var _v2 = _v1.b;
+			var amPm = _v2.a;
+			var _v3 = A2($elm$core$String$split, '/', date);
+			if (((_v3.b && _v3.b.b) && _v3.b.b.b) && (!_v3.b.b.b.b)) {
+				var dayStr = _v3.a;
+				var _v4 = _v3.b;
+				var monthStr = _v4.a;
+				var _v5 = _v4.b;
+				var yearStr = _v5.a;
+				var _v6 = _Utils_Tuple3(
+					$elm$core$String$toInt(dayStr),
+					$author$project$Main$monthFromIntStr(monthStr),
+					$elm$core$String$toInt(yearStr));
+				if (((_v6.a.$ === 'Just') && (_v6.b.$ === 'Just')) && (_v6.c.$ === 'Just')) {
+					var day = _v6.a.a;
+					var month = _v6.b.a;
+					var year = _v6.c.a;
+					var _v7 = A2($elm$core$String$split, ':', time);
+					if ((_v7.b && _v7.b.b) && (!_v7.b.b.b)) {
+						var hourStr = _v7.a;
+						var _v8 = _v7.b;
+						var minStr = _v8.a;
+						var _v9 = _Utils_Tuple2(
+							$elm$core$String$toInt(hourStr),
+							$elm$core$String$toInt(minStr));
+						if ((_v9.a.$ === 'Just') && (_v9.b.$ === 'Just')) {
+							var hour = _v9.a.a;
+							var minute = _v9.b.a;
+							var _v10 = $elm$core$String$toUpper(amPm);
+							switch (_v10) {
+								case 'AM':
+									return $elm$core$Maybe$Just(
+										A2(
+											$justinmimbs$time_extra$Time$Extra$partsToPosix,
+											zone,
+											{day: day, hour: hour, millisecond: 0, minute: minute, month: month, second: 0, year: year}));
+								case 'PM':
+									return $elm$core$Maybe$Just(
+										A2(
+											$justinmimbs$time_extra$Time$Extra$partsToPosix,
+											zone,
+											{day: day, hour: hour + 12, millisecond: 0, minute: minute, month: month, second: 0, year: year}));
+								default:
+									return $elm$core$Maybe$Nothing;
+							}
+						} else {
+							return $elm$core$Maybe$Nothing;
+						}
+					} else {
+						return $elm$core$Maybe$Nothing;
+					}
+				} else {
+					return $elm$core$Maybe$Nothing;
+				}
+			} else {
+				return $elm$core$Maybe$Nothing;
+			}
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $BrianHicks$elm_csv$Csv$Decode$map = F2(
+	function (transform, _v0) {
+		var decoder = _v0.a;
+		return $BrianHicks$elm_csv$Csv$Decode$Decoder(
+			F4(
+				function (location, fieldNames, rowNum, row) {
+					return A2(
+						$elm$core$Result$map,
+						transform,
+						A4(decoder, location, fieldNames, rowNum, row));
+				}));
+	});
+var $BrianHicks$elm_csv$Csv$Decode$map3 = F4(
+	function (transform, _v0, _v1, _v2) {
+		var decodeA = _v0.a;
+		var decodeB = _v1.a;
+		var decodeC = _v2.a;
+		return $BrianHicks$elm_csv$Csv$Decode$Decoder(
+			F4(
+				function (location, fieldNames, rowNum, row) {
+					var _v3 = _Utils_Tuple3(
+						A4(decodeA, location, fieldNames, rowNum, row),
+						A4(decodeB, location, fieldNames, rowNum, row),
+						A4(decodeC, location, fieldNames, rowNum, row));
+					if (_v3.a.$ === 'Ok') {
+						if (_v3.b.$ === 'Ok') {
+							if (_v3.c.$ === 'Ok') {
+								var a = _v3.a.a;
+								var b = _v3.b.a;
+								var c = _v3.c.a;
+								return $elm$core$Result$Ok(
+									A3(transform, a, b, c));
+							} else {
+								var c = _v3.c.a;
+								return $elm$core$Result$Err(c);
+							}
+						} else {
+							if (_v3.c.$ === 'Err') {
+								var b = _v3.b.a;
+								var c = _v3.c.a;
+								return $elm$core$Result$Err(
+									_Utils_ap(b, c));
+							} else {
+								var b = _v3.b.a;
+								return $elm$core$Result$Err(b);
+							}
+						}
+					} else {
+						if (_v3.b.$ === 'Err') {
+							if (_v3.c.$ === 'Err') {
+								var a = _v3.a.a;
+								var b = _v3.b.a;
+								var c = _v3.c.a;
+								return $elm$core$Result$Err(
+									_Utils_ap(
+										a,
+										_Utils_ap(b, c)));
+							} else {
+								var a = _v3.a.a;
+								var b = _v3.b.a;
+								return $elm$core$Result$Err(
+									_Utils_ap(a, b));
+							}
+						} else {
+							if (_v3.c.$ === 'Err') {
+								var a = _v3.a.a;
+								var c = _v3.c.a;
+								return $elm$core$Result$Err(
+									_Utils_ap(a, c));
+							} else {
+								var a = _v3.a.a;
+								return $elm$core$Result$Err(a);
+							}
+						}
+					}
+				}));
+	});
+var $BrianHicks$elm_csv$Csv$Decode$ColumnNotFound = function (a) {
+	return {$: 'ColumnNotFound', a: a};
+};
+var $BrianHicks$elm_csv$Csv$Decode$ExpectedOneColumn = function (a) {
+	return {$: 'ExpectedOneColumn', a: a};
+};
+var $BrianHicks$elm_csv$Csv$Decode$FieldNotFound = function (a) {
+	return {$: 'FieldNotFound', a: a};
+};
+var $BrianHicks$elm_csv$Csv$Decode$FieldNotProvided = function (a) {
+	return {$: 'FieldNotProvided', a: a};
+};
+var $elm$core$List$drop = F2(
+	function (n, list) {
+		drop:
+		while (true) {
+			if (n <= 0) {
+				return list;
+			} else {
+				if (!list.b) {
+					return list;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs;
+					n = $temp$n;
+					list = $temp$list;
+					continue drop;
+				}
+			}
+		}
+	});
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $BrianHicks$elm_csv$Csv$Decode$fromString = function (convert) {
+	return $BrianHicks$elm_csv$Csv$Decode$Decoder(
+		F4(
+			function (location, _v0, rowNum, row) {
+				var names = _v0.names;
+				var error = function (problem) {
+					return $elm$core$Result$Err(
+						_List_fromArray(
+							[
+								$BrianHicks$elm_csv$Csv$Decode$FieldDecodingError(
+								{
+									column: A2($BrianHicks$elm_csv$Csv$Decode$locationToColumn, names, location),
+									problem: problem,
+									row: rowNum
+								})
+							]));
+				};
+				switch (location.$) {
+					case 'Column_':
+						var colNum = location.a;
+						var _v2 = $elm$core$List$head(
+							A2($elm$core$List$drop, colNum, row));
+						if (_v2.$ === 'Just') {
+							var value = _v2.a;
+							var _v3 = convert(value);
+							if (_v3.$ === 'Ok') {
+								var converted = _v3.a;
+								return $elm$core$Result$Ok(converted);
+							} else {
+								var problem = _v3.a;
+								return error(problem);
+							}
+						} else {
+							return error(
+								$BrianHicks$elm_csv$Csv$Decode$ColumnNotFound(colNum));
+						}
+					case 'Field_':
+						var name = location.a;
+						var _v4 = A2($elm$core$Dict$get, name, names);
+						if (_v4.$ === 'Just') {
+							var colNum = _v4.a;
+							var _v5 = $elm$core$List$head(
+								A2($elm$core$List$drop, colNum, row));
+							if (_v5.$ === 'Just') {
+								var value = _v5.a;
+								var _v6 = convert(value);
+								if (_v6.$ === 'Ok') {
+									var converted = _v6.a;
+									return $elm$core$Result$Ok(converted);
+								} else {
+									var problem = _v6.a;
+									return error(problem);
+								}
+							} else {
+								return error(
+									$BrianHicks$elm_csv$Csv$Decode$FieldNotFound(name));
+							}
+						} else {
+							return $elm$core$Result$Err(
+								_List_fromArray(
+									[
+										$BrianHicks$elm_csv$Csv$Decode$FieldNotProvided(name)
+									]));
+						}
+					default:
+						if (!row.b) {
+							return error(
+								$BrianHicks$elm_csv$Csv$Decode$ColumnNotFound(0));
+						} else {
+							if (!row.b.b) {
+								var only = row.a;
+								var _v8 = convert(only);
+								if (_v8.$ === 'Ok') {
+									var converted = _v8.a;
+									return $elm$core$Result$Ok(converted);
+								} else {
+									var problem = _v8.a;
+									return error(problem);
+								}
+							} else {
+								return error(
+									$BrianHicks$elm_csv$Csv$Decode$ExpectedOneColumn(
+										$elm$core$List$length(row)));
+							}
+						}
+				}
+			}));
+};
+var $BrianHicks$elm_csv$Csv$Decode$string = $BrianHicks$elm_csv$Csv$Decode$fromString($elm$core$Result$Ok);
+var $author$project$Main$csvDecoder = function (zone) {
+	return A2(
+		$BrianHicks$elm_csv$Csv$Decode$decodeCsv,
+		$BrianHicks$elm_csv$Csv$Decode$FieldNamesFromFirstRow,
+		A4(
+			$BrianHicks$elm_csv$Csv$Decode$map3,
+			F3(
+				function (date, submit, resist) {
+					return _Utils_Tuple3(date, submit, resist);
+				}),
+			A2(
+				$BrianHicks$elm_csv$Csv$Decode$column,
+				0,
+				A2(
+					$BrianHicks$elm_csv$Csv$Decode$andThen,
+					function (dateStr) {
+						return A2(
+							$BrianHicks$elm_csv$Csv$Decode$fromMaybe,
+							'Expected a date in the format M/D/YYYY H:M AM',
+							A2($author$project$Main$importDateOParser, zone, dateStr));
+					},
+					$BrianHicks$elm_csv$Csv$Decode$string)),
+			A2(
+				$BrianHicks$elm_csv$Csv$Decode$column,
+				1,
+				A2(
+					$BrianHicks$elm_csv$Csv$Decode$map,
+					function (submit) {
+						return !$elm$core$String$isEmpty(submit);
+					},
+					$BrianHicks$elm_csv$Csv$Decode$string)),
+			A2(
+				$BrianHicks$elm_csv$Csv$Decode$column,
+				1,
+				A2(
+					$BrianHicks$elm_csv$Csv$Decode$map,
+					function (resist) {
+						return !$elm$core$String$isEmpty(resist);
+					},
+					$BrianHicks$elm_csv$Csv$Decode$string))));
+};
 var $elm$json$Json$Encode$float = _Json_wrap;
 var $author$project$IndexedDb$encodeKey = function (key) {
 	switch (key.$) {
@@ -11435,11 +13122,6 @@ var $author$project$Main$doDbTask = F2(
 			$andrewMacmurray$elm_concurrent_task$ConcurrentTask$attempt,
 			{onComplete: onComplete, pool: $andrewMacmurray$elm_concurrent_task$ConcurrentTask$pool, send: $author$project$Main$sendToDb},
 			task);
-	});
-var $elm$core$Basics$composeL = F3(
-	function (g, f, x) {
-		return g(
-			f(x));
 	});
 var $elm$core$Dict$fromList = function (assocs) {
 	return A3(
@@ -11569,10 +13251,6 @@ var $BrianHicks$elm_csv$Csv$Encode$encodeItems = F2(
 			return A2($elm$core$List$map, convert, rows);
 		}
 	});
-var $elm$core$String$cons = _String_cons;
-var $elm$core$String$fromChar = function (_char) {
-	return A2($elm$core$String$cons, _char, '');
-};
 var $BrianHicks$elm_csv$Csv$Encode$quoteIfNecessary = F2(
 	function (fieldSeparator, value) {
 		return (A2($elm$core$String$contains, '\"', value) || (A2($elm$core$String$contains, fieldSeparator, value) || (A2($elm$core$String$contains, '\u000D\n', value) || A2($elm$core$String$contains, '\n', value)))) ? ('\"' + (A3($elm$core$String$replace, '\"', '\"\"', value) + '\"')) : value;
@@ -11594,10 +13272,6 @@ var $BrianHicks$elm_csv$Csv$Encode$encode = F2(
 						$BrianHicks$elm_csv$Csv$Encode$quoteIfNecessary(fieldSeparatorString))),
 				A2($BrianHicks$elm_csv$Csv$Encode$encodeItems, encoder, items)));
 	});
-var $elm$time$Time$posixToMillis = function (_v0) {
-	var millis = _v0.a;
-	return millis;
-};
 var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
 var $elm$core$String$repeatHelp = F3(
 	function (n, chunk, result) {
@@ -11806,7 +13480,6 @@ var $ryan_haskell$date_format$DateFormat$Language$toEnglishMonthName = function 
 			return 'December';
 	}
 };
-var $elm$core$Basics$modBy = _Basics_modBy;
 var $ryan_haskell$date_format$DateFormat$Language$toEnglishSuffix = function (num) {
 	var _v0 = A2($elm$core$Basics$modBy, 100, num);
 	switch (_v0) {
@@ -11862,81 +13535,10 @@ var $ryan_haskell$date_format$DateFormat$Language$english = A6(
 		$elm$core$String$left(3)),
 	$ryan_haskell$date_format$DateFormat$Language$toEnglishAmPm,
 	$ryan_haskell$date_format$DateFormat$Language$toEnglishSuffix);
-var $elm$time$Time$flooredDiv = F2(
-	function (numerator, denominator) {
-		return $elm$core$Basics$floor(numerator / denominator);
-	});
-var $elm$time$Time$toAdjustedMinutesHelp = F3(
-	function (defaultOffset, posixMinutes, eras) {
-		toAdjustedMinutesHelp:
-		while (true) {
-			if (!eras.b) {
-				return posixMinutes + defaultOffset;
-			} else {
-				var era = eras.a;
-				var olderEras = eras.b;
-				if (_Utils_cmp(era.start, posixMinutes) < 0) {
-					return posixMinutes + era.offset;
-				} else {
-					var $temp$defaultOffset = defaultOffset,
-						$temp$posixMinutes = posixMinutes,
-						$temp$eras = olderEras;
-					defaultOffset = $temp$defaultOffset;
-					posixMinutes = $temp$posixMinutes;
-					eras = $temp$eras;
-					continue toAdjustedMinutesHelp;
-				}
-			}
-		}
-	});
-var $elm$time$Time$toAdjustedMinutes = F2(
-	function (_v0, time) {
-		var defaultOffset = _v0.a;
-		var eras = _v0.b;
-		return A3(
-			$elm$time$Time$toAdjustedMinutesHelp,
-			defaultOffset,
-			A2(
-				$elm$time$Time$flooredDiv,
-				$elm$time$Time$posixToMillis(time),
-				60000),
-			eras);
-	});
-var $elm$time$Time$toHour = F2(
-	function (zone, time) {
-		return A2(
-			$elm$core$Basics$modBy,
-			24,
-			A2(
-				$elm$time$Time$flooredDiv,
-				A2($elm$time$Time$toAdjustedMinutes, zone, time),
-				60));
-	});
 var $ryan_haskell$date_format$DateFormat$amPm = F3(
 	function (language, zone, posix) {
 		return language.toAmPm(
 			A2($elm$time$Time$toHour, zone, posix));
-	});
-var $elm$core$Basics$ge = _Utils_ge;
-var $elm$time$Time$toCivil = function (minutes) {
-	var rawDay = A2($elm$time$Time$flooredDiv, minutes, 60 * 24) + 719468;
-	var era = (((rawDay >= 0) ? rawDay : (rawDay - 146096)) / 146097) | 0;
-	var dayOfEra = rawDay - (era * 146097);
-	var yearOfEra = ((((dayOfEra - ((dayOfEra / 1460) | 0)) + ((dayOfEra / 36524) | 0)) - ((dayOfEra / 146096) | 0)) / 365) | 0;
-	var dayOfYear = dayOfEra - (((365 * yearOfEra) + ((yearOfEra / 4) | 0)) - ((yearOfEra / 100) | 0));
-	var mp = (((5 * dayOfYear) + 2) / 153) | 0;
-	var month = mp + ((mp < 10) ? 3 : (-9));
-	var year = yearOfEra + (era * 400);
-	return {
-		day: (dayOfYear - ((((153 * mp) + 2) / 5) | 0)) + 1,
-		month: month,
-		year: year + ((month <= 2) ? 1 : 0)
-	};
-};
-var $elm$time$Time$toDay = F2(
-	function (zone, time) {
-		return $elm$time$Time$toCivil(
-			A2($elm$time$Time$toAdjustedMinutes, zone, time)).day;
 	});
 var $ryan_haskell$date_format$DateFormat$dayOfMonth = $elm$time$Time$toDay;
 var $elm$time$Time$Sun = {$: 'Sun'};
@@ -11959,15 +13561,6 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
-var $elm$core$List$head = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return $elm$core$Maybe$Just(x);
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
 var $elm$time$Time$toWeekday = F2(
 	function (zone, time) {
 		var _v0 = A2(
@@ -12052,51 +13645,8 @@ var $ryan_haskell$date_format$DateFormat$daysInMonth = F2(
 				return 31;
 		}
 	});
-var $elm$time$Time$Jan = {$: 'Jan'};
-var $elm$time$Time$Apr = {$: 'Apr'};
-var $elm$time$Time$Aug = {$: 'Aug'};
-var $elm$time$Time$Dec = {$: 'Dec'};
-var $elm$time$Time$Feb = {$: 'Feb'};
-var $elm$time$Time$Jul = {$: 'Jul'};
-var $elm$time$Time$Jun = {$: 'Jun'};
-var $elm$time$Time$Mar = {$: 'Mar'};
-var $elm$time$Time$May = {$: 'May'};
-var $elm$time$Time$Nov = {$: 'Nov'};
-var $elm$time$Time$Oct = {$: 'Oct'};
-var $elm$time$Time$Sep = {$: 'Sep'};
 var $ryan_haskell$date_format$DateFormat$months = _List_fromArray(
 	[$elm$time$Time$Jan, $elm$time$Time$Feb, $elm$time$Time$Mar, $elm$time$Time$Apr, $elm$time$Time$May, $elm$time$Time$Jun, $elm$time$Time$Jul, $elm$time$Time$Aug, $elm$time$Time$Sep, $elm$time$Time$Oct, $elm$time$Time$Nov, $elm$time$Time$Dec]);
-var $elm$time$Time$toMonth = F2(
-	function (zone, time) {
-		var _v0 = $elm$time$Time$toCivil(
-			A2($elm$time$Time$toAdjustedMinutes, zone, time)).month;
-		switch (_v0) {
-			case 1:
-				return $elm$time$Time$Jan;
-			case 2:
-				return $elm$time$Time$Feb;
-			case 3:
-				return $elm$time$Time$Mar;
-			case 4:
-				return $elm$time$Time$Apr;
-			case 5:
-				return $elm$time$Time$May;
-			case 6:
-				return $elm$time$Time$Jun;
-			case 7:
-				return $elm$time$Time$Jul;
-			case 8:
-				return $elm$time$Time$Aug;
-			case 9:
-				return $elm$time$Time$Sep;
-			case 10:
-				return $elm$time$Time$Oct;
-			case 11:
-				return $elm$time$Time$Nov;
-			default:
-				return $elm$time$Time$Dec;
-		}
-	});
 var $ryan_haskell$date_format$DateFormat$monthPair = F2(
 	function (zone, posix) {
 		return A2(
@@ -12255,11 +13805,6 @@ var $elm$core$List$take = F2(
 	function (n, list) {
 		return A3($elm$core$List$takeFast, 0, n, list);
 	});
-var $elm$time$Time$toYear = F2(
-	function (zone, time) {
-		return $elm$time$Time$toCivil(
-			A2($elm$time$Time$toAdjustedMinutes, zone, time)).year;
-	});
 var $ryan_haskell$date_format$DateFormat$dayOfYear = F2(
 	function (zone, posix) {
 		var monthsBeforeThisOne = A2(
@@ -12301,34 +13846,9 @@ var $ryan_haskell$date_format$DateFormat$toFixedLength = F2(
 				A2($elm$core$List$range, 1, numZerosNeeded)));
 		return _Utils_ap(zeros, numStr);
 	});
-var $elm$time$Time$toMillis = F2(
-	function (_v0, time) {
-		return A2(
-			$elm$core$Basics$modBy,
-			1000,
-			$elm$time$Time$posixToMillis(time));
-	});
-var $elm$time$Time$toMinute = F2(
-	function (zone, time) {
-		return A2(
-			$elm$core$Basics$modBy,
-			60,
-			A2($elm$time$Time$toAdjustedMinutes, zone, time));
-	});
 var $ryan_haskell$date_format$DateFormat$toNonMilitary = function (num) {
 	return (!num) ? 12 : ((num <= 12) ? num : (num - 12));
 };
-var $elm$time$Time$toSecond = F2(
-	function (_v0, time) {
-		return A2(
-			$elm$core$Basics$modBy,
-			60,
-			A2(
-				$elm$time$Time$flooredDiv,
-				$elm$time$Time$posixToMillis(time),
-				1000));
-	});
-var $elm$core$String$toUpper = _String_toUpper;
 var $elm$core$Basics$round = _Basics_round;
 var $ryan_haskell$date_format$DateFormat$millisecondsPerYear = $elm$core$Basics$round((((1000 * 60) * 60) * 24) * 365.25);
 var $ryan_haskell$date_format$DateFormat$firstDayOfYear = F2(
@@ -12537,9 +14057,9 @@ var $ryan_haskell$date_format$DateFormat$yearNumber = $ryan_haskell$date_format$
 var $author$project$Main$exportDateFormatter = $ryan_haskell$date_format$DateFormat$format(
 	_List_fromArray(
 		[
-			$ryan_haskell$date_format$DateFormat$dayOfMonthNumber,
-			$ryan_haskell$date_format$DateFormat$text('/'),
 			$ryan_haskell$date_format$DateFormat$monthNumber,
+			$ryan_haskell$date_format$DateFormat$text('/'),
+			$ryan_haskell$date_format$DateFormat$dayOfMonthNumber,
 			$ryan_haskell$date_format$DateFormat$text('/'),
 			$ryan_haskell$date_format$DateFormat$yearNumber,
 			$ryan_haskell$date_format$DateFormat$text(' '),
@@ -12549,6 +14069,18 @@ var $author$project$Main$exportDateFormatter = $ryan_haskell$date_format$DateFor
 			$ryan_haskell$date_format$DateFormat$text(' '),
 			$ryan_haskell$date_format$DateFormat$amPmUppercase
 		]));
+var $elm$core$Task$fail = _Scheduler_fail;
+var $elm$file$File$Select$files = F2(
+	function (mimes, toMsg) {
+		return A2(
+			$elm$core$Task$perform,
+			function (_v0) {
+				var f = _v0.a;
+				var fs = _v0.b;
+				return A2(toMsg, f, fs);
+			},
+			_File_uploadOneOrMore(mimes));
+	});
 var $elm$core$String$filter = _String_filter;
 var $author$project$Main$findBehaviorById = F2(
 	function (id, behaviors) {
@@ -12580,17 +14112,7 @@ var $elm$core$Tuple$mapFirst = F2(
 			func(x),
 			y);
 	});
-var $elm$time$Time$Name = function (a) {
-	return {$: 'Name', a: a};
-};
-var $elm$time$Time$Offset = function (a) {
-	return {$: 'Offset', a: a};
-};
-var $elm$time$Time$Zone = F2(
-	function (a, b) {
-		return {$: 'Zone', a: a, b: b};
-	});
-var $elm$time$Time$customZone = $elm$time$Time$Zone;
+var $elm$file$File$name = _File_name;
 var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
 var $wolfadex$elm_rfc3339$Rfc3339$TimeLocal = function (a) {
 	return {$: 'TimeLocal', a: a};
@@ -12687,93 +14209,6 @@ var $wolfadex$elm_rfc3339$Rfc3339$daysInMonth = function (date) {
 			return 31;
 	}
 };
-var $justinmimbs$date$Date$RD = function (a) {
-	return {$: 'RD', a: a};
-};
-var $elm$core$Basics$clamp = F3(
-	function (low, high, number) {
-		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
-	});
-var $justinmimbs$date$Date$isLeapYear = function (y) {
-	return ((!A2($elm$core$Basics$modBy, 4, y)) && (!(!A2($elm$core$Basics$modBy, 100, y)))) || (!A2($elm$core$Basics$modBy, 400, y));
-};
-var $justinmimbs$date$Date$daysBeforeMonth = F2(
-	function (y, m) {
-		var leapDays = $justinmimbs$date$Date$isLeapYear(y) ? 1 : 0;
-		switch (m.$) {
-			case 'Jan':
-				return 0;
-			case 'Feb':
-				return 31;
-			case 'Mar':
-				return 59 + leapDays;
-			case 'Apr':
-				return 90 + leapDays;
-			case 'May':
-				return 120 + leapDays;
-			case 'Jun':
-				return 151 + leapDays;
-			case 'Jul':
-				return 181 + leapDays;
-			case 'Aug':
-				return 212 + leapDays;
-			case 'Sep':
-				return 243 + leapDays;
-			case 'Oct':
-				return 273 + leapDays;
-			case 'Nov':
-				return 304 + leapDays;
-			default:
-				return 334 + leapDays;
-		}
-	});
-var $justinmimbs$date$Date$floorDiv = F2(
-	function (a, b) {
-		return $elm$core$Basics$floor(a / b);
-	});
-var $justinmimbs$date$Date$daysBeforeYear = function (y1) {
-	var y = y1 - 1;
-	var leapYears = (A2($justinmimbs$date$Date$floorDiv, y, 4) - A2($justinmimbs$date$Date$floorDiv, y, 100)) + A2($justinmimbs$date$Date$floorDiv, y, 400);
-	return (365 * y) + leapYears;
-};
-var $justinmimbs$date$Date$daysInMonth = F2(
-	function (y, m) {
-		switch (m.$) {
-			case 'Jan':
-				return 31;
-			case 'Feb':
-				return $justinmimbs$date$Date$isLeapYear(y) ? 29 : 28;
-			case 'Mar':
-				return 31;
-			case 'Apr':
-				return 30;
-			case 'May':
-				return 31;
-			case 'Jun':
-				return 30;
-			case 'Jul':
-				return 31;
-			case 'Aug':
-				return 31;
-			case 'Sep':
-				return 30;
-			case 'Oct':
-				return 31;
-			case 'Nov':
-				return 30;
-			default:
-				return 31;
-		}
-	});
-var $justinmimbs$date$Date$fromCalendarDate = F3(
-	function (y, m, d) {
-		return $justinmimbs$date$Date$RD(
-			($justinmimbs$date$Date$daysBeforeYear(y) + A2($justinmimbs$date$Date$daysBeforeMonth, y, m)) + A3(
-				$elm$core$Basics$clamp,
-				1,
-				A2($justinmimbs$date$Date$daysInMonth, y, m),
-				d));
-	});
 var $elm$parser$Parser$Advanced$AddRight = F2(
 	function (a, b) {
 		return {$: 'AddRight', a: a, b: b};
@@ -13299,79 +14734,6 @@ var $wolfadex$elm_rfc3339$Rfc3339$offsetParser = $elm$parser$Parser$Advanced$one
 						A2($elm$parser$Parser$Advanced$Token, ':', $wolfadex$elm_rfc3339$Rfc3339$ExpectedOffsetSeparator)))),
 			$wolfadex$elm_rfc3339$Rfc3339$minuteParser)
 		]));
-var $justinmimbs$date$Date$toRataDie = function (_v0) {
-	var rd = _v0.a;
-	return rd;
-};
-var $justinmimbs$time_extra$Time$Extra$dateToMillis = function (date) {
-	var daysSinceEpoch = $justinmimbs$date$Date$toRataDie(date) - 719163;
-	return daysSinceEpoch * 86400000;
-};
-var $justinmimbs$date$Date$fromPosix = F2(
-	function (zone, posix) {
-		return A3(
-			$justinmimbs$date$Date$fromCalendarDate,
-			A2($elm$time$Time$toYear, zone, posix),
-			A2($elm$time$Time$toMonth, zone, posix),
-			A2($elm$time$Time$toDay, zone, posix));
-	});
-var $justinmimbs$time_extra$Time$Extra$timeFromClock = F4(
-	function (hour, minute, second, millisecond) {
-		return (((hour * 3600000) + (minute * 60000)) + (second * 1000)) + millisecond;
-	});
-var $justinmimbs$time_extra$Time$Extra$timeFromPosix = F2(
-	function (zone, posix) {
-		return A4(
-			$justinmimbs$time_extra$Time$Extra$timeFromClock,
-			A2($elm$time$Time$toHour, zone, posix),
-			A2($elm$time$Time$toMinute, zone, posix),
-			A2($elm$time$Time$toSecond, zone, posix),
-			A2($elm$time$Time$toMillis, zone, posix));
-	});
-var $justinmimbs$time_extra$Time$Extra$toOffset = F2(
-	function (zone, posix) {
-		var millis = $elm$time$Time$posixToMillis(posix);
-		var localMillis = $justinmimbs$time_extra$Time$Extra$dateToMillis(
-			A2($justinmimbs$date$Date$fromPosix, zone, posix)) + A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix);
-		return ((localMillis - millis) / 60000) | 0;
-	});
-var $justinmimbs$time_extra$Time$Extra$posixFromDateTime = F3(
-	function (zone, date, time) {
-		var millis = $justinmimbs$time_extra$Time$Extra$dateToMillis(date) + time;
-		var offset0 = A2(
-			$justinmimbs$time_extra$Time$Extra$toOffset,
-			zone,
-			$elm$time$Time$millisToPosix(millis));
-		var posix1 = $elm$time$Time$millisToPosix(millis - (offset0 * 60000));
-		var offset1 = A2($justinmimbs$time_extra$Time$Extra$toOffset, zone, posix1);
-		if (_Utils_eq(offset0, offset1)) {
-			return posix1;
-		} else {
-			var posix2 = $elm$time$Time$millisToPosix(millis - (offset1 * 60000));
-			var offset2 = A2($justinmimbs$time_extra$Time$Extra$toOffset, zone, posix2);
-			return _Utils_eq(offset1, offset2) ? posix2 : posix1;
-		}
-	});
-var $justinmimbs$time_extra$Time$Extra$partsToPosix = F2(
-	function (zone, _v0) {
-		var year = _v0.year;
-		var month = _v0.month;
-		var day = _v0.day;
-		var hour = _v0.hour;
-		var minute = _v0.minute;
-		var second = _v0.second;
-		var millisecond = _v0.millisecond;
-		return A3(
-			$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
-			zone,
-			A3($justinmimbs$date$Date$fromCalendarDate, year, month, day),
-			A4(
-				$justinmimbs$time_extra$Time$Extra$timeFromClock,
-				A3($elm$core$Basics$clamp, 0, 23, hour),
-				A3($elm$core$Basics$clamp, 0, 59, minute),
-				A3($elm$core$Basics$clamp, 0, 59, second),
-				A3($elm$core$Basics$clamp, 0, 999, millisecond)));
-	});
 var $wolfadex$elm_rfc3339$Rfc3339$ExpectedFractionalSecondSeparator = {$: 'ExpectedFractionalSecondSeparator'};
 var $wolfadex$elm_rfc3339$Rfc3339$ExpectedTimeSeparator = {$: 'ExpectedTimeSeparator'};
 var $wolfadex$elm_rfc3339$Rfc3339$InvalidSecond = {$: 'InvalidSecond'};
@@ -13585,17 +14947,6 @@ var $wolfadex$elm_rfc3339$Rfc3339$dateTimeParser = A2(
 						]))),
 				$elm$parser$Parser$Advanced$succeed($elm$core$Maybe$Nothing)
 			])));
-var $elm$core$Result$mapError = F2(
-	function (f, result) {
-		if (result.$ === 'Ok') {
-			var v = result.a;
-			return $elm$core$Result$Ok(v);
-		} else {
-			var e = result.a;
-			return $elm$core$Result$Err(
-				f(e));
-		}
-	});
 var $elm$parser$Parser$Advanced$bagToList = F2(
 	function (bag, list) {
 		bagToList:
@@ -13935,6 +15286,7 @@ var $TSFoster$elm_uuid$UUID$step = function (s) {
 		uuid,
 		A4($TSFoster$elm_uuid$UUID$Seeds, seed1, seed2, seed3, seed4));
 };
+var $elm$file$File$toString = _File_toString;
 var $elm$url$Url$addPort = F2(
 	function (maybePort, starter) {
 		if (maybePort.$ === 'Nothing') {
@@ -13979,7 +15331,6 @@ var $elm$url$Url$toString = function (url) {
 					_Utils_ap(http, url.host)),
 				url.path)));
 };
-var $elm$time$Time$utc = A2($elm$time$Time$Zone, 0, _List_Nil);
 var $author$project$Main$uuidToKey = function (uuid) {
 	return $author$project$IndexedDb$StringKey(
 		$TSFoster$elm_uuid$UUID$toString(uuid));
@@ -14020,6 +15371,14 @@ var $author$project$Main$update = F2(
 								app,
 								$elm$browser$Browser$Navigation$load(url));
 						}
+					case 'TimeZoneFound':
+						var zone = msg.a;
+						return _Utils_Tuple2(
+							$author$project$Main$Initializing(
+								_Utils_update(
+									model,
+									{zone: zone})),
+							$elm$core$Platform$Cmd$none);
 					case 'OnDbProgress':
 						var _v3 = msg.a;
 						var dbTasks = _v3.a;
@@ -14065,7 +15424,7 @@ var $author$project$Main$update = F2(
 												return m;
 											}
 										}(
-											{addingBehavior: $author$project$Main$Fresh, behaviorEditing: $elm$core$Maybe$Nothing, behaviorNameToAdd: '', confirmDelete: $elm$core$Maybe$Nothing, db: db, dbTasks: model.dbTasks, deleting: false, editingBehavior: $author$project$Main$Fresh, navKey: model.navKey, route: route, safetyBehaviors: behaviors, seeds: model.seeds})),
+											{addingBehavior: $author$project$Main$Fresh, behaviorEditing: $elm$core$Maybe$Nothing, behaviorNameToAdd: '', confirmDelete: $elm$core$Maybe$Nothing, db: db, dbTasks: model.dbTasks, deleting: false, editingBehavior: $author$project$Main$Fresh, importErrors: _List_Nil, navKey: model.navKey, route: route, safetyBehaviors: behaviors, seeds: model.seeds, zone: model.zone})),
 									$elm$core$Platform$Cmd$none);
 						}
 					default:
@@ -14135,6 +15494,13 @@ var $author$project$Main$update = F2(
 										model,
 										$elm$browser$Browser$Navigation$load(url));
 								}
+							case 'TimeZoneFound':
+								var zone = msg.a;
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{zone: zone}),
+									$elm$core$Platform$Cmd$none);
 							case 'OnDbProgress':
 								var _v12 = msg.a;
 								var dbTasks = _v12.a;
@@ -14251,7 +15617,7 @@ var $author$project$Main$update = F2(
 									var b = _v18.a;
 									var _v19 = A2(
 										$author$project$Main$doDbTask,
-										$author$project$Main$BehaviorSaveResponded(id),
+										$author$project$Main$BehaviorSaveResponded,
 										A3(
 											$author$project$IndexedDb$put,
 											model.db,
@@ -14295,7 +15661,7 @@ var $author$project$Main$update = F2(
 									var b = _v20.a;
 									var _v21 = A2(
 										$author$project$Main$doDbTask,
-										$author$project$Main$BehaviorSaveResponded(id),
+										$author$project$Main$BehaviorSaveResponded,
 										A3(
 											$author$project$IndexedDb$put,
 											model.db,
@@ -14421,7 +15787,7 @@ var $author$project$Main$update = F2(
 																					$elm$time$Time$posixToMillis,
 																					A2(
 																						$elm$core$List$cons,
-																						A2($justinmimbs$time_extra$Time$Extra$partsToPosix, $elm$time$Time$utc, parts),
+																						A2($justinmimbs$time_extra$Time$Extra$partsToPosix, model.zone, parts),
 																						submits)))
 																		}),
 																	submitToInsert: ''
@@ -14510,7 +15876,7 @@ var $author$project$Main$update = F2(
 																					$elm$time$Time$posixToMillis,
 																					A2(
 																						$elm$core$List$cons,
-																						A2($justinmimbs$time_extra$Time$Extra$partsToPosix, $elm$time$Time$utc, parts),
+																						A2($justinmimbs$time_extra$Time$Extra$partsToPosix, model.zone, parts),
 																						resists)))
 																		}),
 																	resistToInsert: ''
@@ -14534,7 +15900,7 @@ var $author$project$Main$update = F2(
 									} else {
 										var _v32 = A2(
 											$author$project$Main$doDbTask,
-											$author$project$Main$BehaviorSaveResponded(id),
+											$author$project$Main$BehaviorSaveResponded,
 											A3(
 												$author$project$IndexedDb$put,
 												model.db,
@@ -14566,8 +15932,7 @@ var $author$project$Main$update = F2(
 									}
 								}
 							case 'BehaviorSaveResponded':
-								var id = msg.a;
-								var response = msg.b;
+								var response = msg.a;
 								switch (response.$) {
 									case 'Error':
 										var err = response.a;
@@ -14689,7 +16054,7 @@ var $author$project$Main$update = F2(
 										model,
 										{confirmDelete: $elm$core$Maybe$Nothing}),
 									$elm$core$Platform$Cmd$none);
-							default:
+							case 'Export':
 								return _Utils_Tuple2(
 									model,
 									$author$project$Main$export(
@@ -14723,7 +16088,7 @@ var $author$project$Main$update = F2(
 																			[
 																				_Utils_Tuple2(
 																				'date',
-																				A2($author$project$Main$exportDateFormatter, $elm$time$Time$utc, date)),
+																				A2($author$project$Main$exportDateFormatter, model.zone, date)),
 																				_Utils_Tuple2('submit', submit),
 																				_Utils_Tuple2('resist', resist)
 																			]);
@@ -14752,6 +16117,131 @@ var $author$project$Main$update = F2(
 												};
 											},
 											model.safetyBehaviors)));
+							case 'Import':
+								return _Utils_Tuple2(
+									model,
+									A2(
+										$elm$file$File$Select$files,
+										_List_fromArray(
+											['text/csv']),
+										$author$project$Main$FilesImported));
+							case 'FilesImported':
+								var first = msg.a;
+								var rest = msg.b;
+								return _Utils_Tuple2(
+									model,
+									$elm$core$Platform$Cmd$batch(
+										A2(
+											$elm$core$List$map,
+											function (file) {
+												return A2(
+													$elm$core$Task$attempt,
+													$author$project$Main$BehaviorImported,
+													A2(
+														$elm$core$Task$andThen,
+														function (contents) {
+															var _v40 = A2($author$project$Main$csvDecoder, model.zone, contents);
+															if (_v40.$ === 'Err') {
+																var err = _v40.a;
+																return $elm$core$Task$fail(err);
+															} else {
+																var submitsAndResists = _v40.a;
+																return $elm$core$Task$succeed(
+																	_Utils_Tuple2(
+																		$elm$file$File$name(file),
+																		submitsAndResists));
+															}
+														},
+														$elm$file$File$toString(file)));
+											},
+											A2($elm$core$List$cons, first, rest))));
+							case 'BehaviorImported':
+								if (msg.a.$ === 'Err') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									var _v41 = msg.a.a;
+									var fileName = _v41.a;
+									var submitsAndResists = _v41.b;
+									var _v42 = $TSFoster$elm_uuid$UUID$step(model.seeds);
+									var id = _v42.a;
+									var seeds = _v42.b;
+									var behavior = {
+										id: id,
+										name: A3(
+											$elm$core$String$replace,
+											'.csv',
+											'',
+											A3(
+												$elm$core$String$replace,
+												'_',
+												' ',
+												A3($elm$core$String$replace, '-', ' ', fileName))),
+										resists: A2(
+											$elm$core$List$filterMap,
+											function (_v44) {
+												var timestamp = _v44.a;
+												var resist = _v44.c;
+												return resist ? $elm$core$Maybe$Just(timestamp) : $elm$core$Maybe$Nothing;
+											},
+											submitsAndResists),
+										submits: A2(
+											$elm$core$List$filterMap,
+											function (_v45) {
+												var timestamp = _v45.a;
+												var submit = _v45.b;
+												return submit ? $elm$core$Maybe$Just(timestamp) : $elm$core$Maybe$Nothing;
+											},
+											submitsAndResists)
+									};
+									var _v43 = A2(
+										$author$project$Main$doDbTask,
+										$author$project$Main$BehaviorImportResponded(behavior),
+										A3(
+											$author$project$IndexedDb$add,
+											model.db,
+											$author$project$Main$behaviorStore,
+											$author$project$Main$encodeBehavior(behavior)));
+									var dbTasks = _v43.a;
+									var cmd = _v43.b;
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{dbTasks: dbTasks, seeds: seeds}),
+										cmd);
+								}
+							default:
+								var behavior = msg.a;
+								var response = msg.b;
+								switch (response.$) {
+									case 'Error':
+										var err = response.a;
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{
+													importErrors: A2($elm$core$List$cons, 'Failed to import ' + behavior.name, model.importErrors)
+												}),
+											$elm$core$Platform$Cmd$none);
+									case 'UnexpectedError':
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{
+													importErrors: A2($elm$core$List$cons, 'Failed to import ' + behavior.name, model.importErrors)
+												}),
+											$elm$core$Platform$Cmd$none);
+									default:
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{
+													safetyBehaviors: A2($elm$core$List$cons, behavior, model.safetyBehaviors)
+												}),
+											A2(
+												$elm$browser$Browser$Navigation$pushUrl,
+												model.navKey,
+												$author$project$Main$routeToString($author$project$Main$HomeRoute)));
+								}
 						}
 					}());
 		}
@@ -15064,6 +16554,55 @@ var $author$project$Main$viewAddBehavior = function (model) {
 					]))
 			]));
 };
+var $author$project$Main$Import = {$: 'Import'};
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $author$project$Main$buttonSecondary = F2(
+	function (label, action) {
+		return A2(
+			$elm$html$Html$button,
+			_List_fromArray(
+				[
+					$author$project$Css$pushable,
+					$elm$html$Html$Attributes$type_('button'),
+					$elm$html$Html$Events$onClick(action)
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$shadow]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$edge, $author$project$Css$edgeSecondary]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$front, $author$project$Css$frontSecondary]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(label)
+						]))
+				]));
+	});
 var $author$project$Main$linkPrimary = F2(
 	function (label, route) {
 		return A2(
@@ -15168,54 +16707,6 @@ var $author$project$Main$ResistedBehavior = function (a) {
 var $author$project$Main$SubmittedToBehavior = function (a) {
 	return {$: 'SubmittedToBehavior', a: a};
 };
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
-};
-var $author$project$Main$buttonSecondary = F2(
-	function (label, action) {
-		return A2(
-			$elm$html$Html$button,
-			_List_fromArray(
-				[
-					$author$project$Css$pushable,
-					$elm$html$Html$Attributes$type_('button'),
-					$elm$html$Html$Events$onClick(action)
-				]),
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[$author$project$Css$shadow]),
-					_List_Nil),
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[$author$project$Css$edge, $author$project$Css$edgeSecondary]),
-					_List_Nil),
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[$author$project$Css$front, $author$project$Css$frontSecondary]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text(label)
-						]))
-				]));
-	});
 var $author$project$Main$viewBehaviorInList = function (behavior) {
 	return A2(
 		$elm$html$Html$div,
@@ -15326,11 +16817,14 @@ var $author$project$Main$viewBehaviorList = function (model) {
 					$elm$html$Html$div,
 					_List_fromArray(
 						[
-							A2($elm$html$Html$Attributes$style, 'display', 'flex')
+							A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+							A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+							A2($elm$html$Html$Attributes$style, 'gap', '1rem')
 						]),
 					_List_fromArray(
 						[
-							A2($author$project$Main$linkPrimary, 'Start tracking', $author$project$Main$AddBehaviorRoute)
+							A2($author$project$Main$linkPrimary, 'Start tracking', $author$project$Main$AddBehaviorRoute),
+							A2($author$project$Main$buttonSecondary, 'Import (csv)', $author$project$Main$Import)
 						]))
 				]));
 	} else {
@@ -15728,7 +17222,7 @@ var $author$project$Main$viewEditBehavior = F2(
 														_List_fromArray(
 															[
 																$elm$html$Html$text(
-																A2($author$project$Main$prettyDateFormatter, $elm$time$Time$utc, submit)),
+																A2($author$project$Main$prettyDateFormatter, model.zone, submit)),
 																A2(
 																$author$project$Main$buttonSecondarySmall,
 																'Remove',
@@ -15803,7 +17297,7 @@ var $author$project$Main$viewEditBehavior = F2(
 														_List_fromArray(
 															[
 																$elm$html$Html$text(
-																A2($author$project$Main$prettyDateFormatter, $elm$time$Time$utc, resist)),
+																A2($author$project$Main$prettyDateFormatter, model.zone, resist)),
 																A2(
 																$author$project$Main$buttonSecondarySmall,
 																'Remove',
@@ -15866,7 +17360,6 @@ var $author$project$Main$viewEditBehavior = F2(
 		}
 	});
 var $author$project$Main$Export = {$: 'Export'};
-var $elm$html$Html$br = _VirtualDom_node('br');
 var $author$project$Main$linkSecondarySmall = F2(
 	function (label, route) {
 		return A2(
@@ -15931,27 +17424,16 @@ var $author$project$Main$viewMenu = A2(
 			_List_fromArray(
 				[
 					A2($elm$html$Html$Attributes$style, 'height', '93vh'),
-					A2($elm$html$Html$Attributes$style, 'overflow', 'auto')
+					A2($elm$html$Html$Attributes$style, 'overflow', 'auto'),
+					A2($elm$html$Html$Attributes$style, 'padding', '1rem'),
+					A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+					A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+					A2($elm$html$Html$Attributes$style, 'gap', '2rem')
 				]),
 			_List_fromArray(
 				[
-					A2(
-					$elm$html$Html$span,
-					_List_Nil,
-					_List_fromArray(
-						[
-							$elm$html$Html$text('TODO: Stats')
-						])),
-					A2($elm$html$Html$br, _List_Nil, _List_Nil),
 					A2($author$project$Main$buttonSecondary, 'Export (csv)', $author$project$Main$Export),
-					A2($elm$html$Html$br, _List_Nil, _List_Nil),
-					A2(
-					$elm$html$Html$span,
-					_List_Nil,
-					_List_fromArray(
-						[
-							$elm$html$Html$text('TODO: Import (csv)')
-						]))
+					A2($author$project$Main$buttonSecondary, 'Import (csv)', $author$project$Main$Import)
 				]))
 		]));
 var $author$project$Main$viewApp = function (app) {

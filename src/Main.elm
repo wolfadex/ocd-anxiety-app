@@ -1,12 +1,15 @@
-port module Main exposing (Application, Behavior, Flags, Model, Msg, Route, main)
+port module Main exposing (Application, Behavior, BehaviorEditing, Flags, Model, Msg, Route, Saving, main)
 
 import AppUrl
 import Browser
 import Browser.Navigation
 import ConcurrentTask exposing (ConcurrentTask, UnexpectedError)
 import Css
+import Csv.Decode
 import Csv.Encode
 import DateFormat
+import File exposing (File)
+import File.Select
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events
@@ -59,6 +62,7 @@ type alias InitModel =
     , dbTasks : ConcurrentTask.Pool Msg
     , url : Url
     , seeds : UUID.Seeds
+    , zone : Time.Zone
     }
 
 
@@ -67,6 +71,7 @@ type alias Model =
     , dbTasks : ConcurrentTask.Pool Msg
     , seeds : UUID.Seeds
     , db : IndexedDb.Db
+    , zone : Time.Zone
     , route : Route
     , safetyBehaviors : List Behavior
     , behaviorNameToAdd : String
@@ -75,6 +80,7 @@ type alias Model =
     , editingBehavior : Saving
     , confirmDelete : Maybe UUID
     , deleting : Bool
+    , importErrors : List String
     }
 
 
@@ -195,6 +201,7 @@ init flags url navKey =
         { navKey = navKey
         , dbTasks = dbTasks
         , url = url
+        , zone = Time.utc
         , seeds =
             { seed1 = Random.initialSeed flags.seed1
             , seed2 = Random.initialSeed flags.seed2
@@ -202,7 +209,11 @@ init flags url navKey =
             , seed4 = Random.initialSeed flags.seed4
             }
         }
-    , cmd
+    , Cmd.batch
+        [ cmd
+        , Time.here
+            |> Task.perform TimeZoneFound
+        ]
     )
 
 
@@ -261,6 +272,7 @@ type Msg
       --
     | OnDbProgress ( ConcurrentTask.Pool Msg, Cmd Msg )
     | DbLoaded (ConcurrentTask.Response IndexedDb.Error ( IndexedDb.Db, List Behavior ))
+    | TimeZoneFound Time.Zone
       --
     | AddBehavior
     | BehaviorCreateResponded UUID (ConcurrentTask.Response IndexedDb.Error IndexedDb.Key)
@@ -277,13 +289,17 @@ type Msg
     | ResistToInsertChanged String
     | InsertResist
     | SaveBehavior UUID
-    | BehaviorSaveResponded UUID (ConcurrentTask.Response IndexedDb.Error IndexedDb.Key)
+    | BehaviorSaveResponded (ConcurrentTask.Response IndexedDb.Error IndexedDb.Key)
     | DeleteBehavior UUID
     | ConfirmDeleteBehavior UUID
     | BehaviorDeleteResponded UUID (ConcurrentTask.Response IndexedDb.Error ())
     | CancelDeleteBehavior
       --
     | Export
+    | Import
+    | FilesImported File (List File)
+    | BehaviorImported (Result Csv.Decode.Error ( String, List ( Time.Posix, Bool, Bool ) ))
+    | BehaviorImportResponded Behavior (ConcurrentTask.Response IndexedDb.Error IndexedDb.Key)
 
 
 update : Msg -> Application -> ( Application, Cmd Msg )
@@ -315,6 +331,9 @@ update msg app =
                             )
 
                 --
+                TimeZoneFound zone ->
+                    ( Initializing { model | zone = zone }, Cmd.none )
+
                 OnDbProgress ( dbTasks, cmd ) ->
                     ( Initializing { model | dbTasks = dbTasks }, cmd )
 
@@ -335,6 +354,7 @@ update msg app =
                               , dbTasks = model.dbTasks
                               , db = db
                               , seeds = model.seeds
+                              , zone = model.zone
                               , route = route
                               , safetyBehaviors = behaviors
                               , behaviorNameToAdd = ""
@@ -343,6 +363,7 @@ update msg app =
                               , editingBehavior = Fresh
                               , confirmDelete = Nothing
                               , deleting = False
+                              , importErrors = []
                               }
                                 |> (\m ->
                                         case route of
@@ -440,6 +461,9 @@ update msg app =
                                 )
 
                     --
+                    TimeZoneFound zone ->
+                        ( { model | zone = zone }, Cmd.none )
+
                     OnDbProgress ( dbTasks, cmd ) ->
                         ( { model | dbTasks = dbTasks }, cmd )
 
@@ -541,7 +565,7 @@ update msg app =
                                 let
                                     ( dbTasks, cmd ) =
                                         doDbTask
-                                            (BehaviorSaveResponded id)
+                                            (BehaviorSaveResponded )
                                             (IndexedDb.put model.db
                                                 behaviorStore
                                                 (encodeBehavior b)
@@ -575,7 +599,7 @@ update msg app =
                                 let
                                     ( dbTasks, cmd ) =
                                         doDbTask
-                                            (BehaviorSaveResponded id)
+                                            (BehaviorSaveResponded )
                                             (IndexedDb.put model.db
                                                 behaviorStore
                                                 (encodeBehavior b)
@@ -655,7 +679,7 @@ update msg app =
                                                         , new =
                                                             { new
                                                                 | submits =
-                                                                    (Time.Extra.partsToPosix Time.utc parts :: submits)
+                                                                    (Time.Extra.partsToPosix model.zone parts :: submits)
                                                                         |> List.sortBy Time.posixToMillis
                                                                         |> List.reverse
                                                             }
@@ -717,7 +741,7 @@ update msg app =
                                                         , new =
                                                             { new
                                                                 | resists =
-                                                                    (Time.Extra.partsToPosix Time.utc parts :: resists)
+                                                                    (Time.Extra.partsToPosix model.zone parts :: resists)
                                                                         |> List.sortBy Time.posixToMillis
                                                                         |> List.reverse
                                                             }
@@ -742,7 +766,7 @@ update msg app =
                                     let
                                         ( dbTasks, cmd ) =
                                             doDbTask
-                                                (BehaviorSaveResponded id)
+                                                (BehaviorSaveResponded)
                                                 (IndexedDb.put model.db
                                                     behaviorStore
                                                     (encodeBehavior new)
@@ -764,7 +788,7 @@ update msg app =
                                     , Cmd.batch [ Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute), cmd ]
                                     )
 
-                    BehaviorSaveResponded id response ->
+                    BehaviorSaveResponded response ->
                         case response of
                             ConcurrentTask.Error err ->
                                 ( { model
@@ -893,7 +917,7 @@ update msg app =
                                                 { encoder =
                                                     Csv.Encode.withFieldNames
                                                         (\( date, submit, resist ) ->
-                                                            [ ( "date", exportDateFormatter Time.utc date )
+                                                            [ ( "date", exportDateFormatter model.zone date )
                                                             , ( "submit", submit )
                                                             , ( "resist", resist )
                                                             ]
@@ -904,6 +928,140 @@ update msg app =
                                 )
                             |> export
                         )
+
+                    Import ->
+                        ( model
+                        , File.Select.files [ "text/csv" ] FilesImported
+                        )
+
+                    FilesImported first rest ->
+                        ( model
+                        , (first :: rest)
+                            |> List.map
+                                (\file ->
+                                    File.toString file
+                                        |> Task.andThen
+                                            (\contents ->
+                                                case csvDecoder model.zone contents of
+                                                    Err err ->
+                                                        Task.fail err
+
+                                                    Ok submitsAndResists ->
+                                                        Task.succeed ( File.name file, submitsAndResists )
+                                            )
+                                        |> Task.attempt BehaviorImported
+                                )
+                            |> Cmd.batch
+                        )
+
+                    BehaviorImported (Err _) ->
+                        -- Debug.todo ""
+                        ( model, Cmd.none )
+
+                    BehaviorImported (Ok ( fileName, submitsAndResists )) ->
+                        let
+                            ( id, seeds ) =
+                                UUID.step model.seeds
+
+                            behavior =
+                                { id = id
+                                , name =
+                                    fileName
+                                        |> String.replace "-" " "
+                                        |> String.replace "_" " "
+                                        |> String.replace ".csv" ""
+                                , submits =
+                                    List.filterMap
+                                        (\( timestamp, submit, _ ) ->
+                                            if submit then
+                                                Just timestamp
+
+                                            else
+                                                Nothing
+                                        )
+                                        submitsAndResists
+                                , resists =
+                                    List.filterMap
+                                        (\( timestamp, _, resist ) ->
+                                            if resist then
+                                                Just timestamp
+
+                                            else
+                                                Nothing
+                                        )
+                                        submitsAndResists
+                                }
+
+                            ( dbTasks, cmd ) =
+                                doDbTask
+                                    (BehaviorImportResponded behavior)
+                                    (IndexedDb.add model.db
+                                        behaviorStore
+                                        (encodeBehavior behavior)
+                                    )
+                        in
+                        ( { model
+                            | dbTasks = dbTasks
+                            , seeds = seeds
+                          }
+                        , cmd
+                        )
+
+                    BehaviorImportResponded behavior response ->
+                        case response of
+                            ConcurrentTask.Error err ->
+                                ( { model
+                                    | importErrors = ("Failed to import " ++ behavior.name) :: model.importErrors
+                                  }
+                                , Cmd.none
+                                )
+
+                            ConcurrentTask.UnexpectedError _ ->
+                                ( { model
+                                    | importErrors = ("Failed to import " ++ behavior.name) :: model.importErrors
+                                  }
+                                , Cmd.none
+                                )
+
+                            ConcurrentTask.Success _ ->
+                                ( { model
+                                    | safetyBehaviors = behavior :: model.safetyBehaviors
+                                  }
+                                , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
+                                )
+
+
+csvDecoder : Time.Zone -> String -> Result Csv.Decode.Error (List ( Time.Posix, Bool, Bool ))
+csvDecoder zone =
+    Csv.Decode.decodeCsv Csv.Decode.FieldNamesFromFirstRow
+        (Csv.Decode.map3
+            (\date submit resist -> ( date, submit, resist ))
+            (Csv.Decode.column 0
+                (Csv.Decode.string
+                    |> Csv.Decode.andThen
+                        (\dateStr ->
+                            Csv.Decode.fromMaybe "Expected a date in the format M/D/YYYY H:M AM"
+                                (importDateOParser zone dateStr)
+                        )
+                )
+            )
+            (Csv.Decode.column 1
+                (Csv.Decode.string
+                    |> Csv.Decode.map
+                        (\submit ->
+                            not (String.isEmpty submit)
+                        )
+                )
+            )
+            (Csv.Decode.column 1
+                (Csv.Decode.string
+                    |> Csv.Decode.map
+                        (\resist ->
+                            not (String.isEmpty resist)
+                        )
+                )
+            )
+        )
 
 
 uuidToKey : UUID -> IndexedDb.Key
@@ -927,9 +1085,9 @@ port export : List { name : String, data : String, type_ : String } -> Cmd msg
 exportDateFormatter : Time.Zone -> Time.Posix -> String
 exportDateFormatter =
     DateFormat.format
-        [ DateFormat.dayOfMonthNumber
+        [ DateFormat.monthNumber
         , DateFormat.text "/"
-        , DateFormat.monthNumber
+        , DateFormat.dayOfMonthNumber
         , DateFormat.text "/"
         , DateFormat.yearNumber
         , DateFormat.text " "
@@ -939,6 +1097,105 @@ exportDateFormatter =
         , DateFormat.text " "
         , DateFormat.amPmUppercase
         ]
+
+
+importDateOParser : Time.Zone -> String -> Maybe Time.Posix
+importDateOParser zone timestamp =
+    case String.split " " (String.trim timestamp) of
+        [ date, time, amPm ] ->
+            case String.split "/" date of
+                [ dayStr, monthStr, yearStr ] ->
+                    case ( String.toInt dayStr, monthFromIntStr monthStr, String.toInt yearStr ) of
+                        ( Just day, Just month, Just year ) ->
+                            case String.split ":" time of
+                                [ hourStr, minStr ] ->
+                                    case ( String.toInt hourStr, String.toInt minStr ) of
+                                        ( Just hour, Just minute ) ->
+                                            case String.toUpper amPm of
+                                                "AM" ->
+                                                    Time.Extra.partsToPosix zone
+                                                        { year = year
+                                                        , month = month
+                                                        , day = day
+                                                        , hour = hour
+                                                        , minute = minute
+                                                        , second = 0
+                                                        , millisecond = 0
+                                                        }
+                                                        |> Just
+
+                                                "PM" ->
+                                                    Time.Extra.partsToPosix zone
+                                                        { year = year
+                                                        , month = month
+                                                        , day = day
+                                                        , hour = hour + 12
+                                                        , minute = minute
+                                                        , second = 0
+                                                        , millisecond = 0
+                                                        }
+                                                        |> Just
+
+                                                _ ->
+                                                    Nothing
+
+                                        _ ->
+                                            Nothing
+
+                                _ ->
+                                    Nothing
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+
+        _ ->
+            Nothing
+
+
+monthFromIntStr : String -> Maybe Time.Month
+monthFromIntStr str =
+    case str of
+        "1" ->
+            Just Time.Jan
+
+        "2" ->
+            Just Time.Feb
+
+        "3" ->
+            Just Time.Mar
+
+        "4" ->
+            Just Time.Apr
+
+        "5" ->
+            Just Time.May
+
+        "6" ->
+            Just Time.Jun
+
+        "7" ->
+            Just Time.Jul
+
+        "8" ->
+            Just Time.Aug
+
+        "9" ->
+            Just Time.Sep
+
+        "10" ->
+            Just Time.Oct
+
+        "11" ->
+            Just Time.Nov
+
+        "12" ->
+            Just Time.Dec
+
+        _ ->
+            Nothing
 
 
 findBehaviorById : UUID -> List Behavior -> Maybe Behavior
@@ -1112,7 +1369,7 @@ viewEditBehavior id model =
                                         , Attr.style "justify-content" "space-between"
                                         , Attr.style "margin-top" "0.75rem"
                                         ]
-                                        [ Html.text <| prettyDateFormatter Time.utc submit
+                                        [ Html.text <| prettyDateFormatter model.zone submit
                                         , buttonSecondarySmall "Remove"
                                             (RemoveSubmit submit)
                                         ]
@@ -1154,7 +1411,7 @@ viewEditBehavior id model =
                                         , Attr.style "justify-content" "space-between"
                                         , Attr.style "margin-top" "0.75rem"
                                         ]
-                                        [ Html.text <| prettyDateFormatter Time.utc resist
+                                        [ Html.text <| prettyDateFormatter model.zone resist
                                         , buttonSecondarySmall "Remove"
                                             (RemoveResist resist)
                                         ]
@@ -1255,13 +1512,15 @@ viewMenu =
         , Html.div
             [ Attr.style "height" "93vh"
             , Attr.style "overflow" "auto"
+            , Attr.style "padding" "1rem"
+            , Attr.style "display" "flex"
+            , Attr.style "flex-direction" "column"
+            , Attr.style "gap" "2rem"
             ]
-            [ Html.span [] [ Html.text "TODO: Stats" ]
-            , Html.br [] []
-            , buttonSecondary "Export (csv)"
+            [ buttonSecondary "Export (csv)"
                 Export
-            , Html.br [] []
-            , Html.span [] [ Html.text "TODO: Import (csv)" ]
+            , buttonSecondary "Import (csv)"
+                Import
             ]
         ]
 
@@ -1282,9 +1541,13 @@ viewBehaviorList model =
                 [ Html.h1 [] [ Html.span [] [ Html.text "Welcome!" ] ]
                 , Html.div
                     [ Attr.style "display" "flex"
+                    , Attr.style "flex-direction" "column"
+                    , Attr.style "gap" "1rem"
                     ]
                     [ linkPrimary "Start tracking"
                         AddBehaviorRoute
+                    , buttonSecondary "Import (csv)"
+                        Import
                     ]
                 ]
 
