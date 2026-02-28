@@ -9,6 +9,7 @@ import Csv.Decode
 import Csv.Encode
 import DateFormat
 import File exposing (File)
+import File.Download
 import File.Select
 import Html exposing (Html)
 import Html.Attributes as Attr
@@ -278,9 +279,9 @@ type Msg
     | BehaviorCreateResponded UUID (ConcurrentTask.Response IndexedDb.Error IndexedDb.Key)
     | BehaviorNameToAddChanged String
     | SubmittedToBehavior UUID
-    | SubmittedToBehaviorAt UUID Time.Posix
+    | SubmittedToBehaviorAt Behavior Time.Posix
     | ResistedBehavior UUID
-    | ResistedBehaviorAt UUID Time.Posix
+    | ResistedBehaviorAt Behavior Time.Posix
     | BehaviorNameEdited String
     | RemoveSubmit Time.Posix
     | SubmitToInsertChanged String
@@ -298,7 +299,7 @@ type Msg
     | Export
     | Import
     | FilesImported File (List File)
-    | BehaviorImported (Result Csv.Decode.Error ( String, List ( Time.Posix, Bool, Bool ) ))
+    | BehaviorImported String (Result Csv.Decode.Error (List ( Time.Posix, Bool, Bool )))
     | BehaviorImportResponded Behavior (ConcurrentTask.Response IndexedDb.Error IndexedDb.Key)
 
 
@@ -553,73 +554,73 @@ update msg app =
                                 , Browser.Navigation.pushUrl model.navKey (routeToString HomeRoute)
                                 )
 
-                    SubmittedToBehavior key ->
-                        ( model, Task.perform (SubmittedToBehaviorAt key) Time.now )
-
-                    SubmittedToBehaviorAt id time ->
+                    SubmittedToBehavior id ->
                         case findBehaviorById id model.safetyBehaviors of
                             Nothing ->
                                 ( model, Cmd.none )
 
                             Just b ->
-                                let
-                                    ( dbTasks, cmd ) =
-                                        doDbTask
-                                            (BehaviorSaveResponded )
-                                            (IndexedDb.put model.db
-                                                behaviorStore
-                                                (encodeBehavior b)
-                                            )
-                                in
-                                ( { model
-                                    | dbTasks = dbTasks
-                                    , safetyBehaviors =
-                                        List.map
-                                            (\behavior ->
-                                                if behavior.id == id then
-                                                    { behavior | submits = time :: behavior.submits }
+                                ( model, Task.perform (SubmittedToBehaviorAt b) Time.now )
 
-                                                else
-                                                    behavior
-                                            )
-                                            model.safetyBehaviors
-                                  }
-                                , cmd
-                                )
+                    SubmittedToBehaviorAt behavior time ->
+                        let
+                            ( dbTasks, cmd ) =
+                                doDbTask
+                                    BehaviorSaveResponded
+                                    (IndexedDb.put model.db
+                                        behaviorStore
+                                        (encodeBehavior { behavior | submits = time :: behavior.submits })
+                                    )
+                        in
+                        ( { model
+                            | dbTasks = dbTasks
+                            , safetyBehaviors =
+                                List.map
+                                    (\bvh ->
+                                        if bvh.id == behavior.id then
+                                            { bvh | submits = time :: bvh.submits }
 
-                    ResistedBehavior key ->
-                        ( model, Task.perform (ResistedBehaviorAt key) Time.now )
+                                        else
+                                            bvh
+                                    )
+                                    model.safetyBehaviors
+                          }
+                        , cmd
+                        )
 
-                    ResistedBehaviorAt id time ->
+                    ResistedBehavior id ->
                         case findBehaviorById id model.safetyBehaviors of
                             Nothing ->
                                 ( model, Cmd.none )
 
                             Just b ->
-                                let
-                                    ( dbTasks, cmd ) =
-                                        doDbTask
-                                            (BehaviorSaveResponded )
-                                            (IndexedDb.put model.db
-                                                behaviorStore
-                                                (encodeBehavior b)
-                                            )
-                                in
-                                ( { model
-                                    | dbTasks = dbTasks
-                                    , safetyBehaviors =
-                                        List.map
-                                            (\behavior ->
-                                                if behavior.id == id then
-                                                    { behavior | resists = time :: behavior.resists }
+                                ( model, Task.perform (ResistedBehaviorAt b) Time.now )
 
-                                                else
-                                                    behavior
-                                            )
-                                            model.safetyBehaviors
-                                  }
-                                , cmd
-                                )
+                    ResistedBehaviorAt behavior time ->
+                        let
+                            ( dbTasks, cmd ) =
+                                doDbTask
+                                    BehaviorSaveResponded
+                                    (IndexedDb.put model.db
+                                        behaviorStore
+                                        (encodeBehavior { behavior | resists = time :: behavior.resists })
+                                    )
+                        in
+                        ( { model
+                            | dbTasks = dbTasks
+                            , safetyBehaviors =
+                                List.map
+                                    (\bvh ->
+                                        if bvh.id == behavior.id then
+                                            { bvh | resists = time :: bvh.resists }
+
+                                        else
+                                            bvh
+                                    )
+                                    model.safetyBehaviors
+                          }
+                        , cmd
+                        )
 
                     BehaviorNameEdited name ->
                         case model.behaviorEditing of
@@ -766,7 +767,7 @@ update msg app =
                                     let
                                         ( dbTasks, cmd ) =
                                             doDbTask
-                                                (BehaviorSaveResponded)
+                                                BehaviorSaveResponded
                                                 (IndexedDb.put model.db
                                                     behaviorStore
                                                     (encodeBehavior new)
@@ -885,14 +886,14 @@ update msg app =
                         , model.safetyBehaviors
                             |> List.map
                                 (\behavior ->
-                                    { name =
-                                        String.filter
+                                    File.Download.string
+                                        (String.filter
                                             (\char -> Char.isAlphaNum char || char == '_' || char == '-')
                                             behavior.name
-                                            ++ "-safety-behavior-data.csv"
-                                    , type_ = "text/csv"
-                                    , data =
-                                        let
+                                            ++ ".csv"
+                                        )
+                                        "text/csv"
+                                        (let
                                             timestamps =
                                                 List.map
                                                     (\submit ->
@@ -910,8 +911,8 @@ update msg app =
                                                             )
                                                         )
                                                         behavior.resists
-                                        in
-                                        timestamps
+                                         in
+                                         timestamps
                                             |> List.sortBy (\( t, _, _ ) -> Time.posixToMillis t)
                                             |> Csv.Encode.encode
                                                 { encoder =
@@ -924,9 +925,9 @@ update msg app =
                                                         )
                                                 , fieldSeparator = ','
                                                 }
-                                    }
+                                        )
                                 )
-                            |> export
+                            |> Cmd.batch
                         )
 
                     Import ->
@@ -947,18 +948,21 @@ update msg app =
                                                         Task.fail err
 
                                                     Ok submitsAndResists ->
-                                                        Task.succeed ( File.name file, submitsAndResists )
+                                                        Task.succeed submitsAndResists
                                             )
-                                        |> Task.attempt BehaviorImported
+                                        |> Task.attempt (BehaviorImported (File.name file))
                                 )
                             |> Cmd.batch
                         )
 
-                    BehaviorImported (Err _) ->
-                        -- Debug.todo ""
-                        ( model, Cmd.none )
+                    BehaviorImported fileName (Err _) ->
+                        ( { model
+                            | importErrors = ("Failed to import " ++ fileName) :: model.importErrors
+                          }
+                        , Cmd.none
+                        )
 
-                    BehaviorImported (Ok ( fileName, submitsAndResists )) ->
+                    BehaviorImported fileName (Ok submitsAndResists) ->
                         let
                             ( id, seeds ) =
                                 UUID.step model.seeds
@@ -967,7 +971,6 @@ update msg app =
                                 { id = id
                                 , name =
                                     fileName
-                                        |> String.replace "-" " "
                                         |> String.replace "_" " "
                                         |> String.replace ".csv" ""
                                 , submits =
@@ -1077,9 +1080,6 @@ doDbTask onComplete task =
         , onComplete = onComplete
         }
         task
-
-
-port export : List { name : String, data : String, type_ : String } -> Cmd msg
 
 
 exportDateFormatter : Time.Zone -> Time.Posix -> String

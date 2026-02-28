@@ -1,9 +1,9 @@
 node_modules/
 elm-stuff/
 dist/
-android/
-ios/
 
+# This is used for local-ish testing
+public/404.html
 
 .DS_Store
 .Directory

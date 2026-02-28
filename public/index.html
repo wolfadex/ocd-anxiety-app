@@ -56,20 +56,6 @@
                     receive: app.ports.receiveFromDb,
                 },
             });
-
-            app.ports.export.subscribe(function (files) {
-                for (const file of files) {
-                    const blob = new Blob([file.data], { type: file.type_ });
-                    const url = URL.createObjectURL(blob);
-                    const aEl = document.createElement("a");
-                    aEl.href = url;
-                    aEl.download = file.name;
-                    document.body.appendChild(aEl);
-                    aEl.click();
-                    URL.revokeObjectURL(url);
-                    document.body.removeChild(aEl);
-                }
-            });
         </script>
     </body>
 </html>
