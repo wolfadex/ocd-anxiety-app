@@ -1,8 +1,19 @@
 {
-  "name": "ocd-anxiety-app",
-  "version": "0.1.0",
-  "private": true,
+  "name": "ocd-anxtiey-app",
+  "version": "1.0.0",
+  "description": "A tool for tracking safety behaviors",
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@codeberg.org/wolfadex/ocd-anxiety-app.git"
+  },
+  "author": "Wolfgang Schuster",
+  "scripts": {
+    "build": "elm-review && css-in-elm build public/styles.css src/Css.elm && elm make src/Main.elm --output public/elm.js --optimize"
+  },
   "devDependencies": {
-    "@andrewmacmurray/elm-concurrent-task": "^2.0.0"
+    "@ryannhg/css-in-elm": "1.0.0",
+    "elm": "0.19.1-6",
+    "elm-format": "0.8.8",
+    "elm-review": "2.13.5"
   }
 }

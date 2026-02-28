@@ -8,7 +8,7 @@ just = "1"
 
 "npm:@ryannhg/css-in-elm" = "1.0.0"
 "npm:elm-format" = "0.8"
-"npm:elm-review" = "2"
+"npm:elm-review" = "2.13"
 "npm:elm-watch" =  "2.0.0-beta.12"
 "npm:http-server" = "14.1.1"
 "npm:run-pty" = "5.0.0"
