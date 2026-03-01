@@ -3,7 +3,10 @@ port module Main exposing (Application, Behavior, BehaviorEditing, Flags, Model,
 import AppUrl
 import Browser
 import Browser.Navigation
-import ConcurrentTask exposing (ConcurrentTask, UnexpectedError)
+import Chart
+import Chart.Attributes
+import Chart.Svg
+import ConcurrentTask exposing (ConcurrentTask)
 import Css
 import Csv.Decode
 import Csv.Encode
@@ -18,7 +21,6 @@ import Html.Events
 import IndexedDb
 import Json.Decode
 import Json.Encode
-import List.Extra
 import Random
 import Rfc3339
 import Task
@@ -1373,6 +1375,71 @@ viewSpecificStats id model =
                     StatsRoute
 
             Just behavior ->
+                let
+                    submits =
+                        behavior.submits
+                            |> List.map (\submit -> { timestamp = submit, submit = True, resist = False })
+
+                    resists =
+                        behavior.resists
+                            |> List.map (\resist -> { timestamp = resist, submit = False, resist = True })
+
+                    submitsAndResists =
+                        (submits ++ resists)
+                            |> List.sortBy (.timestamp >> Time.posixToMillis)
+
+                    byDay =
+                        List.foldl
+                            (\stat ->
+                                let
+                                    inDay =
+                                        stat.timestamp
+                                            |> Time.Extra.floor Time.Extra.Day model.zone
+                                            |> Time.posixToMillis
+                                in
+                                Dict.update inDay
+                                    (\maybeStats ->
+                                        case maybeStats of
+                                            Nothing ->
+                                                Just
+                                                    { submits =
+                                                        if stat.submit then
+                                                            [ stat.timestamp ]
+
+                                                        else
+                                                            []
+                                                    , resists =
+                                                        if stat.resist then
+                                                            [ stat.timestamp ]
+
+                                                        else
+                                                            []
+                                                    }
+
+                                            Just s ->
+                                                Just
+                                                    { submits =
+                                                        if stat.submit then
+                                                            stat.timestamp :: s.submits
+
+                                                        else
+                                                            s.submits
+                                                    , resists =
+                                                        if stat.resist then
+                                                            stat.timestamp :: s.resists
+
+                                                        else
+                                                            s.resists
+                                                    }
+                                    )
+                            )
+                            Dict.empty
+                            submitsAndResists
+
+                    byDayList =
+                        byDay
+                            |> Dict.toList
+                in
                 Html.div
                     [ Attr.style "display" "flex"
                     , Attr.style "flex-direction" "column"
@@ -1382,69 +1449,75 @@ viewSpecificStats id model =
                     [ Html.span
                         [ Attr.style "text-decoration" "underline" ]
                         [ Html.text behavior.name ]
-                    , let
-                        submits =
-                            behavior.submits
-                                |> List.map (\submit -> { timestamp = submit, submit = True, resist = False })
+                    , case byDayList of
+                        [] ->
+                            Html.text "No submits or resists yet"
 
-                        resists =
-                            behavior.resists
-                                |> List.map (\resist -> { timestamp = resist, submit = False, resist = True })
+                        ( high, _ ) :: _ ->
+                            let
+                                low =
+                                    case List.reverse byDayList of
+                                        [] ->
+                                            high
 
-                        submitsAndResists =
-                            (submits ++ resists)
-                                |> List.sortBy (.timestamp >> Time.posixToMillis)
-
-                        byDay =
-                            List.foldl
-                                (\stat ->
-                                    let
-                                        inDay =
-                                            stat.timestamp
-                                                |> Time.Extra.floor Time.Extra.Day model.zone
-                                                |> Time.posixToMillis
-                                    in
-                                    Dict.update inDay
-                                        (\maybeStats ->
-                                            case maybeStats of
-                                                Nothing ->
-                                                    Just
-                                                        { submits =
-                                                            if stat.submit then
-                                                                [ stat.timestamp ]
-
-                                                            else
-                                                                []
-                                                        , resists =
-                                                            if stat.resist then
-                                                                [ stat.timestamp ]
-
-                                                            else
-                                                                []
-                                                        }
-
-                                                Just s ->
-                                                    Just
-                                                        { submits =
-                                                            if stat.submit then
-                                                                stat.timestamp :: s.submits
-
-                                                            else
-                                                                s.submits
-                                                        , resists =
-                                                            if stat.resist then
-                                                                stat.timestamp :: s.resists
-
-                                                            else
-                                                                s.resists
-                                                        }
-                                        )
-                                )
-                                Dict.empty
-                                submitsAndResists
-                      in
-                      byDay
-                        |> Dict.toList
+                                        ( l, _ ) :: _ ->
+                                            l
+                            in
+                            Html.div
+                                [ Attr.style "width" "calc(100vw - 3rem)"
+                                , Attr.style "margin" "1rem auto 0"
+                                , Attr.style "display" "flex"
+                                , Attr.style "align-items" "center"
+                                , Attr.style "justify-content" "center"
+                                ]
+                                [ Html.div
+                                    [ Attr.style "height" "100%"
+                                    , Attr.style "width" "100%"
+                                    ]
+                                    [ Chart.chart
+                                        [ Chart.Attributes.height 200
+                                        , Chart.Attributes.padding { top = 0, bottom = 0, left = 50, right = 25 }
+                                        , Chart.Attributes.range
+                                            [ Chart.Attributes.lowest (toFloat low) Chart.Attributes.exactly
+                                            , Chart.Attributes.highest (toFloat high) Chart.Attributes.exactly
+                                            ]
+                                        ]
+                                        [ Chart.xAxis []
+                                        , Chart.xTicks [ Chart.Attributes.times model.zone ]
+                                        , Chart.xLabels
+                                            [ Chart.Attributes.times model.zone
+                                            , Chart.Attributes.rotate 90
+                                            , Chart.Attributes.moveDown 22
+                                            , Chart.Attributes.moveRight 8
+                                            , Chart.Attributes.fontSize 16
+                                            ]
+                                        , Chart.yAxis []
+                                        , Chart.yLabels
+                                            [ Chart.Attributes.ints
+                                            , Chart.Attributes.fontSize 16
+                                            ]
+                                        , byDayList
+                                            |> List.reverse
+                                            |> Chart.series (\( t, _ ) -> toFloat t)
+                                                [ Chart.interpolated (\( _, d ) -> toFloat (List.length d.submits)) [] []
+                                                    |> Chart.named "Submits"
+                                                , Chart.interpolated (\( _, d ) -> toFloat (List.length d.resists)) [] []
+                                                    |> Chart.named "Resists"
+                                                ]
+                                        , Chart.legendsAt
+                                            .min
+                                            .max
+                                            [ Chart.Attributes.column
+                                            , Chart.Attributes.moveRight 15
+                                            , Chart.Attributes.spacing 5
+                                            ]
+                                            [ Chart.Attributes.width 20
+                                            , Chart.Attributes.fontSize 16
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                    , byDayList
                         |> List.reverse
                         |> List.map
                             (\( d, s ) ->
@@ -1470,6 +1543,7 @@ viewSpecificStats id model =
                             , Attr.style "display" "flex"
                             , Attr.style "flex-direction" "column"
                             , Attr.style "gap" "1rem"
+                            , Attr.style "margin-top" "6rem"
                             ]
                     ]
         ]
@@ -1812,8 +1886,6 @@ prettyDayFormatter =
         [ DateFormat.monthNameAbbreviated
         , DateFormat.text " "
         , DateFormat.dayOfMonthSuffix
-        , DateFormat.text ", "
-        , DateFormat.yearNumber
         ]
 
 
