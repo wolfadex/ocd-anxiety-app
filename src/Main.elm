@@ -8,6 +8,7 @@ import Css
 import Csv.Decode
 import Csv.Encode
 import DateFormat
+import Dict
 import File exposing (File)
 import File.Download
 import File.Select
@@ -17,6 +18,7 @@ import Html.Events
 import IndexedDb
 import Json.Decode
 import Json.Encode
+import List.Extra
 import Random
 import Rfc3339
 import Task
@@ -109,6 +111,7 @@ type Route
     | EditBehaviorRoute UUID
     | SettingsRoute
     | StatsRoute
+    | StatRoute UUID
 
 
 routeToString : Route -> String
@@ -122,6 +125,9 @@ routeToString route =
 
         EditBehaviorRoute id ->
             "/behavior/" ++ UUID.toString id ++ "/edit"
+
+        StatRoute id ->
+            "/behavior/" ++ UUID.toString id ++ "/stats"
 
         SettingsRoute ->
             "/settings"
@@ -150,6 +156,14 @@ routeFromUrl url =
 
                 Ok id ->
                     EditBehaviorRoute id
+
+        [ "behavior", idStr, "stats" ] ->
+            case UUID.fromString idStr of
+                Err _ ->
+                    StatsRoute
+
+                Ok id ->
+                    StatRoute id
 
         [ "settings" ] ->
             SettingsRoute
@@ -383,8 +397,8 @@ update msg app =
                               }
                                 |> (\m ->
                                         case route of
-                                            EditBehaviorRoute key ->
-                                                case findBehaviorById key m.safetyBehaviors of
+                                            EditBehaviorRoute id ->
+                                                case findBehaviorById id m.safetyBehaviors of
                                                     Nothing ->
                                                         m
 
@@ -425,8 +439,8 @@ update msg app =
                                 routeFromUrl url
                         in
                         case route of
-                            EditBehaviorRoute key ->
-                                case findBehaviorById key model.safetyBehaviors of
+                            EditBehaviorRoute id ->
+                                case findBehaviorById id model.safetyBehaviors of
                                     Nothing ->
                                         ( { model
                                             | route = route
@@ -1328,6 +1342,138 @@ viewApp app =
                 StatsRoute ->
                     viewStats model
 
+                StatRoute id ->
+                    viewSpecificStats id model
+
+
+viewSpecificStats : UUID -> Model -> Html Msg
+viewSpecificStats id model =
+    Html.div
+        [ Attr.style "height" "100vh"
+        , Attr.style "width" "100vw"
+        , Attr.style "display" "flex"
+        , Attr.style "flex-direction" "column"
+        , Attr.style "gap" "0.125rem"
+        , Attr.style "font-size" "7vw"
+        ]
+        [ Html.div
+            [ Attr.style "height" "7vh"
+            , Attr.style "display" "flex"
+            , Attr.style "align-items" "center"
+            , Attr.style "gap" "3rem"
+            , Attr.style "padding" "0.5rem"
+            ]
+            [ linkSecondarySmall "Back"
+                StatsRoute
+            , Html.span [ Attr.style "font-size" "2rem" ] [ Html.text "Stats" ]
+            ]
+        , case findBehaviorById id model.safetyBehaviors of
+            Nothing ->
+                linkSecondary "Sorry, looks like we made a mistake"
+                    StatsRoute
+
+            Just behavior ->
+                Html.div
+                    [ Attr.style "display" "flex"
+                    , Attr.style "flex-direction" "column"
+                    , Attr.style "padding" "0.5rem"
+                    , Attr.style "gap" "1rem"
+                    ]
+                    [ Html.span
+                        [ Attr.style "text-decoration" "underline" ]
+                        [ Html.text behavior.name ]
+                    , let
+                        submits =
+                            behavior.submits
+                                |> List.map (\submit -> { timestamp = submit, submit = True, resist = False })
+
+                        resists =
+                            behavior.resists
+                                |> List.map (\resist -> { timestamp = resist, submit = False, resist = True })
+
+                        submitsAndResists =
+                            (submits ++ resists)
+                                |> List.sortBy (.timestamp >> Time.posixToMillis)
+
+                        byDay =
+                            List.foldl
+                                (\stat ->
+                                    let
+                                        inDay =
+                                            stat.timestamp
+                                                |> Time.Extra.floor Time.Extra.Day model.zone
+                                                |> Time.posixToMillis
+                                    in
+                                    Dict.update inDay
+                                        (\maybeStats ->
+                                            case maybeStats of
+                                                Nothing ->
+                                                    Just
+                                                        { submits =
+                                                            if stat.submit then
+                                                                [ stat.timestamp ]
+
+                                                            else
+                                                                []
+                                                        , resists =
+                                                            if stat.resist then
+                                                                [ stat.timestamp ]
+
+                                                            else
+                                                                []
+                                                        }
+
+                                                Just s ->
+                                                    Just
+                                                        { submits =
+                                                            if stat.submit then
+                                                                stat.timestamp :: s.submits
+
+                                                            else
+                                                                s.submits
+                                                        , resists =
+                                                            if stat.resist then
+                                                                stat.timestamp :: s.resists
+
+                                                            else
+                                                                s.resists
+                                                        }
+                                        )
+                                )
+                                Dict.empty
+                                submitsAndResists
+                      in
+                      byDay
+                        |> Dict.toList
+                        |> List.reverse
+                        |> List.map
+                            (\( d, s ) ->
+                                Html.li []
+                                    [ Html.span [] [ Html.text (prettyDayFormatter model.zone (Time.millisToPosix d)) ]
+                                    , Html.br [] []
+                                    , Html.span []
+                                        [ Html.text "Submits: "
+                                        , s.submits
+                                            |> List.length
+                                            |> String.fromInt
+                                            |> Html.text
+                                        , Html.text ", Resists: "
+                                        , s.resists
+                                            |> List.length
+                                            |> String.fromInt
+                                            |> Html.text
+                                        ]
+                                    ]
+                            )
+                        |> Html.ol
+                            [ Attr.style "list-style" "none"
+                            , Attr.style "display" "flex"
+                            , Attr.style "flex-direction" "column"
+                            , Attr.style "gap" "1rem"
+                            ]
+                    ]
+        ]
+
 
 viewStats : Model -> Html Msg
 viewStats model =
@@ -1399,7 +1545,7 @@ viewBehaviorStats model behavior =
                 [ Attr.style "text-decoration" "underline" ]
                 [ Html.text behavior.name ]
             , linkSecondarySmall "more"
-                HomeRoute
+                (StatRoute behavior.id)
             ]
         , Html.br [] []
         , Html.text "Submits:"
@@ -1657,6 +1803,17 @@ prettyDateFormatter =
         , DateFormat.minuteFixed
         , DateFormat.text " "
         , DateFormat.amPmUppercase
+        ]
+
+
+prettyDayFormatter : Time.Zone -> Time.Posix -> String
+prettyDayFormatter =
+    DateFormat.format
+        [ DateFormat.monthNameAbbreviated
+        , DateFormat.text " "
+        , DateFormat.dayOfMonthSuffix
+        , DateFormat.text ", "
+        , DateFormat.yearNumber
         ]
 
 

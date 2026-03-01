@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1772376773289"
+    "1772381887493"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -15025,6 +15025,9 @@ var $author$project$Main$EditBehaviorRoute = function (a) {
 	return {$: 'EditBehaviorRoute', a: a};
 };
 var $author$project$Main$SettingsRoute = {$: 'SettingsRoute'};
+var $author$project$Main$StatRoute = function (a) {
+	return {$: 'StatRoute', a: a};
+};
 var $author$project$Main$StatsRoute = {$: 'StatsRoute'};
 var $elm$url$Url$percentDecode = _Url_percentDecode;
 var $lydell$elm_app_url$AppUrl$percentDecode = function (string) {
@@ -15101,7 +15104,7 @@ var $lydell$elm_app_url$AppUrl$fromUrl = function (url) {
 var $author$project$Main$routeFromUrl = function (url) {
 	var appUrl = $lydell$elm_app_url$AppUrl$fromUrl(url);
 	var _v0 = appUrl.path;
-	_v0$5:
+	_v0$6:
 	while (true) {
 		if (!_v0.b) {
 			return $author$project$Main$HomeRoute;
@@ -15113,26 +15116,42 @@ var $author$project$Main$routeFromUrl = function (url) {
 							var _v1 = _v0.b;
 							return $author$project$Main$AddBehaviorRoute;
 						} else {
-							break _v0$5;
+							break _v0$6;
 						}
 					} else {
-						if ((_v0.b.b.a === 'edit') && (!_v0.b.b.b.b)) {
-							var _v2 = _v0.b;
-							var idStr = _v2.a;
-							var _v3 = _v2.b;
-							var _v4 = $TSFoster$elm_uuid$UUID$fromString(idStr);
-							if (_v4.$ === 'Err') {
-								return $author$project$Main$HomeRoute;
-							} else {
-								var id = _v4.a;
-								return $author$project$Main$EditBehaviorRoute(id);
+						if (!_v0.b.b.b.b) {
+							switch (_v0.b.b.a) {
+								case 'edit':
+									var _v2 = _v0.b;
+									var idStr = _v2.a;
+									var _v3 = _v2.b;
+									var _v4 = $TSFoster$elm_uuid$UUID$fromString(idStr);
+									if (_v4.$ === 'Err') {
+										return $author$project$Main$HomeRoute;
+									} else {
+										var id = _v4.a;
+										return $author$project$Main$EditBehaviorRoute(id);
+									}
+								case 'stats':
+									var _v5 = _v0.b;
+									var idStr = _v5.a;
+									var _v6 = _v5.b;
+									var _v7 = $TSFoster$elm_uuid$UUID$fromString(idStr);
+									if (_v7.$ === 'Err') {
+										return $author$project$Main$StatsRoute;
+									} else {
+										var id = _v7.a;
+										return $author$project$Main$StatRoute(id);
+									}
+								default:
+									break _v0$6;
 							}
 						} else {
-							break _v0$5;
+							break _v0$6;
 						}
 					}
 				} else {
-					break _v0$5;
+					break _v0$6;
 				}
 			} else {
 				switch (_v0.a) {
@@ -15141,7 +15160,7 @@ var $author$project$Main$routeFromUrl = function (url) {
 					case 'stats':
 						return $author$project$Main$StatsRoute;
 					default:
-						break _v0$5;
+						break _v0$6;
 				}
 			}
 		}
@@ -15157,6 +15176,9 @@ var $author$project$Main$routeToString = function (route) {
 		case 'EditBehaviorRoute':
 			var id = route.a;
 			return '/behavior/' + ($TSFoster$elm_uuid$UUID$toString(id) + '/edit');
+		case 'StatRoute':
+			var id = route.a;
+			return '/behavior/' + ($TSFoster$elm_uuid$UUID$toString(id) + '/stats');
 		case 'SettingsRoute':
 			return '/settings';
 		default:
@@ -15413,8 +15435,8 @@ var $author$project$Main$update = F2(
 									$author$project$Main$Initialized(
 										function (m) {
 											if (route.$ === 'EditBehaviorRoute') {
-												var key = route.a;
-												var _v7 = A2($author$project$Main$findBehaviorById, key, m.safetyBehaviors);
+												var id = route.a;
+												var _v7 = A2($author$project$Main$findBehaviorById, id, m.safetyBehaviors);
 												if (_v7.$ === 'Nothing') {
 													return m;
 												} else {
@@ -15472,8 +15494,8 @@ var $author$project$Main$update = F2(
 								var route = $author$project$Main$routeFromUrl(url);
 								switch (route.$) {
 									case 'EditBehaviorRoute':
-										var key = route.a;
-										var _v11 = A2($author$project$Main$findBehaviorById, key, model.safetyBehaviors);
+										var id = route.a;
+										var _v11 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
 										if (_v11.$ === 'Nothing') {
 											return _Utils_Tuple2(
 												_Utils_update(
@@ -17490,146 +17512,7 @@ var $author$project$Main$viewMenu = A2(
 					A2($author$project$Main$buttonSecondary, 'Import (csv)', $author$project$Main$Import)
 				]))
 		]));
-var $elm$html$Html$ul = _VirtualDom_node('ul');
 var $justinmimbs$time_extra$Time$Extra$Day = {$: 'Day'};
-var $justinmimbs$date$Date$Days = {$: 'Days'};
-var $justinmimbs$time_extra$Time$Extra$Millisecond = {$: 'Millisecond'};
-var $justinmimbs$time_extra$Time$Extra$Month = {$: 'Month'};
-var $justinmimbs$date$Date$Months = {$: 'Months'};
-var $elm$core$Basics$min = F2(
-	function (x, y) {
-		return (_Utils_cmp(x, y) < 0) ? x : y;
-	});
-var $justinmimbs$date$Date$add = F3(
-	function (unit, n, _v0) {
-		var rd = _v0.a;
-		switch (unit.$) {
-			case 'Years':
-				return A3(
-					$justinmimbs$date$Date$add,
-					$justinmimbs$date$Date$Months,
-					12 * n,
-					$justinmimbs$date$Date$RD(rd));
-			case 'Months':
-				var date = $justinmimbs$date$Date$toCalendarDate(
-					$justinmimbs$date$Date$RD(rd));
-				var wholeMonths = ((12 * (date.year - 1)) + ($justinmimbs$date$Date$monthToNumber(date.month) - 1)) + n;
-				var m = $justinmimbs$date$Date$numberToMonth(
-					A2($elm$core$Basics$modBy, 12, wholeMonths) + 1);
-				var y = A2($justinmimbs$date$Date$floorDiv, wholeMonths, 12) + 1;
-				return $justinmimbs$date$Date$RD(
-					($justinmimbs$date$Date$daysBeforeYear(y) + A2($justinmimbs$date$Date$daysBeforeMonth, y, m)) + A2(
-						$elm$core$Basics$min,
-						date.day,
-						A2($justinmimbs$date$Date$daysInMonth, y, m)));
-			case 'Weeks':
-				return $justinmimbs$date$Date$RD(rd + (7 * n));
-			default:
-				return $justinmimbs$date$Date$RD(rd + n);
-		}
-	});
-var $justinmimbs$time_extra$Time$Extra$add = F4(
-	function (interval, n, zone, posix) {
-		add:
-		while (true) {
-			switch (interval.$) {
-				case 'Millisecond':
-					return $elm$time$Time$millisToPosix(
-						$elm$time$Time$posixToMillis(posix) + n);
-				case 'Second':
-					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
-						$temp$n = n * 1000,
-						$temp$zone = zone,
-						$temp$posix = posix;
-					interval = $temp$interval;
-					n = $temp$n;
-					zone = $temp$zone;
-					posix = $temp$posix;
-					continue add;
-				case 'Minute':
-					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
-						$temp$n = n * 60000,
-						$temp$zone = zone,
-						$temp$posix = posix;
-					interval = $temp$interval;
-					n = $temp$n;
-					zone = $temp$zone;
-					posix = $temp$posix;
-					continue add;
-				case 'Hour':
-					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
-						$temp$n = n * 3600000,
-						$temp$zone = zone,
-						$temp$posix = posix;
-					interval = $temp$interval;
-					n = $temp$n;
-					zone = $temp$zone;
-					posix = $temp$posix;
-					continue add;
-				case 'Day':
-					return A3(
-						$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
-						zone,
-						A3(
-							$justinmimbs$date$Date$add,
-							$justinmimbs$date$Date$Days,
-							n,
-							A2($justinmimbs$date$Date$fromPosix, zone, posix)),
-						A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix));
-				case 'Month':
-					return A3(
-						$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
-						zone,
-						A3(
-							$justinmimbs$date$Date$add,
-							$justinmimbs$date$Date$Months,
-							n,
-							A2($justinmimbs$date$Date$fromPosix, zone, posix)),
-						A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix));
-				case 'Year':
-					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Month,
-						$temp$n = n * 12,
-						$temp$zone = zone,
-						$temp$posix = posix;
-					interval = $temp$interval;
-					n = $temp$n;
-					zone = $temp$zone;
-					posix = $temp$posix;
-					continue add;
-				case 'Quarter':
-					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Month,
-						$temp$n = n * 3,
-						$temp$zone = zone,
-						$temp$posix = posix;
-					interval = $temp$interval;
-					n = $temp$n;
-					zone = $temp$zone;
-					posix = $temp$posix;
-					continue add;
-				case 'Week':
-					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Day,
-						$temp$n = n * 7,
-						$temp$zone = zone,
-						$temp$posix = posix;
-					interval = $temp$interval;
-					n = $temp$n;
-					zone = $temp$zone;
-					posix = $temp$posix;
-					continue add;
-				default:
-					var weekday = interval;
-					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Day,
-						$temp$n = n * 7,
-						$temp$zone = zone,
-						$temp$posix = posix;
-					interval = $temp$interval;
-					n = $temp$n;
-					zone = $temp$zone;
-					posix = $temp$posix;
-					continue add;
-			}
-		}
-	});
 var $elm$html$Html$br = _VirtualDom_node('br');
 var $justinmimbs$date$Date$Day = {$: 'Day'};
 var $justinmimbs$date$Date$Friday = {$: 'Friday'};
@@ -17815,6 +17698,326 @@ var $justinmimbs$time_extra$Time$Extra$floor = F3(
 				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Sunday, zone, posix);
 		}
 	});
+var $author$project$Main$prettyDayFormatter = $ryan_haskell$date_format$DateFormat$format(
+	_List_fromArray(
+		[
+			$ryan_haskell$date_format$DateFormat$monthNameAbbreviated,
+			$ryan_haskell$date_format$DateFormat$text(' '),
+			$ryan_haskell$date_format$DateFormat$dayOfMonthSuffix,
+			$ryan_haskell$date_format$DateFormat$text(', '),
+			$ryan_haskell$date_format$DateFormat$yearNumber
+		]));
+var $author$project$Main$viewSpecificStats = F2(
+	function (id, model) {
+		return A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					A2($elm$html$Html$Attributes$style, 'height', '100vh'),
+					A2($elm$html$Html$Attributes$style, 'width', '100vw'),
+					A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+					A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+					A2($elm$html$Html$Attributes$style, 'gap', '0.125rem'),
+					A2($elm$html$Html$Attributes$style, 'font-size', '7vw')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$div,
+					_List_fromArray(
+						[
+							A2($elm$html$Html$Attributes$style, 'height', '7vh'),
+							A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+							A2($elm$html$Html$Attributes$style, 'align-items', 'center'),
+							A2($elm$html$Html$Attributes$style, 'gap', '3rem'),
+							A2($elm$html$Html$Attributes$style, 'padding', '0.5rem')
+						]),
+					_List_fromArray(
+						[
+							A2($author$project$Main$linkSecondarySmall, 'Back', $author$project$Main$StatsRoute),
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									A2($elm$html$Html$Attributes$style, 'font-size', '2rem')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Stats')
+								]))
+						])),
+					function () {
+					var _v0 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
+					if (_v0.$ === 'Nothing') {
+						return A2($author$project$Main$linkSecondary, 'Sorry, looks like we made a mistake', $author$project$Main$StatsRoute);
+					} else {
+						var behavior = _v0.a;
+						return A2(
+							$elm$html$Html$div,
+							_List_fromArray(
+								[
+									A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+									A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+									A2($elm$html$Html$Attributes$style, 'padding', '0.5rem'),
+									A2($elm$html$Html$Attributes$style, 'gap', '1rem')
+								]),
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$span,
+									_List_fromArray(
+										[
+											A2($elm$html$Html$Attributes$style, 'text-decoration', 'underline')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text(behavior.name)
+										])),
+									function () {
+									var submits = A2(
+										$elm$core$List$map,
+										function (submit) {
+											return {resist: false, submit: true, timestamp: submit};
+										},
+										behavior.submits);
+									var resists = A2(
+										$elm$core$List$map,
+										function (resist) {
+											return {resist: true, submit: false, timestamp: resist};
+										},
+										behavior.resists);
+									var submitsAndResists = A2(
+										$elm$core$List$sortBy,
+										A2(
+											$elm$core$Basics$composeR,
+											function ($) {
+												return $.timestamp;
+											},
+											$elm$time$Time$posixToMillis),
+										_Utils_ap(submits, resists));
+									var byDay = A3(
+										$elm$core$List$foldl,
+										function (stat) {
+											var inDay = $elm$time$Time$posixToMillis(
+												A3($justinmimbs$time_extra$Time$Extra$floor, $justinmimbs$time_extra$Time$Extra$Day, model.zone, stat.timestamp));
+											return A2(
+												$elm$core$Dict$update,
+												inDay,
+												function (maybeStats) {
+													if (maybeStats.$ === 'Nothing') {
+														return $elm$core$Maybe$Just(
+															{
+																resists: stat.resist ? _List_fromArray(
+																	[stat.timestamp]) : _List_Nil,
+																submits: stat.submit ? _List_fromArray(
+																	[stat.timestamp]) : _List_Nil
+															});
+													} else {
+														var s = maybeStats.a;
+														return $elm$core$Maybe$Just(
+															{
+																resists: stat.resist ? A2($elm$core$List$cons, stat.timestamp, s.resists) : s.resists,
+																submits: stat.submit ? A2($elm$core$List$cons, stat.timestamp, s.submits) : s.submits
+															});
+													}
+												});
+										},
+										$elm$core$Dict$empty,
+										submitsAndResists);
+									return A2(
+										$elm$html$Html$ol,
+										_List_fromArray(
+											[
+												A2($elm$html$Html$Attributes$style, 'list-style', 'none'),
+												A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+												A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+												A2($elm$html$Html$Attributes$style, 'gap', '1rem')
+											]),
+										A2(
+											$elm$core$List$map,
+											function (_v1) {
+												var d = _v1.a;
+												var s = _v1.b;
+												return A2(
+													$elm$html$Html$li,
+													_List_Nil,
+													_List_fromArray(
+														[
+															A2(
+															$elm$html$Html$span,
+															_List_Nil,
+															_List_fromArray(
+																[
+																	$elm$html$Html$text(
+																	A2(
+																		$author$project$Main$prettyDayFormatter,
+																		model.zone,
+																		$elm$time$Time$millisToPosix(d)))
+																])),
+															A2($elm$html$Html$br, _List_Nil, _List_Nil),
+															A2(
+															$elm$html$Html$span,
+															_List_Nil,
+															_List_fromArray(
+																[
+																	$elm$html$Html$text('Submits: '),
+																	$elm$html$Html$text(
+																	$elm$core$String$fromInt(
+																		$elm$core$List$length(s.submits))),
+																	$elm$html$Html$text(', Resists: '),
+																	$elm$html$Html$text(
+																	$elm$core$String$fromInt(
+																		$elm$core$List$length(s.resists)))
+																]))
+														]));
+											},
+											$elm$core$List$reverse(
+												$elm$core$Dict$toList(byDay))));
+								}()
+								]));
+					}
+				}()
+				]));
+	});
+var $elm$html$Html$ul = _VirtualDom_node('ul');
+var $justinmimbs$date$Date$Days = {$: 'Days'};
+var $justinmimbs$time_extra$Time$Extra$Millisecond = {$: 'Millisecond'};
+var $justinmimbs$time_extra$Time$Extra$Month = {$: 'Month'};
+var $justinmimbs$date$Date$Months = {$: 'Months'};
+var $elm$core$Basics$min = F2(
+	function (x, y) {
+		return (_Utils_cmp(x, y) < 0) ? x : y;
+	});
+var $justinmimbs$date$Date$add = F3(
+	function (unit, n, _v0) {
+		var rd = _v0.a;
+		switch (unit.$) {
+			case 'Years':
+				return A3(
+					$justinmimbs$date$Date$add,
+					$justinmimbs$date$Date$Months,
+					12 * n,
+					$justinmimbs$date$Date$RD(rd));
+			case 'Months':
+				var date = $justinmimbs$date$Date$toCalendarDate(
+					$justinmimbs$date$Date$RD(rd));
+				var wholeMonths = ((12 * (date.year - 1)) + ($justinmimbs$date$Date$monthToNumber(date.month) - 1)) + n;
+				var m = $justinmimbs$date$Date$numberToMonth(
+					A2($elm$core$Basics$modBy, 12, wholeMonths) + 1);
+				var y = A2($justinmimbs$date$Date$floorDiv, wholeMonths, 12) + 1;
+				return $justinmimbs$date$Date$RD(
+					($justinmimbs$date$Date$daysBeforeYear(y) + A2($justinmimbs$date$Date$daysBeforeMonth, y, m)) + A2(
+						$elm$core$Basics$min,
+						date.day,
+						A2($justinmimbs$date$Date$daysInMonth, y, m)));
+			case 'Weeks':
+				return $justinmimbs$date$Date$RD(rd + (7 * n));
+			default:
+				return $justinmimbs$date$Date$RD(rd + n);
+		}
+	});
+var $justinmimbs$time_extra$Time$Extra$add = F4(
+	function (interval, n, zone, posix) {
+		add:
+		while (true) {
+			switch (interval.$) {
+				case 'Millisecond':
+					return $elm$time$Time$millisToPosix(
+						$elm$time$Time$posixToMillis(posix) + n);
+				case 'Second':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
+						$temp$n = n * 1000,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Minute':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
+						$temp$n = n * 60000,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Hour':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
+						$temp$n = n * 3600000,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Day':
+					return A3(
+						$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+						zone,
+						A3(
+							$justinmimbs$date$Date$add,
+							$justinmimbs$date$Date$Days,
+							n,
+							A2($justinmimbs$date$Date$fromPosix, zone, posix)),
+						A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix));
+				case 'Month':
+					return A3(
+						$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+						zone,
+						A3(
+							$justinmimbs$date$Date$add,
+							$justinmimbs$date$Date$Months,
+							n,
+							A2($justinmimbs$date$Date$fromPosix, zone, posix)),
+						A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix));
+				case 'Year':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Month,
+						$temp$n = n * 12,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Quarter':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Month,
+						$temp$n = n * 3,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Week':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Day,
+						$temp$n = n * 7,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				default:
+					var weekday = interval;
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Day,
+						$temp$n = n * 7,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+			}
+		}
+	});
 var $author$project$Main$viewBehaviorStats = F2(
 	function (model, behavior) {
 		var dayStart = A3($justinmimbs$time_extra$Time$Extra$floor, $justinmimbs$time_extra$Time$Extra$Day, model.zone, model.today);
@@ -17853,7 +18056,10 @@ var $author$project$Main$viewBehaviorStats = F2(
 								[
 									$elm$html$Html$text(behavior.name)
 								])),
-							A2($author$project$Main$linkSecondarySmall, 'more', $author$project$Main$HomeRoute)
+							A2(
+							$author$project$Main$linkSecondarySmall,
+							'more',
+							$author$project$Main$StatRoute(behavior.id))
 						])),
 					A2($elm$html$Html$br, _List_Nil, _List_Nil),
 					$elm$html$Html$text('Submits:'),
@@ -18102,8 +18308,11 @@ var $author$project$Main$viewApp = function (app) {
 					return A2($author$project$Main$viewEditBehavior, id, model);
 				case 'SettingsRoute':
 					return $author$project$Main$viewMenu;
-				default:
+				case 'StatsRoute':
 					return $author$project$Main$viewStats(model);
+				default:
+					var id = _v1.a;
+					return A2($author$project$Main$viewSpecificStats, id, model);
 			}
 	}
 };
