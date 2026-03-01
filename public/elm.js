@@ -947,7 +947,7 @@ ${indent.repeat(level)}}`;
   var WEBSOCKET_TOKEN = "8e54da5d-fa1a-4582-b841-43e95f4652cd";
   var TARGET_NAME = "My app";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1772288854383"
+    "1772376773289"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -10783,6 +10783,7 @@ var $author$project$Main$init = F3(
 						seed3: $elm$random$Random$initialSeed(flags.seed3),
 						seed4: $elm$random$Random$initialSeed(flags.seed4)
 					},
+					today: $elm$time$Time$millisToPosix(0),
 					url: url,
 					zone: $elm$time$Time$utc
 				}),
@@ -11463,6 +11464,9 @@ var $author$project$Main$FilesImported = F2(
 		return {$: 'FilesImported', a: a, b: b};
 	});
 var $author$project$Main$Fresh = {$: 'Fresh'};
+var $author$project$Main$GotToday = function (a) {
+	return {$: 'GotToday', a: a};
+};
 var $author$project$Main$HomeRoute = {$: 'HomeRoute'};
 var $author$project$Main$Initialized = function (a) {
 	return {$: 'Initialized', a: a};
@@ -15021,6 +15025,7 @@ var $author$project$Main$EditBehaviorRoute = function (a) {
 	return {$: 'EditBehaviorRoute', a: a};
 };
 var $author$project$Main$SettingsRoute = {$: 'SettingsRoute'};
+var $author$project$Main$StatsRoute = {$: 'StatsRoute'};
 var $elm$url$Url$percentDecode = _Url_percentDecode;
 var $lydell$elm_app_url$AppUrl$percentDecode = function (string) {
 	return A2(
@@ -15096,7 +15101,7 @@ var $lydell$elm_app_url$AppUrl$fromUrl = function (url) {
 var $author$project$Main$routeFromUrl = function (url) {
 	var appUrl = $lydell$elm_app_url$AppUrl$fromUrl(url);
 	var _v0 = appUrl.path;
-	_v0$4:
+	_v0$5:
 	while (true) {
 		if (!_v0.b) {
 			return $author$project$Main$HomeRoute;
@@ -15108,7 +15113,7 @@ var $author$project$Main$routeFromUrl = function (url) {
 							var _v1 = _v0.b;
 							return $author$project$Main$AddBehaviorRoute;
 						} else {
-							break _v0$4;
+							break _v0$5;
 						}
 					} else {
 						if ((_v0.b.b.a === 'edit') && (!_v0.b.b.b.b)) {
@@ -15123,17 +15128,20 @@ var $author$project$Main$routeFromUrl = function (url) {
 								return $author$project$Main$EditBehaviorRoute(id);
 							}
 						} else {
-							break _v0$4;
+							break _v0$5;
 						}
 					}
 				} else {
-					break _v0$4;
+					break _v0$5;
 				}
 			} else {
-				if (_v0.a === 'settings') {
-					return $author$project$Main$SettingsRoute;
-				} else {
-					break _v0$4;
+				switch (_v0.a) {
+					case 'settings':
+						return $author$project$Main$SettingsRoute;
+					case 'stats':
+						return $author$project$Main$StatsRoute;
+					default:
+						break _v0$5;
 				}
 			}
 		}
@@ -15149,8 +15157,10 @@ var $author$project$Main$routeToString = function (route) {
 		case 'EditBehaviorRoute':
 			var id = route.a;
 			return '/behavior/' + ($TSFoster$elm_uuid$UUID$toString(id) + '/edit');
-		default:
+		case 'SettingsRoute':
 			return '/settings';
+		default:
+			return '/stats';
 	}
 };
 var $TSFoster$elm_uuid$UUID$Seeds = F4(
@@ -15369,6 +15379,14 @@ var $author$project$Main$update = F2(
 									model,
 									{zone: zone})),
 							$elm$core$Platform$Cmd$none);
+					case 'GotToday':
+						var today = msg.a;
+						return _Utils_Tuple2(
+							$author$project$Main$Initializing(
+								_Utils_update(
+									model,
+									{today: today})),
+							$elm$core$Platform$Cmd$none);
 					case 'OnDbProgress':
 						var _v3 = msg.a;
 						var dbTasks = _v3.a;
@@ -15414,8 +15432,30 @@ var $author$project$Main$update = F2(
 												return m;
 											}
 										}(
-											{addingBehavior: $author$project$Main$Fresh, behaviorEditing: $elm$core$Maybe$Nothing, behaviorNameToAdd: '', confirmDelete: $elm$core$Maybe$Nothing, db: db, dbTasks: model.dbTasks, deleting: false, editingBehavior: $author$project$Main$Fresh, importErrors: _List_Nil, navKey: model.navKey, route: route, safetyBehaviors: behaviors, seeds: model.seeds, zone: model.zone})),
-									$elm$core$Platform$Cmd$none);
+											{
+												addingBehavior: $author$project$Main$Fresh,
+												behaviorEditing: $elm$core$Maybe$Nothing,
+												behaviorNameToAdd: '',
+												confirmDelete: $elm$core$Maybe$Nothing,
+												db: db,
+												dbTasks: model.dbTasks,
+												deleting: false,
+												editingBehavior: $author$project$Main$Fresh,
+												importErrors: _List_Nil,
+												navKey: model.navKey,
+												route: route,
+												safetyBehaviors: behaviors,
+												seeds: model.seeds,
+												today: $elm$time$Time$millisToPosix(0),
+												zone: model.zone
+											})),
+									function () {
+										if (route.$ === 'StatsRoute') {
+											return A2($elm$core$Task$perform, $author$project$Main$GotToday, $elm$time$Time$now);
+										} else {
+											return $elm$core$Platform$Cmd$none;
+										}
+									}());
 						}
 					default:
 						return _Utils_Tuple2(app, $elm$core$Platform$Cmd$none);
@@ -15433,15 +15473,15 @@ var $author$project$Main$update = F2(
 								switch (route.$) {
 									case 'EditBehaviorRoute':
 										var key = route.a;
-										var _v10 = A2($author$project$Main$findBehaviorById, key, model.safetyBehaviors);
-										if (_v10.$ === 'Nothing') {
+										var _v11 = A2($author$project$Main$findBehaviorById, key, model.safetyBehaviors);
+										if (_v11.$ === 'Nothing') {
 											return _Utils_Tuple2(
 												_Utils_update(
 													model,
 													{behaviorEditing: $elm$core$Maybe$Nothing, deleting: false, route: route}),
 												$elm$core$Platform$Cmd$none);
 										} else {
-											var behavior = _v10.a;
+											var behavior = _v11.a;
 											return _Utils_Tuple2(
 												_Utils_update(
 													model,
@@ -15461,6 +15501,12 @@ var $author$project$Main$update = F2(
 												model,
 												{addingBehavior: $author$project$Main$Fresh, route: route}),
 											$elm$core$Platform$Cmd$none);
+									case 'StatsRoute':
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{behaviorEditing: $elm$core$Maybe$Nothing, route: route}),
+											A2($elm$core$Task$perform, $author$project$Main$GotToday, $elm$time$Time$now));
 									default:
 										return _Utils_Tuple2(
 											_Utils_update(
@@ -15491,10 +15537,17 @@ var $author$project$Main$update = F2(
 										model,
 										{zone: zone}),
 									$elm$core$Platform$Cmd$none);
+							case 'GotToday':
+								var today = msg.a;
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{today: today}),
+									$elm$core$Platform$Cmd$none);
 							case 'OnDbProgress':
-								var _v12 = msg.a;
-								var dbTasks = _v12.a;
-								var cmd = _v12.b;
+								var _v13 = msg.a;
+								var dbTasks = _v13.a;
+								var cmd = _v13.b;
 								return _Utils_Tuple2(
 									_Utils_update(
 										model,
@@ -15510,17 +15563,17 @@ var $author$project$Main$update = F2(
 										{behaviorNameToAdd: name}),
 									$elm$core$Platform$Cmd$none);
 							case 'AddBehavior':
-								var _v13 = model.addingBehavior;
-								if (_v13.$ === 'Saving') {
+								var _v14 = model.addingBehavior;
+								if (_v14.$ === 'Saving') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
 									if ($elm$core$String$isEmpty(model.behaviorNameToAdd)) {
 										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 									} else {
-										var _v14 = $TSFoster$elm_uuid$UUID$step(model.seeds);
-										var id = _v14.a;
-										var seeds = _v14.b;
-										var _v15 = A2(
+										var _v15 = $TSFoster$elm_uuid$UUID$step(model.seeds);
+										var id = _v15.a;
+										var seeds = _v15.b;
+										var _v16 = A2(
 											$author$project$Main$doDbTask,
 											$author$project$Main$BehaviorCreateResponded(id),
 											A3(
@@ -15529,8 +15582,8 @@ var $author$project$Main$update = F2(
 												$author$project$Main$behaviorStore,
 												$author$project$Main$encodeBehavior(
 													{id: id, name: model.behaviorNameToAdd, resists: _List_Nil, submits: _List_Nil})));
-										var dbTasks = _v15.a;
-										var cmd = _v15.b;
+										var dbTasks = _v16.a;
+										var cmd = _v16.b;
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
@@ -15591,11 +15644,11 @@ var $author$project$Main$update = F2(
 								}
 							case 'SubmittedToBehavior':
 								var id = msg.a;
-								var _v18 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
-								if (_v18.$ === 'Nothing') {
+								var _v19 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
+								if (_v19.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var b = _v18.a;
+									var b = _v19.a;
 									return _Utils_Tuple2(
 										model,
 										A2(
@@ -15606,7 +15659,7 @@ var $author$project$Main$update = F2(
 							case 'SubmittedToBehaviorAt':
 								var behavior = msg.a;
 								var time = msg.b;
-								var _v19 = A2(
+								var _v20 = A2(
 									$author$project$Main$doDbTask,
 									$author$project$Main$BehaviorSaveResponded,
 									A3(
@@ -15619,8 +15672,8 @@ var $author$project$Main$update = F2(
 												{
 													submits: A2($elm$core$List$cons, time, behavior.submits)
 												}))));
-								var dbTasks = _v19.a;
-								var cmd = _v19.b;
+								var dbTasks = _v20.a;
+								var cmd = _v20.b;
 								return _Utils_Tuple2(
 									_Utils_update(
 										model,
@@ -15640,11 +15693,11 @@ var $author$project$Main$update = F2(
 									cmd);
 							case 'ResistedBehavior':
 								var id = msg.a;
-								var _v20 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
-								if (_v20.$ === 'Nothing') {
+								var _v21 = A2($author$project$Main$findBehaviorById, id, model.safetyBehaviors);
+								if (_v21.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var b = _v20.a;
+									var b = _v21.a;
 									return _Utils_Tuple2(
 										model,
 										A2(
@@ -15655,7 +15708,7 @@ var $author$project$Main$update = F2(
 							case 'ResistedBehaviorAt':
 								var behavior = msg.a;
 								var time = msg.b;
-								var _v21 = A2(
+								var _v22 = A2(
 									$author$project$Main$doDbTask,
 									$author$project$Main$BehaviorSaveResponded,
 									A3(
@@ -15668,8 +15721,8 @@ var $author$project$Main$update = F2(
 												{
 													resists: A2($elm$core$List$cons, time, behavior.resists)
 												}))));
-								var dbTasks = _v21.a;
-								var cmd = _v21.b;
+								var dbTasks = _v22.a;
+								var cmd = _v22.b;
 								return _Utils_Tuple2(
 									_Utils_update(
 										model,
@@ -15689,11 +15742,11 @@ var $author$project$Main$update = F2(
 									cmd);
 							case 'BehaviorNameEdited':
 								var name = msg.a;
-								var _v22 = model.behaviorEditing;
-								if (_v22.$ === 'Nothing') {
+								var _v23 = model.behaviorEditing;
+								if (_v23.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var behaviorEditing = _v22.a;
+									var behaviorEditing = _v23.a;
 									var _new = behaviorEditing._new;
 									return _Utils_Tuple2(
 										_Utils_update(
@@ -15712,11 +15765,11 @@ var $author$project$Main$update = F2(
 								}
 							case 'RemoveSubmit':
 								var timestamp = msg.a;
-								var _v23 = model.behaviorEditing;
-								if (_v23.$ === 'Nothing') {
+								var _v24 = model.behaviorEditing;
+								if (_v24.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var behaviorEditing = _v23.a;
+									var behaviorEditing = _v24.a;
 									var _new = behaviorEditing._new;
 									return _Utils_Tuple2(
 										_Utils_update(
@@ -15742,11 +15795,11 @@ var $author$project$Main$update = F2(
 								}
 							case 'SubmitToInsertChanged':
 								var submitToInsert = msg.a;
-								var _v24 = model.behaviorEditing;
-								if (_v24.$ === 'Nothing') {
+								var _v25 = model.behaviorEditing;
+								if (_v25.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var behaviorEditing = _v24.a;
+									var behaviorEditing = _v25.a;
 									return _Utils_Tuple2(
 										_Utils_update(
 											model,
@@ -15759,15 +15812,15 @@ var $author$project$Main$update = F2(
 										$elm$core$Platform$Cmd$none);
 								}
 							case 'InsertSubmit':
-								var _v25 = model.behaviorEditing;
-								if (_v25.$ === 'Nothing') {
+								var _v26 = model.behaviorEditing;
+								if (_v26.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var behaviorEditing = _v25.a;
+									var behaviorEditing = _v26.a;
 									var _new = behaviorEditing._new;
-									var _v26 = $wolfadex$elm_rfc3339$Rfc3339$parse(behaviorEditing.submitToInsert + ':00');
-									if ((_v26.$ === 'Ok') && (_v26.a.$ === 'DateTimeLocal')) {
-										var parts = _v26.a.a;
+									var _v27 = $wolfadex$elm_rfc3339$Rfc3339$parse(behaviorEditing.submitToInsert + ':00');
+									if ((_v27.$ === 'Ok') && (_v27.a.$ === 'DateTimeLocal')) {
+										var parts = _v27.a.a;
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
@@ -15801,11 +15854,11 @@ var $author$project$Main$update = F2(
 								}
 							case 'RemoveResist':
 								var timestamp = msg.a;
-								var _v27 = model.behaviorEditing;
-								if (_v27.$ === 'Nothing') {
+								var _v28 = model.behaviorEditing;
+								if (_v28.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var behaviorEditing = _v27.a;
+									var behaviorEditing = _v28.a;
 									var _new = behaviorEditing._new;
 									return _Utils_Tuple2(
 										_Utils_update(
@@ -15831,11 +15884,11 @@ var $author$project$Main$update = F2(
 								}
 							case 'ResistToInsertChanged':
 								var resistToInsert = msg.a;
-								var _v28 = model.behaviorEditing;
-								if (_v28.$ === 'Nothing') {
+								var _v29 = model.behaviorEditing;
+								if (_v29.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var behaviorEditing = _v28.a;
+									var behaviorEditing = _v29.a;
 									return _Utils_Tuple2(
 										_Utils_update(
 											model,
@@ -15848,15 +15901,15 @@ var $author$project$Main$update = F2(
 										$elm$core$Platform$Cmd$none);
 								}
 							case 'InsertResist':
-								var _v29 = model.behaviorEditing;
-								if (_v29.$ === 'Nothing') {
+								var _v30 = model.behaviorEditing;
+								if (_v30.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var behaviorEditing = _v29.a;
+									var behaviorEditing = _v30.a;
 									var _new = behaviorEditing._new;
-									var _v30 = $wolfadex$elm_rfc3339$Rfc3339$parse(behaviorEditing.resistToInsert + ':00');
-									if ((_v30.$ === 'Ok') && (_v30.a.$ === 'DateTimeLocal')) {
-										var parts = _v30.a.a;
+									var _v31 = $wolfadex$elm_rfc3339$Rfc3339$parse(behaviorEditing.resistToInsert + ':00');
+									if ((_v31.$ === 'Ok') && (_v31.a.$ === 'DateTimeLocal')) {
+										var parts = _v31.a.a;
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
@@ -15890,15 +15943,15 @@ var $author$project$Main$update = F2(
 								}
 							case 'SaveBehavior':
 								var id = msg.a;
-								var _v31 = model.behaviorEditing;
-								if (_v31.$ === 'Nothing') {
+								var _v32 = model.behaviorEditing;
+								if (_v32.$ === 'Nothing') {
 									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 								} else {
-									var _new = _v31.a._new;
+									var _new = _v32.a._new;
 									if ($elm$core$String$isEmpty(_new.name)) {
 										return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 									} else {
-										var _v32 = A2(
+										var _v33 = A2(
 											$author$project$Main$doDbTask,
 											$author$project$Main$BehaviorSaveResponded,
 											A3(
@@ -15906,8 +15959,8 @@ var $author$project$Main$update = F2(
 												model.db,
 												$author$project$Main$behaviorStore,
 												$author$project$Main$encodeBehavior(_new)));
-										var dbTasks = _v32.a;
-										var cmd = _v32.b;
+										var dbTasks = _v33.a;
+										var cmd = _v33.b;
 										return _Utils_Tuple2(
 											_Utils_update(
 												model,
@@ -15979,7 +16032,7 @@ var $author$project$Main$update = F2(
 									$elm$core$Platform$Cmd$none);
 							case 'ConfirmDeleteBehavior':
 								var id = msg.a;
-								var _v35 = A2(
+								var _v36 = A2(
 									$author$project$Main$doDbTask,
 									$author$project$Main$BehaviorDeleteResponded(id),
 									A3(
@@ -15987,8 +16040,8 @@ var $author$project$Main$update = F2(
 										model.db,
 										$author$project$Main$behaviorStore,
 										$author$project$Main$uuidToKey(id)));
-								var dbTasks = _v35.a;
-								var cmd = _v35.b;
+								var dbTasks = _v36.a;
+								var cmd = _v36.b;
 								return _Utils_Tuple2(
 									_Utils_update(
 										model,
@@ -16092,10 +16145,10 @@ var $author$project$Main$update = F2(
 															$BrianHicks$elm_csv$Csv$Encode$encode,
 															{
 																encoder: $BrianHicks$elm_csv$Csv$Encode$withFieldNames(
-																	function (_v39) {
-																		var date = _v39.a;
-																		var submit = _v39.b;
-																		var resist = _v39.c;
+																	function (_v40) {
+																		var date = _v40.a;
+																		var submit = _v40.b;
+																		var resist = _v40.c;
 																		return _List_fromArray(
 																			[
 																				_Utils_Tuple2(
@@ -16109,8 +16162,8 @@ var $author$project$Main$update = F2(
 															},
 															A2(
 																$elm$core$List$sortBy,
-																function (_v38) {
-																	var t = _v38.a;
+																function (_v39) {
+																	var t = _v39.a;
 																	return $elm$time$Time$posixToMillis(t);
 																},
 																timestamps));
@@ -16141,12 +16194,12 @@ var $author$project$Main$update = F2(
 													A2(
 														$elm$core$Task$andThen,
 														function (contents) {
-															var _v40 = A2($author$project$Main$csvDecoder, model.zone, contents);
-															if (_v40.$ === 'Err') {
-																var err = _v40.a;
+															var _v41 = A2($author$project$Main$csvDecoder, model.zone, contents);
+															if (_v41.$ === 'Err') {
+																var err = _v41.a;
 																return $elm$core$Task$fail(err);
 															} else {
-																var submitsAndResists = _v40.a;
+																var submitsAndResists = _v41.a;
 																return $elm$core$Task$succeed(submitsAndResists);
 															}
 														},
@@ -16166,9 +16219,9 @@ var $author$project$Main$update = F2(
 								} else {
 									var fileName = msg.a;
 									var submitsAndResists = msg.b.a;
-									var _v41 = $TSFoster$elm_uuid$UUID$step(model.seeds);
-									var id = _v41.a;
-									var seeds = _v41.b;
+									var _v42 = $TSFoster$elm_uuid$UUID$step(model.seeds);
+									var id = _v42.a;
+									var seeds = _v42.b;
 									var behavior = {
 										id: id,
 										name: A3(
@@ -16178,22 +16231,22 @@ var $author$project$Main$update = F2(
 											A3($elm$core$String$replace, '_', ' ', fileName)),
 										resists: A2(
 											$elm$core$List$filterMap,
-											function (_v43) {
-												var timestamp = _v43.a;
-												var resist = _v43.c;
+											function (_v44) {
+												var timestamp = _v44.a;
+												var resist = _v44.c;
 												return resist ? $elm$core$Maybe$Just(timestamp) : $elm$core$Maybe$Nothing;
 											},
 											submitsAndResists),
 										submits: A2(
 											$elm$core$List$filterMap,
-											function (_v44) {
-												var timestamp = _v44.a;
-												var submit = _v44.b;
+											function (_v45) {
+												var timestamp = _v45.a;
+												var submit = _v45.b;
 												return submit ? $elm$core$Maybe$Just(timestamp) : $elm$core$Maybe$Nothing;
 											},
 											submitsAndResists)
 									};
-									var _v42 = A2(
+									var _v43 = A2(
 										$author$project$Main$doDbTask,
 										$author$project$Main$BehaviorImportResponded(behavior),
 										A3(
@@ -16201,8 +16254,8 @@ var $author$project$Main$update = F2(
 											model.db,
 											$author$project$Main$behaviorStore,
 											$author$project$Main$encodeBehavior(behavior)));
-									var dbTasks = _v42.a;
-									var cmd = _v42.b;
+									var dbTasks = _v43.a;
+									var cmd = _v43.b;
 									return _Utils_Tuple2(
 										_Utils_update(
 											model,
@@ -16701,6 +16754,38 @@ var $author$project$Main$linkSecondaryIcon = F2(
 						]))
 				]));
 	});
+var $author$project$Main$linkSecondarySmall = F2(
+	function (label, route) {
+		return A2(
+			$elm$html$Html$a,
+			_List_fromArray(
+				[
+					$author$project$Css$pushable,
+					$elm$html$Html$Attributes$href(
+					$author$project$Main$routeToString(route))
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$shadow]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$edge, $author$project$Css$edgeSecondary]),
+					_List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[$author$project$Css$front, $author$project$Css$frontSecondary, $author$project$Css$frontSmall]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(label)
+						]))
+				]));
+	});
 var $author$project$Main$ResistedBehavior = function (a) {
 	return {$: 'ResistedBehavior', a: a};
 };
@@ -16854,7 +16939,8 @@ var $author$project$Main$viewBehaviorList = function (model) {
 						]),
 					_List_fromArray(
 						[
-							A2($author$project$Main$linkPrimarySmall, 'Add safety behavior', $author$project$Main$AddBehaviorRoute),
+							A2($author$project$Main$linkPrimarySmall, 'Stats', $author$project$Main$StatsRoute),
+							A2($author$project$Main$linkSecondarySmall, 'Add safety behavior', $author$project$Main$AddBehaviorRoute),
 							A2($author$project$Main$linkSecondaryIcon, '☰', $author$project$Main$SettingsRoute)
 						])),
 					A2(
@@ -17360,38 +17446,6 @@ var $author$project$Main$viewEditBehavior = F2(
 		}
 	});
 var $author$project$Main$Export = {$: 'Export'};
-var $author$project$Main$linkSecondarySmall = F2(
-	function (label, route) {
-		return A2(
-			$elm$html$Html$a,
-			_List_fromArray(
-				[
-					$author$project$Css$pushable,
-					$elm$html$Html$Attributes$href(
-					$author$project$Main$routeToString(route))
-				]),
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[$author$project$Css$shadow]),
-					_List_Nil),
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[$author$project$Css$edge, $author$project$Css$edgeSecondary]),
-					_List_Nil),
-					A2(
-					$elm$html$Html$span,
-					_List_fromArray(
-						[$author$project$Css$front, $author$project$Css$frontSecondary, $author$project$Css$frontSmall]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text(label)
-						]))
-				]));
-	});
 var $author$project$Main$viewMenu = A2(
 	$elm$html$Html$div,
 	_List_fromArray(
@@ -17436,6 +17490,502 @@ var $author$project$Main$viewMenu = A2(
 					A2($author$project$Main$buttonSecondary, 'Import (csv)', $author$project$Main$Import)
 				]))
 		]));
+var $elm$html$Html$ul = _VirtualDom_node('ul');
+var $justinmimbs$time_extra$Time$Extra$Day = {$: 'Day'};
+var $justinmimbs$date$Date$Days = {$: 'Days'};
+var $justinmimbs$time_extra$Time$Extra$Millisecond = {$: 'Millisecond'};
+var $justinmimbs$time_extra$Time$Extra$Month = {$: 'Month'};
+var $justinmimbs$date$Date$Months = {$: 'Months'};
+var $elm$core$Basics$min = F2(
+	function (x, y) {
+		return (_Utils_cmp(x, y) < 0) ? x : y;
+	});
+var $justinmimbs$date$Date$add = F3(
+	function (unit, n, _v0) {
+		var rd = _v0.a;
+		switch (unit.$) {
+			case 'Years':
+				return A3(
+					$justinmimbs$date$Date$add,
+					$justinmimbs$date$Date$Months,
+					12 * n,
+					$justinmimbs$date$Date$RD(rd));
+			case 'Months':
+				var date = $justinmimbs$date$Date$toCalendarDate(
+					$justinmimbs$date$Date$RD(rd));
+				var wholeMonths = ((12 * (date.year - 1)) + ($justinmimbs$date$Date$monthToNumber(date.month) - 1)) + n;
+				var m = $justinmimbs$date$Date$numberToMonth(
+					A2($elm$core$Basics$modBy, 12, wholeMonths) + 1);
+				var y = A2($justinmimbs$date$Date$floorDiv, wholeMonths, 12) + 1;
+				return $justinmimbs$date$Date$RD(
+					($justinmimbs$date$Date$daysBeforeYear(y) + A2($justinmimbs$date$Date$daysBeforeMonth, y, m)) + A2(
+						$elm$core$Basics$min,
+						date.day,
+						A2($justinmimbs$date$Date$daysInMonth, y, m)));
+			case 'Weeks':
+				return $justinmimbs$date$Date$RD(rd + (7 * n));
+			default:
+				return $justinmimbs$date$Date$RD(rd + n);
+		}
+	});
+var $justinmimbs$time_extra$Time$Extra$add = F4(
+	function (interval, n, zone, posix) {
+		add:
+		while (true) {
+			switch (interval.$) {
+				case 'Millisecond':
+					return $elm$time$Time$millisToPosix(
+						$elm$time$Time$posixToMillis(posix) + n);
+				case 'Second':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
+						$temp$n = n * 1000,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Minute':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
+						$temp$n = n * 60000,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Hour':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
+						$temp$n = n * 3600000,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Day':
+					return A3(
+						$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+						zone,
+						A3(
+							$justinmimbs$date$Date$add,
+							$justinmimbs$date$Date$Days,
+							n,
+							A2($justinmimbs$date$Date$fromPosix, zone, posix)),
+						A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix));
+				case 'Month':
+					return A3(
+						$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+						zone,
+						A3(
+							$justinmimbs$date$Date$add,
+							$justinmimbs$date$Date$Months,
+							n,
+							A2($justinmimbs$date$Date$fromPosix, zone, posix)),
+						A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix));
+				case 'Year':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Month,
+						$temp$n = n * 12,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Quarter':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Month,
+						$temp$n = n * 3,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Week':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Day,
+						$temp$n = n * 7,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				default:
+					var weekday = interval;
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Day,
+						$temp$n = n * 7,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+			}
+		}
+	});
+var $elm$html$Html$br = _VirtualDom_node('br');
+var $justinmimbs$date$Date$Day = {$: 'Day'};
+var $justinmimbs$date$Date$Friday = {$: 'Friday'};
+var $justinmimbs$date$Date$Monday = {$: 'Monday'};
+var $justinmimbs$date$Date$Month = {$: 'Month'};
+var $justinmimbs$date$Date$Quarter = {$: 'Quarter'};
+var $justinmimbs$date$Date$Saturday = {$: 'Saturday'};
+var $justinmimbs$date$Date$Sunday = {$: 'Sunday'};
+var $justinmimbs$date$Date$Thursday = {$: 'Thursday'};
+var $justinmimbs$date$Date$Tuesday = {$: 'Tuesday'};
+var $justinmimbs$date$Date$Wednesday = {$: 'Wednesday'};
+var $justinmimbs$date$Date$Week = {$: 'Week'};
+var $justinmimbs$date$Date$Year = {$: 'Year'};
+var $justinmimbs$date$Date$weekdayNumber = function (_v0) {
+	var rd = _v0.a;
+	var _v1 = A2($elm$core$Basics$modBy, 7, rd);
+	if (!_v1) {
+		return 7;
+	} else {
+		var n = _v1;
+		return n;
+	}
+};
+var $justinmimbs$date$Date$weekdayToNumber = function (wd) {
+	switch (wd.$) {
+		case 'Mon':
+			return 1;
+		case 'Tue':
+			return 2;
+		case 'Wed':
+			return 3;
+		case 'Thu':
+			return 4;
+		case 'Fri':
+			return 5;
+		case 'Sat':
+			return 6;
+		default:
+			return 7;
+	}
+};
+var $justinmimbs$date$Date$daysSincePreviousWeekday = F2(
+	function (wd, date) {
+		return A2(
+			$elm$core$Basics$modBy,
+			7,
+			($justinmimbs$date$Date$weekdayNumber(date) + 7) - $justinmimbs$date$Date$weekdayToNumber(wd));
+	});
+var $justinmimbs$date$Date$firstOfMonth = F2(
+	function (y, m) {
+		return $justinmimbs$date$Date$RD(
+			($justinmimbs$date$Date$daysBeforeYear(y) + A2($justinmimbs$date$Date$daysBeforeMonth, y, m)) + 1);
+	});
+var $justinmimbs$date$Date$firstOfYear = function (y) {
+	return $justinmimbs$date$Date$RD(
+		$justinmimbs$date$Date$daysBeforeYear(y) + 1);
+};
+var $justinmimbs$date$Date$monthToQuarter = function (m) {
+	return (($justinmimbs$date$Date$monthToNumber(m) + 2) / 3) | 0;
+};
+var $justinmimbs$date$Date$quarter = A2($elm$core$Basics$composeR, $justinmimbs$date$Date$month, $justinmimbs$date$Date$monthToQuarter);
+var $justinmimbs$date$Date$quarterToMonth = function (q) {
+	return $justinmimbs$date$Date$numberToMonth((q * 3) - 2);
+};
+var $justinmimbs$date$Date$floor = F2(
+	function (interval, date) {
+		var rd = date.a;
+		switch (interval.$) {
+			case 'Year':
+				return $justinmimbs$date$Date$firstOfYear(
+					$justinmimbs$date$Date$year(date));
+			case 'Quarter':
+				return A2(
+					$justinmimbs$date$Date$firstOfMonth,
+					$justinmimbs$date$Date$year(date),
+					$justinmimbs$date$Date$quarterToMonth(
+						$justinmimbs$date$Date$quarter(date)));
+			case 'Month':
+				return A2(
+					$justinmimbs$date$Date$firstOfMonth,
+					$justinmimbs$date$Date$year(date),
+					$justinmimbs$date$Date$month(date));
+			case 'Week':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Mon, date));
+			case 'Monday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Mon, date));
+			case 'Tuesday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Tue, date));
+			case 'Wednesday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Wed, date));
+			case 'Thursday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Thu, date));
+			case 'Friday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Fri, date));
+			case 'Saturday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Sat, date));
+			case 'Sunday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Sun, date));
+			default:
+				return date;
+		}
+	});
+var $justinmimbs$time_extra$Time$Extra$floorDate = F3(
+	function (dateInterval, zone, posix) {
+		return A3(
+			$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+			zone,
+			A2(
+				$justinmimbs$date$Date$floor,
+				dateInterval,
+				A2($justinmimbs$date$Date$fromPosix, zone, posix)),
+			0);
+	});
+var $justinmimbs$time_extra$Time$Extra$floor = F3(
+	function (interval, zone, posix) {
+		switch (interval.$) {
+			case 'Millisecond':
+				return posix;
+			case 'Second':
+				return A3(
+					$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+					zone,
+					A2($justinmimbs$date$Date$fromPosix, zone, posix),
+					A4(
+						$justinmimbs$time_extra$Time$Extra$timeFromClock,
+						A2($elm$time$Time$toHour, zone, posix),
+						A2($elm$time$Time$toMinute, zone, posix),
+						A2($elm$time$Time$toSecond, zone, posix),
+						0));
+			case 'Minute':
+				return A3(
+					$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+					zone,
+					A2($justinmimbs$date$Date$fromPosix, zone, posix),
+					A4(
+						$justinmimbs$time_extra$Time$Extra$timeFromClock,
+						A2($elm$time$Time$toHour, zone, posix),
+						A2($elm$time$Time$toMinute, zone, posix),
+						0,
+						0));
+			case 'Hour':
+				return A3(
+					$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+					zone,
+					A2($justinmimbs$date$Date$fromPosix, zone, posix),
+					A4(
+						$justinmimbs$time_extra$Time$Extra$timeFromClock,
+						A2($elm$time$Time$toHour, zone, posix),
+						0,
+						0,
+						0));
+			case 'Day':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Day, zone, posix);
+			case 'Month':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Month, zone, posix);
+			case 'Year':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Year, zone, posix);
+			case 'Quarter':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Quarter, zone, posix);
+			case 'Week':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Week, zone, posix);
+			case 'Monday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Monday, zone, posix);
+			case 'Tuesday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Tuesday, zone, posix);
+			case 'Wednesday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Wednesday, zone, posix);
+			case 'Thursday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Thursday, zone, posix);
+			case 'Friday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Friday, zone, posix);
+			case 'Saturday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Saturday, zone, posix);
+			default:
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Sunday, zone, posix);
+		}
+	});
+var $author$project$Main$viewBehaviorStats = F2(
+	function (model, behavior) {
+		var dayStart = A3($justinmimbs$time_extra$Time$Extra$floor, $justinmimbs$time_extra$Time$Extra$Day, model.zone, model.today);
+		var dayStartMillis = $elm$time$Time$posixToMillis(dayStart);
+		var nextDayStartMillis = $elm$time$Time$posixToMillis(
+			A4($justinmimbs$time_extra$Time$Extra$add, $justinmimbs$time_extra$Time$Extra$Day, 1, model.zone, dayStart));
+		var prevDayStartMillis = $elm$time$Time$posixToMillis(
+			A4($justinmimbs$time_extra$Time$Extra$add, $justinmimbs$time_extra$Time$Extra$Day, -1, model.zone, dayStart));
+		return A2(
+			$elm$html$Html$li,
+			_List_fromArray(
+				[
+					A2($elm$html$Html$Attributes$style, 'border', '1px solid black'),
+					A2($elm$html$Html$Attributes$style, 'border-radius', '1rem'),
+					A2($elm$html$Html$Attributes$style, 'padding', '0.5rem 1rem')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$div,
+					_List_fromArray(
+						[
+							A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+							A2($elm$html$Html$Attributes$style, 'align-items', 'center'),
+							A2($elm$html$Html$Attributes$style, 'justify-content', 'space-between')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$span,
+							_List_fromArray(
+								[
+									A2($elm$html$Html$Attributes$style, 'text-decoration', 'underline')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(behavior.name)
+								])),
+							A2($author$project$Main$linkSecondarySmall, 'more', $author$project$Main$HomeRoute)
+						])),
+					A2($elm$html$Html$br, _List_Nil, _List_Nil),
+					$elm$html$Html$text('Submits:'),
+					A2($elm$html$Html$br, _List_Nil, _List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							$elm$core$String$fromInt(
+								$elm$core$List$length(
+									A2(
+										$elm$core$List$filter,
+										function (submit) {
+											var subMiilis = $elm$time$Time$posixToMillis(submit);
+											return (_Utils_cmp(subMiilis, prevDayStartMillis) > -1) && (_Utils_cmp(subMiilis, dayStartMillis) < 0);
+										},
+										behavior.submits)))),
+							$elm$html$Html$text(' yesterday, '),
+							$elm$html$Html$text(
+							$elm$core$String$fromInt(
+								$elm$core$List$length(
+									A2(
+										$elm$core$List$filter,
+										function (submit) {
+											var subMiilis = $elm$time$Time$posixToMillis(submit);
+											return (_Utils_cmp(subMiilis, dayStartMillis) > -1) && (_Utils_cmp(subMiilis, nextDayStartMillis) < 0);
+										},
+										behavior.submits)))),
+							$elm$html$Html$text(' today')
+						])),
+					A2($elm$html$Html$br, _List_Nil, _List_Nil),
+					$elm$html$Html$text('Resists:'),
+					A2($elm$html$Html$br, _List_Nil, _List_Nil),
+					A2(
+					$elm$html$Html$span,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							$elm$core$String$fromInt(
+								$elm$core$List$length(
+									A2(
+										$elm$core$List$filter,
+										function (resist) {
+											var subMiilis = $elm$time$Time$posixToMillis(resist);
+											return (_Utils_cmp(subMiilis, prevDayStartMillis) > -1) && (_Utils_cmp(subMiilis, dayStartMillis) < 0);
+										},
+										behavior.resists)))),
+							$elm$html$Html$text(' yesterday, '),
+							$elm$html$Html$text(
+							$elm$core$String$fromInt(
+								$elm$core$List$length(
+									A2(
+										$elm$core$List$filter,
+										function (resist) {
+											var subMiilis = $elm$time$Time$posixToMillis(resist);
+											return (_Utils_cmp(subMiilis, dayStartMillis) > -1) && (_Utils_cmp(subMiilis, nextDayStartMillis) < 0);
+										},
+										behavior.resists)))),
+							$elm$html$Html$text(' today')
+						]))
+				]));
+	});
+var $author$project$Main$viewStats = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$Attributes$style, 'height', '100vh'),
+				A2($elm$html$Html$Attributes$style, 'width', '100vw'),
+				A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+				A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+				A2($elm$html$Html$Attributes$style, 'gap', '0.125rem'),
+				A2($elm$html$Html$Attributes$style, 'font-size', '7vw')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2($elm$html$Html$Attributes$style, 'height', '7vh'),
+						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+						A2($elm$html$Html$Attributes$style, 'align-items', 'center'),
+						A2($elm$html$Html$Attributes$style, 'gap', '3rem'),
+						A2($elm$html$Html$Attributes$style, 'padding', '0.5rem')
+					]),
+				_List_fromArray(
+					[
+						A2($author$project$Main$linkSecondarySmall, 'Back', $author$project$Main$HomeRoute),
+						A2(
+						$elm$html$Html$span,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'font-size', '2rem')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Stats')
+							]))
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2($elm$html$Html$Attributes$style, 'height', '93vh'),
+						A2($elm$html$Html$Attributes$style, 'overflow', 'auto'),
+						A2($elm$html$Html$Attributes$style, 'padding', '1rem'),
+						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+						A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+						A2($elm$html$Html$Attributes$style, 'gap', '2rem')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$ul,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'list-style', 'none'),
+								A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+								A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+								A2($elm$html$Html$Attributes$style, 'gap', '1rem')
+							]),
+						A2(
+							$elm$core$List$map,
+							$author$project$Main$viewBehaviorStats(model),
+							model.safetyBehaviors))
+					]))
+			]));
+};
 var $author$project$Main$viewApp = function (app) {
 	switch (app.$) {
 		case 'StartupFailure':
@@ -17550,8 +18100,10 @@ var $author$project$Main$viewApp = function (app) {
 				case 'EditBehaviorRoute':
 					var id = _v1.a;
 					return A2($author$project$Main$viewEditBehavior, id, model);
-				default:
+				case 'SettingsRoute':
 					return $author$project$Main$viewMenu;
+				default:
+					return $author$project$Main$viewStats(model);
 			}
 	}
 };

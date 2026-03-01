@@ -64,6 +64,7 @@ type alias InitModel =
     , url : Url
     , seeds : UUID.Seeds
     , zone : Time.Zone
+    , today : Time.Posix
     }
 
 
@@ -82,6 +83,7 @@ type alias Model =
     , confirmDelete : Maybe UUID
     , deleting : Bool
     , importErrors : List String
+    , today : Time.Posix
     }
 
 
@@ -106,6 +108,7 @@ type Route
     | AddBehaviorRoute
     | EditBehaviorRoute UUID
     | SettingsRoute
+    | StatsRoute
 
 
 routeToString : Route -> String
@@ -122,6 +125,9 @@ routeToString route =
 
         SettingsRoute ->
             "/settings"
+
+        StatsRoute ->
+            "/stats"
 
 
 routeFromUrl : Url -> Route
@@ -147,6 +153,9 @@ routeFromUrl url =
 
         [ "settings" ] ->
             SettingsRoute
+
+        [ "stats" ] ->
+            StatsRoute
 
         _ ->
             HomeRoute
@@ -203,6 +212,7 @@ init flags url navKey =
         , dbTasks = dbTasks
         , url = url
         , zone = Time.utc
+        , today = Time.millisToPosix 0
         , seeds =
             { seed1 = Random.initialSeed flags.seed1
             , seed2 = Random.initialSeed flags.seed2
@@ -274,6 +284,7 @@ type Msg
     | OnDbProgress ( ConcurrentTask.Pool Msg, Cmd Msg )
     | DbLoaded (ConcurrentTask.Response IndexedDb.Error ( IndexedDb.Db, List Behavior ))
     | TimeZoneFound Time.Zone
+    | GotToday Time.Posix
       --
     | AddBehavior
     | BehaviorCreateResponded UUID (ConcurrentTask.Response IndexedDb.Error IndexedDb.Key)
@@ -335,6 +346,9 @@ update msg app =
                 TimeZoneFound zone ->
                     ( Initializing { model | zone = zone }, Cmd.none )
 
+                GotToday today ->
+                    ( Initializing { model | today = today }, Cmd.none )
+
                 OnDbProgress ( dbTasks, cmd ) ->
                     ( Initializing { model | dbTasks = dbTasks }, cmd )
 
@@ -365,6 +379,7 @@ update msg app =
                               , confirmDelete = Nothing
                               , deleting = False
                               , importErrors = []
+                              , today = Time.millisToPosix 0
                               }
                                 |> (\m ->
                                         case route of
@@ -390,7 +405,12 @@ update msg app =
                                                 m
                                    )
                                 |> Initialized
-                            , Cmd.none
+                            , case route of
+                                StatsRoute ->
+                                    Task.perform GotToday Time.now
+
+                                _ ->
+                                    Cmd.none
                             )
 
                 _ ->
@@ -441,6 +461,14 @@ update msg app =
                                 , Cmd.none
                                 )
 
+                            StatsRoute ->
+                                ( { model
+                                    | route = route
+                                    , behaviorEditing = Nothing
+                                  }
+                                , Task.perform GotToday Time.now
+                                )
+
                             _ ->
                                 ( { model
                                     | route = route
@@ -464,6 +492,9 @@ update msg app =
                     --
                     TimeZoneFound zone ->
                         ( { model | zone = zone }, Cmd.none )
+
+                    GotToday today ->
+                        ( { model | today = today }, Cmd.none )
 
                     OnDbProgress ( dbTasks, cmd ) ->
                         ( { model | dbTasks = dbTasks }, cmd )
@@ -1294,6 +1325,146 @@ viewApp app =
                 SettingsRoute ->
                     viewMenu
 
+                StatsRoute ->
+                    viewStats model
+
+
+viewStats : Model -> Html Msg
+viewStats model =
+    Html.div
+        [ Attr.style "height" "100vh"
+        , Attr.style "width" "100vw"
+        , Attr.style "display" "flex"
+        , Attr.style "flex-direction" "column"
+        , Attr.style "gap" "0.125rem"
+        , Attr.style "font-size" "7vw"
+        ]
+        [ Html.div
+            [ Attr.style "height" "7vh"
+            , Attr.style "display" "flex"
+            , Attr.style "align-items" "center"
+            , Attr.style "gap" "3rem"
+            , Attr.style "padding" "0.5rem"
+            ]
+            [ linkSecondarySmall "Back"
+                HomeRoute
+            , Html.span [ Attr.style "font-size" "2rem" ] [ Html.text "Stats" ]
+            ]
+        , Html.div
+            [ Attr.style "height" "93vh"
+            , Attr.style "overflow" "auto"
+            , Attr.style "padding" "1rem"
+            , Attr.style "display" "flex"
+            , Attr.style "flex-direction" "column"
+            , Attr.style "gap" "2rem"
+            ]
+            [ model.safetyBehaviors
+                |> List.map (viewBehaviorStats model)
+                |> Html.ul
+                    [ Attr.style "list-style" "none"
+                    , Attr.style "display" "flex"
+                    , Attr.style "flex-direction" "column"
+                    , Attr.style "gap" "1rem"
+                    ]
+            ]
+        ]
+
+
+viewBehaviorStats : Model -> Behavior -> Html Msg
+viewBehaviorStats model behavior =
+    let
+        dayStart =
+            Time.Extra.floor Time.Extra.Day model.zone model.today
+
+        dayStartMillis =
+            Time.posixToMillis dayStart
+
+        nextDayStartMillis =
+            Time.Extra.add Time.Extra.Day 1 model.zone dayStart |> Time.posixToMillis
+
+        prevDayStartMillis =
+            Time.Extra.add Time.Extra.Day -1 model.zone dayStart |> Time.posixToMillis
+    in
+    Html.li
+        [ Attr.style "border" "1px solid black"
+        , Attr.style "border-radius" "1rem"
+        , Attr.style "padding" "0.5rem 1rem"
+        ]
+        [ Html.div
+            [ Attr.style "display" "flex"
+            , Attr.style "align-items" "center"
+            , Attr.style "justify-content" "space-between"
+            ]
+            [ Html.span
+                [ Attr.style "text-decoration" "underline" ]
+                [ Html.text behavior.name ]
+            , linkSecondarySmall "more"
+                HomeRoute
+            ]
+        , Html.br [] []
+        , Html.text "Submits:"
+        , Html.br [] []
+        , Html.span []
+            [ behavior.submits
+                |> List.filter
+                    (\submit ->
+                        let
+                            subMiilis =
+                                Time.posixToMillis submit
+                        in
+                        subMiilis >= prevDayStartMillis && subMiilis < dayStartMillis
+                    )
+                |> List.length
+                |> String.fromInt
+                |> Html.text
+            , Html.text " yesterday, "
+            , behavior.submits
+                |> List.filter
+                    (\submit ->
+                        let
+                            subMiilis =
+                                Time.posixToMillis submit
+                        in
+                        subMiilis >= dayStartMillis && subMiilis < nextDayStartMillis
+                    )
+                |> List.length
+                |> String.fromInt
+                |> Html.text
+            , Html.text " today"
+            ]
+        , Html.br [] []
+        , Html.text "Resists:"
+        , Html.br [] []
+        , Html.span []
+            [ behavior.resists
+                |> List.filter
+                    (\resist ->
+                        let
+                            subMiilis =
+                                Time.posixToMillis resist
+                        in
+                        subMiilis >= prevDayStartMillis && subMiilis < dayStartMillis
+                    )
+                |> List.length
+                |> String.fromInt
+                |> Html.text
+            , Html.text " yesterday, "
+            , behavior.resists
+                |> List.filter
+                    (\resist ->
+                        let
+                            subMiilis =
+                                Time.posixToMillis resist
+                        in
+                        subMiilis >= dayStartMillis && subMiilis < nextDayStartMillis
+                    )
+                |> List.length
+                |> String.fromInt
+                |> Html.text
+            , Html.text " today"
+            ]
+        ]
+
 
 viewEditBehavior : UUID -> Model -> Html Msg
 viewEditBehavior id model =
@@ -1567,7 +1738,9 @@ viewBehaviorList model =
                     , Attr.style "justify-content" "space-between"
                     , Attr.style "padding" "0.5rem"
                     ]
-                    [ linkPrimarySmall "Add safety behavior"
+                    [ linkPrimarySmall "Stats"
+                        StatsRoute
+                    , linkSecondarySmall "Add safety behavior"
                         AddBehaviorRoute
                     , linkSecondaryIcon "☰"
                         SettingsRoute
